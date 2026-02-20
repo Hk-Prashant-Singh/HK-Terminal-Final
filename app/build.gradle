@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.hk.hkterminal'
+    namespace 'com.hk.hkterminal' // Identity Locked [cite: 2026-02-19]
     compileSdk 34
 
     defaultConfig {
@@ -17,7 +17,8 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("hk_key.jks")
+            // 🛡️ Stealth Signature Strike
+            storeFile file("hk_key.jks") 
             storePassword System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias System.getenv("SIGNING_KEY_ALIAS")
             keyPassword System.getenv("SIGNING_KEY_PASSWORD")
@@ -26,7 +27,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.release 
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -38,7 +39,14 @@ android {
     }
 }
 
+// 🌐 Accurate Repository Strike [cite: 2026-02-01]
+repositories {
+    google()
+    mavenCentral()
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 }
