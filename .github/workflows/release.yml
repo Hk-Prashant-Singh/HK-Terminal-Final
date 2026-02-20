@@ -17,20 +17,27 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Setup Gradle Engine
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Decode Keystore
+      - name: Decode Keystore (The Identity)
         run: |
-          # 🔐 Identity Locked: Adra, West Bengal
+          # 🔐 Identity Locked: Adra, West Bengal [cite: 2026-01-20, 2026-02-19]
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
 
-      - name: Build Signed APK
+      - name: Build Signed APK (The Weapon)
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          # 🚀 Execution Power Injection
-          chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          # 🚀 Direct Engine Strike [cite: 2026-02-01]
+          # Skipping gradlew because it's missing in your root
+          gradle assembleRelease --stacktrace --no-daemon
+
+      - name: Upload HK Terminal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HK-Terminal-Lethal-APK
+          path: app/build/outputs/apk/release/app-release.apk
+          
