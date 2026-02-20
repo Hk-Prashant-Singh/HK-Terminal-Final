@@ -1,91 +1,63 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#000000"
-    android:orientation="vertical">
+package com.hk.hkterminal;
 
-    <!-- ===== TOP HACKER HEADER ===== -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:background="#0A0A0A"
-        android:gravity="center_vertical"
-        android:padding="10dp"
-        android:elevation="8dp">
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🛡 PS HACKER"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:fontFamily="monospace"/>
+public class MainActivity extends AppCompatActivity {
 
-    </LinearLayout>
+    // UI Elements linking to the professional XML
+    private TextView outputView;
+    private EditText inputCommand;
+    private Button runButton;
+    private ScrollView scrollView;
+    private boolean rootMode;
 
-    <!-- ===== STATUS HEADER ===== -->
-    <TextView
-        android:id="@+id/statusHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#00FF00"
-        android:textSize="12sp"
-        android:fontFamily="monospace"
-        android:text="[ SYSTEM ONLINE ]"
-        android:gravity="end"
-        android:padding="8dp"
-        android:background="#111111"/>
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Ensure your XML file name is activity_main.xml
+        setContentView(R.layout.activity_main);
 
-    <!-- ===== TERMINAL OUTPUT AREA ===== -->
-    <ScrollView
-        android:id="@+id/scrollView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp">
+        // Binding Views
+        outputView = findViewById(R.id.outputView);
+        inputCommand = findViewById(R.id.inputCommand);
+        runButton = findViewById(R.id.runButton);
+        scrollView = findViewById(R.id.scrollView);
 
-        <TextView
-            android:id="@+id/outputView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#00FF00"
-            android:textSize="15sp"
-            android:fontFamily="monospace"
-            android:lineSpacingExtra="4dp"/>
-    </ScrollView>
+        // Check Root Status
+        rootMode = RootUtils.isRootAvailable();
+        
+        // Elite Terminal Welcome Message
+        String modeHeader = rootMode ? " [ STATUS: ROOT ACCESS GRANTED ]\n" : " [ STATUS: USER ACCESS ONLY ]\n";
+        outputView.setText(">> SYSTEM INITIALIZED...\n" + modeHeader + ">> READY FOR COMMANDS...\n");
 
-    <!-- ===== COMMAND BAR ===== -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:orientation="horizontal"
-        android:background="#0F0F0F"
-        android:padding="8dp"
-        android:gravity="center_vertical">
+        // Execution Logic
+        runButton.setOnClickListener(v -> {
+            String cmd = inputCommand.getText().toString().trim();
+            
+            if (!cmd.isEmpty()) {
+                // Command display style
+                String prompt = rootMode ? "root@pshacker:~# " : "user@pshacker:~$ ";
+                outputView.append("\n" + prompt + cmd + "\n");
+                
+                // Clear input immediately for next command
+                inputCommand.setText("");
 
-        <EditText
-            android:id="@+id/inputCommand"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:hint="root@pshacker:~$"
-            android:textColorHint="#006600"
-            android:textColor="#00FF00"
-            android:background="#111111"
-            android:padding="10dp"
-            android:fontFamily="monospace"/>
+                // Terminal Engine Execution
+                TerminalEngine.runCommand(cmd, rootMode, result -> {
+                    runOnUiThread(() -> {
+                        // Append output and auto-scroll to bottom
+                        outputView.append(result + "\n");
+                        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                    });
+                });
+            }
+        });
+    }
+}
 
-        <Button
-            android:id="@+id/runButton"
-            android:layout_width="90dp"
-            android:layout_height="match_parent"
-            android:text="RUN"
-            android:textStyle="bold"
-            android:backgroundTint="#111111"
-            android:textColor="#00FF00"
-            android:fontFamily="monospace"/>
-    </LinearLayout>
-
-</LinearLayout>
