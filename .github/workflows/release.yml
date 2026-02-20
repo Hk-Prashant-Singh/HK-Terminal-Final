@@ -17,14 +17,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Specific Gradle (8.2.2)
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.2.2
-
       - name: Decode Keystore
         run: |
-          # Identity: Adra Tech Wizard [cite: 2026-01-20, 2026-02-19]
+          # Stealth Strike: Identity Encrypted 🔐
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
 
       - name: Build Signed APK
@@ -33,6 +28,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          # 🚀 Power Strike without gradlew [cite: 2026-02-01]
+          # 🚀 Force Build: Using system-default Gradle
+          # No version locking, no gradlew dependency.
           gradle assembleRelease --no-daemon --stacktrace
           
