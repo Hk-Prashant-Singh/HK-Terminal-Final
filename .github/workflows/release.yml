@@ -17,6 +17,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Stable Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.5 # Force lock to stable version
+
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
 
@@ -25,7 +30,5 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: |
-          # 🚀 Stealth Strike: Bypass Version Deprecations
-          gradle assembleRelease --no-daemon --stacktrace -Pandroid.experimental.privacysandboxsdk.enable=false
-          
+        run: gradle assembleRelease --no-daemon
+        
