@@ -5,7 +5,30 @@
     android:background="#000000"
     android:orientation="vertical">
 
-    <include layout="@layout/header_layout" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#0A0A0A"
+        android:padding="10dp">
+        <ImageView
+            android:id="@+id/shieldLogo"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@android:drawable/ic_lock_idle_lock" 
+            android:layout_centerVertical="true"
+            android:tint="#FF0000"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/shieldLogo"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
+            android:text="PS HACKER"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold"/>
+    </RelativeLayout>
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
@@ -22,19 +45,26 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <TableLayout
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#111111"
-        android:stretchColumns="*">
-        <TableRow>
-            <Button style="?android:attr/borderlessButtonStyle" android:text="ESC" android:textColor="#FFF"/>
-            <Button style="?android:attr/borderlessButtonStyle" android:text="/" android:textColor="#FFF"/>
-            <Button style="?android:attr/borderlessButtonStyle" android:text="-" android:textColor="#FFF"/>
-            <Button style="?android:attr/borderlessButtonStyle" android:text="HOME" android:textColor="#FFF"/>
-            <Button style="?android:attr/borderlessButtonStyle" android:text="↑" android:textColor="#FFF"/>
-        </TableRow>
-    </TableLayout>
+        android:scrollbars="none">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="45dp"
+            android:orientation="horizontal"
+            android:padding="2dp">
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="60dp" android:layout_height="match_parent" android:text="ESC" android:textColor="#FFFFFF" android:fontFamily="monospace"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="40dp" android:layout_height="match_parent" android:text="/" android:textColor="#FFFFFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="40dp" android:layout_height="match_parent" android:text="-" android:textColor="#FFFFFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="70dp" android:layout_height="match_parent" android:text="HOME" android:textColor="#FFFFFF" android:fontFamily="monospace"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="50dp" android:layout_height="match_parent" android:text="CTRL" android:textColor="#FFFFFF" android:fontFamily="monospace"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="50dp" android:layout_height="match_parent" android:text="ALT" android:textColor="#FFFFFF" android:fontFamily="monospace"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="40dp" android:layout_height="match_parent" android:text="↑" android:textColor="#FFFFFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:layout_width="40dp" android:layout_height="match_parent" android:text="↓" android:textColor="#FFFFFF"/>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -51,13 +81,18 @@
             android:textColorHint="#444444"
             android:textColor="#00FF00"
             android:background="@null"
-            android:fontFamily="monospace"/>
+            android:paddingStart="10dp"
+            android:fontFamily="monospace"
+            android:inputType="textNoSuggestions"/>
         <Button
             android:id="@+id/runButton"
             android:layout_width="80dp"
             android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
             android:text="RUN"
-            android:backgroundTint="#333333"
-            android:textColor="#FFFFFF"/>
+            android:backgroundTint="#222222"
+            android:textColor="#00FF00"
+            android:textStyle="bold"/>
     </LinearLayout>
+
 </LinearLayout>
