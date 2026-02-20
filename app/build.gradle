@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.hk.hkterminal'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.hk.hkterminal"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 🔑 Signature Motor: Tere hk-s aur hk-g setup ke hisaab se
+    signingConfigs {
+        release {
+            /* GitHub par hum Base64 ko decode karke 'hk_key.jks' banate hain.
+               Lekin agar tu local build karega, toh ye seedha tere 'hk-s' 
+               folder ki file 'hk_terminal_auto.jks' ko point karega.
+            */
+            storeFile file("hk_key.jks") 
+            
+            // Ye environmental variables GitHub Secrets se connect honge
+            storePassword System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias System.getenv("SIGNING_KEY_ALIAS") // 'hk_auto_alias'
+            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        release {
+            // Is line ke bina APK sign nahi hogi
+            signingConfig signingConfigs.release 
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+}
