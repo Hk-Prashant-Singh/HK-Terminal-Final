@@ -1,4 +1,4 @@
-Name: HK Final Strike Launch
+name: HK Final Strike Launch
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Stable Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.5 # Force lock to stable version
+          gradle-version: 8.5
 
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
