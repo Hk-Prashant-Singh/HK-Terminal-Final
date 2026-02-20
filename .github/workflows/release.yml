@@ -22,25 +22,15 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          # 🛡️ GitHub Secrets se keystore weapon generate ho raha hai
+          # 🔐 Identity Locked: Adra, West Bengal
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
 
       - name: Build Signed APK
         env:
-          # 🔑 Signature Motor: Environmental variables mapping
           SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: hk_auto_alias
-          SIGNING_KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          # 🛠️ Missing gradlew fix and execution power injection
-          if [ ! -f ./gradlew ]; then gradle wrapper; fi
+          # 🚀 Execution Power Injection
           chmod +x gradlew
-          ./gradlew :app:assembleRelease --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: HK-Terminal-Lethal-APK
-          path: app/build/outputs/apk/release/*.apk
-          
- # HK Launch 1.0
+          ./gradlew assembleRelease --stacktrace
