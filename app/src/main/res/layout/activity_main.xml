@@ -2,34 +2,93 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#000000">
+    android:background="#000000"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#0A0A0A"
+        android:padding="10dp">
+        <ImageView
+            android:id="@+id/shieldLogo"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@android:drawable/ic_lock_idle_lock" 
+            android:layout_centerVertical="true"
+            android:tint="#FF0000"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/shieldLogo"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
+            android:text="PS HACKER"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold"/>
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ultimate: Command Bar"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"
+        android:paddingStart="15dp"
+        android:fontFamily="monospace"/>
 
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
+        android:layout_weight="1"
+        android:fillViewport="true">
         <TextView
             android:id="@+id/outputView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#00FF00"
-            android:textSize="14sp"
-            android:typeface="monospace"/>
+            android:padding="12dp"
+            android:fontFamily="monospace"/>
     </ScrollView>
 
-    <EditText
-        android:id="@+id/inputCommand"
+    <TableLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter command"
-        android:textColor="#FFFFFF"/>
+        android:background="#111111"
+        android:stretchColumns="*">
+        <TableRow>
+            <Button style="?android:attr/borderlessButtonStyle" android:text="ESC" android:textColor="#FFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:text="/" android:textColor="#FFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:text="-" android:textColor="#FFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:text="HOME" android:textColor="#FFF"/>
+            <Button style="?android:attr/borderlessButtonStyle" android:text="↑" android:textColor="#FFF"/>
+        </TableRow>
+    </TableLayout>
 
-    <Button
-        android:id="@+id/runButton"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Run"/>
+        android:orientation="horizontal"
+        android:background="#0A0A0A"
+        android:padding="5dp">
+        <EditText
+            android:id="@+id/inputCommand"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:hint="root@pshacker:~#"
+            android:textColor="#00FF00"
+            android:background="@null"
+            android:fontFamily="monospace"/>
+        <Button
+            android:id="@+id/runButton"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:text="RUN"
+            android:backgroundTint="#333333"
+            android:textColor="#FFFFFF"/>
+    </LinearLayout>
 </LinearLayout>
