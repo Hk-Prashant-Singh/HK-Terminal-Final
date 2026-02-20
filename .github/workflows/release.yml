@@ -18,9 +18,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Decode Keystore
-        run: |
-          # Stealth Strike: Identity Encrypted 🔐
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/hk_key.jks
 
       - name: Build Signed APK
         env:
@@ -28,7 +26,6 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          # 🚀 Force Build: Using system-default Gradle
-          # No version locking, no gradlew dependency.
-          gradle assembleRelease --no-daemon --stacktrace
+          # 🚀 Stealth Strike: Bypass Version Deprecations
+          gradle assembleRelease --no-daemon --stacktrace -Pandroid.experimental.privacysandboxsdk.enable=false
           
