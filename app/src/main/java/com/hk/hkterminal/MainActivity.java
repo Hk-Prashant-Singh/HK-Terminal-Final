@@ -5,9 +5,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.LayoutInflater;
+import android.view.View; // FIX: Missing View import
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ScrollView;
@@ -28,6 +27,11 @@ public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
+
+    // FIX: TerminalEngine needs this symbol
+    public interface Callback { 
+        void onOutput(String line); 
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,12 +55,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void executeCommand(final String command) {
         history.add(command);
-        outputView.append("\n"); // Move to next line before output
+        outputView.append("\n");
         
-        // Fix: Execute in Background Thread to avoid app hang
         new Thread(() -> {
             try {
-                // Check for Root and run shell
                 Process process = Runtime.getRuntime().exec(isRooted() ? "su" : "sh");
                 OutputStream os = process.getOutputStream();
                 os.write((command + "\nexit\n").getBytes());
@@ -68,17 +70,11 @@ public class MainActivity extends AppCompatActivity {
                     final String output = line;
                     new Handler(Looper.getMainLooper()).post(() -> outputView.append(output + "\n"));
                 }
-
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                while ((line = errorReader.readLine()) != null) {
-                    final String error = line;
-                    new Handler(Looper.getMainLooper()).post(() -> outputView.append("Error: " + error + "\n"));
-                }
                 
                 new Handler(Looper.getMainLooper()).post(() -> outputView.append("root@pshacker:~# "));
                 process.waitFor();
             } catch (Exception e) {
-                new Handler(Looper.getMainLooper()).post(() -> outputView.append("Execution Error: " + e.getMessage() + "\nroot@pshacker:~# "));
+                new Handler(Looper.getMainLooper()).post(() -> outputView.append("Error: " + e.getMessage() + "\nroot@pshacker:~# "));
             }
         }).start();
     }
@@ -103,11 +99,12 @@ public class MainActivity extends AppCompatActivity {
 
     public static class TabFragment extends Fragment {
         int type;
-        public TabFragment() {} // Required empty constructor
+        public TabFragment() {}
         public TabFragment(int t) { this.type = t; }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
+            // FIX: Symbol 'View' is now available due to import
             if (type != 0) return new View(getContext());
 
             ScrollView sv = new ScrollView(getContext());
@@ -117,11 +114,10 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setClickable(true);
 
-            // Fix: Touch to open keyboard
             outputView.setOnClickListener(v -> {
                 v.requestFocus();
                 InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
+                if (imm != null) imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
             });
 
             outputView.setOnKeyListener((v, code, ev) -> {
@@ -134,13 +130,6 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             });
 
-            ScaleGestureDetector gd = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                @Override public boolean onScale(ScaleGestureDetector d) {
-                    outputView.setTextSize(0, outputView.getTextSize() * d.getScaleFactor());
-                    return true;
-                }
-            });
-            sv.setOnTouchListener((v, e) -> { gd.onTouchEvent(e); return false; });
             sv.addView(outputView);
             return sv;
         }
