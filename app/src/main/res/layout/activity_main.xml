@@ -16,7 +16,6 @@
             android:background="#0A0A0A"
             android:padding="10dp">
             <ImageView
-                android:id="@+id/shieldLogo"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:src="@android:drawable/ic_lock_idle_lock"
@@ -24,21 +23,18 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/shieldLogo"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="40dp"
                 android:text="PS HACKER"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
                 android:fontFamily="monospace" />
             <ProgressBar
                 android:id="@+id/headerProgress"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="80dp"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:progressTint="#00FF00"
                 android:visibility="gone" />
         </RelativeLayout>
         <com.google.android.material.tabs.TabLayout
@@ -55,37 +51,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/topBar"
-        android:layout_above="@+id/extraKeysLayout" /> <LinearLayout
+        android:layout_above="@+id/extraKeysLayout" />
+
+    <LinearLayout
         android:id="@+id/extraKeysLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="#111111"
-        android:gravity="center_vertical"
         android:padding="5dp"
         android:orientation="horizontal">
-
-        <Button android:id="@+id/btnCtrl" android:layout_width="45dp" android:layout_height="40dp"
-            android:text="CTR" android:textColor="#FFFFFF" android:backgroundTint="#FF0000" android:textSize="10sp" />
-
-        <Button android:id="@+id/btnAlt" android:layout_width="45dp" android:layout_height="40dp"
-            android:text="ALT" android:textColor="#00FF00" android:backgroundTint="#333333" android:textSize="10sp" android:layout_marginStart="2dp" />
-
-        <Button android:id="@+id/btnFn" android:layout_width="45dp" android:layout_height="40dp"
-            android:text="FN" android:textColor="#00FFFF" android:backgroundTint="#333333" android:textSize="10sp" android:layout_marginStart="2dp" />
-
-        <Button android:id="@+id/btnCLR" android:layout_width="45dp" android:layout_height="40dp"
-            android:text="CL" android:textColor="#FFFF00" android:backgroundTint="#222222" android:textSize="10sp" android:layout_marginStart="5dp" />
-
-        <ImageButton android:id="@+id/btnUp" android:layout_width="40dp" android:layout_height="40dp"
-            android:src="@android:drawable/arrow_up_float" android:tint="#00FF00" android:backgroundTint="#333333" android:layout_marginStart="5dp" />
-
-        <ImageButton android:id="@+id/btnDown" android:layout_width="40dp" android:layout_height="40dp"
-            android:src="@android:drawable/arrow_down_float" android:tint="#00FF00" android:backgroundTint="#333333" android:layout_marginStart="2dp" />
-
-        <ImageButton android:id="@+id/btnDrawer" android:layout_width="40dp" android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_more" android:tint="#FFFFFF" android:backgroundTint="#333333" android:layout_marginStart="5dp" />
-
+        <Button android:id="@+id/btnCtrl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="CTR" android:textSize="10sp" android:backgroundTint="#333333" />
+        <Button android:id="@+id/btnAlt" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="ALT" android:textSize="10sp" android:backgroundTint="#333333" />
+        <Button android:id="@+id/btnCb" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="Cb" android:textColor="#00FF00" android:textSize="10sp" android:backgroundTint="#333333" />
+        <Button android:id="@+id/btnCLR" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="CL" android:textSize="10sp" android:backgroundTint="#333333" />
+        <ImageButton android:id="@+id/btnUp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:src="@android:drawable/arrow_up_float" android:backgroundTint="#333333" />
+        <ImageButton android:id="@+id/btnDown" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:src="@android:drawable/arrow_down_float" android:backgroundTint="#333333" />
     </LinearLayout>
-
 </RelativeLayout>
