@@ -1,12 +1,10 @@
 package com.hk.hkterminal;
 
-import android.Manifest;
+import android.content.Context;
 import android.os.*;
 import android.view.*;
-import android.view.inputmethod.BaseInputConnection;
-import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
@@ -15,111 +13,73 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
-    private ViewPager2 viewPager;
-    private EditText inputCommand;
-    public static TextView outputView; 
-    private ProgressBar headerProgress;
+    public static TextView outputView;
     private List<String> history = new ArrayList<>();
+    private int hIndex = -1;
 
-    public interface Callback { 
-        void onOutput(String line); 
-    }
+    public interface Callback { void onOutput(String line); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        viewPager = findViewById(R.id.viewPager);
-        inputCommand = findViewById(R.id.inputCommand);
-        headerProgress = findViewById(R.id.headerProgress);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.MODIFY_AUDIO_SETTINGS,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.INTERNET
-            }, 101);
-        }
-
-        viewPager.setAdapter(new TerminalPagerAdapter(this));
-        new TabLayoutMediator(findViewById(R.id.tabLayout), viewPager, (tab, pos) -> 
-            tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
-
-        inputCommand.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEND) {
-                execute(inputCommand.getText().toString());
-                inputCommand.setText("");
-                return true;
-            }
-            return false;
+        ViewPager2 vp = findViewById(R.id.viewPager);
+        vp.setAdapter(new FragmentStateAdapter(this) {
+            @Override public int getItemCount() { return 2; }
+            @Override public Fragment createFragment(int p) { return new TabFragment(p); }
         });
+        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> tab.setText(pos==0?"TERMINAL":"PACKAGES")).attach();
 
-        findViewById(R.id.btnUp).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_UP));
-        findViewById(R.id.btnDown).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_DOWN));
-        findViewById(R.id.btnLeft).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_LEFT));
-        findViewById(R.id.btnRight).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_RIGHT));
-        findViewById(R.id.btnCLR).setOnClickListener(v -> { if(outputView!=null) outputView.setText(">> HK READY\n"); });
-    }
-
-    private void sendNanoKey(int keyCode) {
-        BaseInputConnection ic = new BaseInputConnection(inputCommand, true);
-        ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+        // Shortcut Listeners
+        findViewById(R.id.btnCLR).setOnClickListener(v -> outputView.setText(">> HK READY\nroot@pshacker:~# "));
+        findViewById(R.id.btnUp).setOnClickListener(v -> navigateHistory(1));
+        findViewById(R.id.btnDown).setOnClickListener(v -> navigateHistory(-1));
     }
 
     public void execute(String cmd) {
-        if (outputView != null) outputView.append("\nroot@pshacker:~# " + cmd + "\n");
         history.add(cmd);
-        headerProgress.setVisibility(View.VISIBLE);
-        TerminalEngine.run(cmd, line -> runOnUiThread(() -> {
-            if (outputView != null) outputView.append(line + "\n");
-            headerProgress.setVisibility(View.GONE);
-        }));
+        TerminalEngine.run(cmd, line -> runOnUiThread(() -> outputView.append(line + "\nroot@pshacker:~# ")));
+    }
+
+    private void navigateHistory(int dir) {
+        if(history.isEmpty()) return;
+        hIndex = Math.max(-1, Math.min(hIndex + dir, history.size() - 1));
+        if(hIndex != -1) outputView.append(history.get(history.size() - 1 - hIndex));
     }
 
     public static class TabFragment extends Fragment {
-        private float mScale = 14f;
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
-            if (getArguments().getInt("type") == 0) {
-                ScrollView sv = new ScrollView(getContext());
-                outputView = new TextView(getContext());
-                outputView.setTextColor(0xFF00FF00);
-                outputView.setTypeface(android.graphics.Typeface.MONOSPACE);
-                outputView.setTextIsSelectable(true); 
-                
-                ScaleGestureDetector gd = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                    @Override public boolean onScale(ScaleGestureDetector d) {
-                        mScale *= d.getScaleFactor();
-                        outputView.setTextSize(mScale);
-                        return true;
-                    }
-                });
+        int type;
+        public TabFragment(int t) { type = t; }
+        @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
+            if(type != 0) return new View(getContext());
+            ScrollView sv = new ScrollView(getContext());
+            outputView = new TextView(getContext());
+            outputView.setTextColor(0xFF00FF00);
+            outputView.setFocusableInTouchMode(true);
+            outputView.setText(">> HK READY\nroot@pshacker:~# ");
+            
+            // Direct Key Input
+            outputView.setOnKeyListener((v, code, ev) -> {
+                if(ev.getAction() == KeyEvent.ACTION_DOWN && code == KeyEvent.KEYCODE_ENTER) {
+                    String[] lines = outputView.getText().toString().split("\n");
+                    String last = lines[lines.length-1].replace("root@pshacker:~# ", "");
+                    ((MainActivity)getActivity()).execute(last);
+                    return true;
+                }
+                return false;
+            });
 
-                outputView.setOnTouchListener((v, event) -> {
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        int offset = outputView.getOffsetForPosition(event.getX(), event.getY());
-                        ((MainActivity)getActivity()).execute("jump-to-offset " + offset);
-                    }
-                    return gd.onTouchEvent(event);
-                });
-
-                sv.addView(outputView);
-                return sv;
-            } else {
-                return new View(getContext()); 
-            }
+            // Smooth Zoom
+            ScaleGestureDetector gd = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                @Override public boolean onScale(ScaleGestureDetector d) {
+                    outputView.setTextSize(0, outputView.getTextSize() * d.getScaleFactor());
+                    return true;
+                }
+            });
+            sv.setOnTouchListener((v, e) -> { gd.onTouchEvent(e); return false; });
+            sv.addView(outputView);
+            return sv;
         }
     }
-
-    private class TerminalPagerAdapter extends FragmentStateAdapter {
-        public TerminalPagerAdapter(AppCompatActivity a) { super(a); }
-        @NonNull @Override public Fragment createFragment(int p) {
-            TabFragment f = new TabFragment();
-            Bundle b = new Bundle(); b.putInt("type", p);
-            f.setArguments(b); return f;
-        }
-        @Override public int getItemCount() { return 2; }
-    }
-            }
+}
