@@ -4,8 +4,8 @@ import android.Manifest;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
 import android.view.*;
+import android.view.inputmethod.EditorInfo;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,11 +21,10 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
     private TabLayout tabLayout;
     private EditText inputCommand;
-    private Button runButton, btnUp, btnDown;
+    private ImageButton btnUp, btnDown;
     private static TextView globalOutputView;
-    private TextToSpeech alexVoice;
     
-    // Command History
+    // History Logic
     private List<String> commandHistory = new ArrayList<>();
     private int historyIndex = -1;
 
@@ -34,56 +33,56 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Required Permissions [cite: 2026-02-01]
+        // Accuracy and Professional Level Permissions [cite: 2026-02-01]
         if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, 101);
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 101);
         }
-
-        alexVoice = new TextToSpeech(this, status -> {
-            if (status != TextToSpeech.ERROR) alexVoice.setLanguage(Locale.UK);
-        });
 
         viewPager = findViewById(R.id.viewPager);
         tabLayout = findViewById(R.id.tabLayout);
         inputCommand = findViewById(R.id.inputCommand);
-        runButton = findViewById(R.id.runButton);
         btnUp = findViewById(R.id.btnUp);
         btnDown = findViewById(R.id.btnDown);
 
-        // Fixing the Error: Setting Adapter
         viewPager.setAdapter(new TerminalPagerAdapter(this));
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             tab.setText(position == 0 ? "TERMINAL" : "PACKAGES");
         }).attach();
 
-        // History Up Logic
+        // Keyboard Enter Button Logic
+        inputCommand.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEND || 
+               (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                
+                String cmd = inputCommand.getText().toString().trim();
+                if (!cmd.isEmpty() && globalOutputView != null) {
+                    commandHistory.add(cmd);
+                    historyIndex = -1;
+                    globalOutputView.append("\nroot@pshacker:~# " + cmd + "\n");
+                    executeCommand(cmd);
+                    inputCommand.setText("");
+                }
+                return true;
+            }
+            return false;
+        });
+
+        // History Navigation
         btnUp.setOnClickListener(v -> {
             if (!commandHistory.isEmpty() && historyIndex < commandHistory.size() - 1) {
                 historyIndex++;
                 inputCommand.setText(commandHistory.get(commandHistory.size() - 1 - historyIndex));
+                inputCommand.setSelection(inputCommand.getText().length());
             }
         });
 
-        // History Down Logic
         btnDown.setOnClickListener(v -> {
             if (historyIndex > 0) {
                 historyIndex--;
                 inputCommand.setText(commandHistory.get(commandHistory.size() - 1 - historyIndex));
+                inputCommand.setSelection(inputCommand.getText().length());
             } else {
                 historyIndex = -1;
-                inputCommand.setText("");
-            }
-        });
-
-        runButton.setOnClickListener(v -> {
-            String cmd = inputCommand.getText().toString().trim();
-            if (!cmd.isEmpty()) {
-                commandHistory.add(cmd);
-                historyIndex = -1;
-                if (globalOutputView != null) {
-                    globalOutputView.append("\nroot@pshacker:~# " + cmd + "\n");
-                    executeCommand(cmd);
-                }
                 inputCommand.setText("");
             }
         });
@@ -92,21 +91,17 @@ public class MainActivity extends AppCompatActivity {
     private void executeCommand(String command) {
         new Thread(() -> {
             try {
-                // Root/Non-Root Engine
-                Process process;
-                try {
-                    process = Runtime.getRuntime().exec("su -c " + command); 
-                } catch (Exception e) {
-                    process = Runtime.getRuntime().exec(command); 
-                }
-
+                // Professional Shell Execution
+                ProcessBuilder pb = new ProcessBuilder("/system/bin/sh", "-c", command);
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                
                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String finalLine = line;
                     runOnUiThread(() -> {
                         globalOutputView.append(finalLine + "\n");
-                        alexVoice.speak(finalLine, TextToSpeech.QUEUE_ADD, null, null);
                     });
                 }
             } catch (Exception e) {
@@ -115,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    // Pager Adapter Class
     private class TerminalPagerAdapter extends FragmentStateAdapter {
         public TerminalPagerAdapter(AppCompatActivity fa) { super(fa); }
         @Override public int getItemCount() { return 2; }
@@ -126,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static class TabFragment extends androidx.fragment.app.Fragment {
         int type;
-        public TabFragment() {} // Default constructor
+        public TabFragment() {}
         public TabFragment(int type) { this.type = type; }
         
         @Override
@@ -134,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
             if (type == 0) {
                 ScrollView sv = new ScrollView(getContext());
                 TextView tv = new TextView(getContext());
-                tv.setText(">> SYSTEM READY, PRASHANT BHAI...\n>> SPEAKER ACTIVE\n");
+                tv.setText(">> HK TERMINAL READY\n>> PRASHANT BHAI, ENTER COMMAND...\n");
                 tv.setTextColor(0xFF00FF00);
                 tv.setTypeface(android.graphics.Typeface.MONOSPACE);
                 tv.setTextIsSelectable(true); 
@@ -158,16 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int i = 0; i < apps.size(); i++) {
                     names[i] = " > " + apps.get(i).packageName;
                 }
-                ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_list_item_1, names) {
-                    @Override public View getView(int position, View convertView, ViewGroup parent) {
-                        View view = super.getView(position, convertView, parent);
-                        TextView text = view.findViewById(android.R.id.text1);
-                        text.setTextColor(0xFF00FF00);
-                        text.setTextSize(12);
-                        return view;
-                    }
-                };
-                lv.setAdapter(adapter);
+                lv.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, names));
             } catch (Exception e) {}
         }
     }
