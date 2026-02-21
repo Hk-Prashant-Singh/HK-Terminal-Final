@@ -1,30 +1,25 @@
 package com.hk.hkterminal;
 
-import android.content.Context; // FIXED
-import android.content.Intent;  // FIXED
-import android.widget.Toast;    // FIXED
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * HK Terminal Engine - Professional Core logic [cite: 2026-01-20]
- * Designed by: Tech Wizard (Prashant Bhai)
- */
 public class TerminalEngine {
 
-    // SYSTEM CORE: JNI Bridge Placeholder
+    private static ServerSocket amSocketServer;
+    private static Thread amSocketThread;
+
     public static void openPtmx() {
         Log.d("PS_HACKER_JNI", "Opening /dev/ptmx via JNI (Placeholder)");
     }
 
-    // SYSTEM CORE: AmSocketServer
-    private static ServerSocket amSocketServer;
-    private static Thread amSocketThread;
-
+    // SYSTEM CORE: AmSocketServer Initialization
     public static void startAmSocketServer() {
         if (amSocketThread != null && amSocketThread.isAlive()) return;
         amSocketThread = new Thread(() -> {
@@ -39,6 +34,21 @@ public class TerminalEngine {
             }
         });
         amSocketThread.start();
+    }
+
+    // FIXED: Added missing stopAmSocketServer method for Security Cleanup
+    public static void stopAmSocketServer() {
+        if (amSocketThread != null) {
+            amSocketThread.interrupt();
+            if (amSocketServer != null && !amSocketServer.isClosed()) {
+                try {
+                    amSocketServer.close();
+                } catch (IOException e) {
+                    MainActivity.logError("AM_SOCKET", "Error closing server socket", e);
+                }
+            }
+            Log.d("PS_HACKER_SOCKET", "AmSocketServer stopped successfully");
+        }
     }
 
     private static class AmSocketClientHandler implements Runnable {
@@ -57,7 +67,6 @@ public class TerminalEngine {
         }
     }
 
-    // ROBUSTNESS: ActivityUtils (Fail-safe activity launching)
     public static void launchActivitySafely(Context context, Intent intent) {
         try {
             context.startActivity(intent);
@@ -67,7 +76,6 @@ public class TerminalEngine {
         }
     }
 
-    // DATA & SECURITY: SHA-256 Validation for binaries
     public static String calculateSHA256(File file) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -89,15 +97,13 @@ public class TerminalEngine {
         }
     }
 
-    // Core Shell Execution - Root/Non-Root handle
     public static void run(final String cmd, final MainActivity.Callback cb) {
         new Thread(() -> {
             try {
                 Process p = Runtime.getRuntime().exec(isRooted() ? "su" : "sh");
                 OutputStream os = p.getOutputStream();
                 os.write((cmd + "\nexit\n").getBytes());
-                os.flush(); // Crucial flush
-
+                os.flush();
                 BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 String l;
                 while ((l = r.readLine()) != null) {
