@@ -20,7 +20,10 @@ public class MainActivity extends AppCompatActivity {
     private int hIndex = -1;
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
+    
+    // Status flags for modifier keys
     private boolean isCtrl = false;
+    private boolean isAlt = false;
 
     public interface Callback { void onOutput(String line); }
 
@@ -41,39 +44,48 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
-        // --- Cb BUTTON: Professional Command Box ---
-        findViewById(R.id.btnCb).setOnClickListener(v -> {
-            final EditText input = new EditText(this);
-            input.setTextColor(0xFF00FF00);
-            input.setBackgroundColor(0xFF111111);
-            input.setTypeface(Typeface.MONOSPACE);
-            
-            new android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
-                .setTitle("COMMAND BOX")
-                .setView(input)
-                .setPositiveButton("EXECUTE", (d, w) -> {
-                    String cmd = input.getText().toString().trim();
-                    if(!cmd.isEmpty()) {
-                        outputView.append(cmd); 
-                        executeCommand(cmd);
-                    }
-                }).setNegativeButton("CANCEL", null).show();
-            
-            input.requestFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            if(imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-        });
+        // --- NEW 2-LINE KEYBOARD BUTTONS INTEGRATION ---
+        setupExtraKeys();
 
-        findViewById(R.id.btnCtrl).setOnClickListener(v -> {
+        TerminalEngine.startAmSocketServer();
+    }
+
+    private void setupExtraKeys() {
+        // Row 1
+        findViewById(R.id.esc).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_ESCAPE));
+        findViewById(R.id.slash).setOnClickListener(v -> appendChar("/"));
+        findViewById(R.id.dash).setOnClickListener(v -> appendChar("-"));
+        findViewById(R.id.home).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_MOVE_HOME));
+        findViewById(R.id.up).setOnClickListener(v -> navigateHistory(1));
+        findViewById(R.id.end).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_MOVE_END));
+        findViewById(R.id.pgup).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_PAGE_UP));
+
+        // Row 2
+        findViewById(R.id.left_arrow).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_TAB)); // Tab for completion
+        findViewById(R.id.ctrl).setOnClickListener(v -> {
             isCtrl = !isCtrl;
             v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
         });
+        findViewById(R.id.alt).setOnClickListener(v -> {
+            isAlt = !isAlt;
+            v.setBackgroundColor(isAlt ? 0xFFFF0000 : 0xFF333333);
+        });
+        findViewById(R.id.left).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_DPAD_LEFT));
+        findViewById(R.id.down).setOnClickListener(v -> navigateHistory(-1));
+        findViewById(R.id.right).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_DPAD_RIGHT));
+        findViewById(R.id.pgdn).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_PAGE_DOWN));
+    }
 
-        findViewById(R.id.btnCLR).setOnClickListener(v -> outputView.setText(">> PS HACKER READY\nroot@pshacker:~# "));
-        findViewById(R.id.btnUp).setOnClickListener(v -> navigateHistory(1));
-        findViewById(R.id.btnDown).setOnClickListener(v -> navigateHistory(-1));
+    private void appendChar(String c) {
+        if(outputView != null) outputView.append(c);
+    }
 
-        TerminalEngine.startAmSocketServer();
+    private void sendKey(int keyCode) {
+        // Implementation for virtual key dispatch
+        if(outputView != null) {
+            KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+            outputView.dispatchKeyEvent(event);
+        }
     }
 
     public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
@@ -123,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
 
-            // --- ZOOM LOGIC ---
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override public boolean onScale(ScaleGestureDetector d) {
@@ -133,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            // --- SLIDE & TOUCH ---
             sv.setOnTouchListener((v, e) -> {
                 scaleDetector.onTouchEvent(e);
                 if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
@@ -144,7 +154,6 @@ public class MainActivity extends AppCompatActivity {
                 return false; 
             });
 
-            // --- TYPING VISIBILITY FIX ---
             outputView.setOnKeyListener((v, code, ev) -> {
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
