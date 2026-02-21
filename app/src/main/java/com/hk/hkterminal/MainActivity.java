@@ -29,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Soft input mode fixed for perfect focus and resizing
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
@@ -36,7 +38,9 @@ public class MainActivity extends AppCompatActivity {
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setAdapter(new FragmentStateAdapter(this) {
             @Override public int getItemCount() { return 2; }
-            @Override public Fragment createFragment(int pos) { return new TerminalTabFragment(pos); }
+            @Override public Fragment createFragment(int pos) { 
+                return new TerminalTabFragment(pos); 
+            }
         });
 
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> {
@@ -47,9 +51,12 @@ public class MainActivity extends AppCompatActivity {
         TerminalEngine.startAmSocketServer();
     }
 
-    public static void logError(String tag, String msg, Exception e) { Log.e(tag, msg, e); }
+    public static void logError(String tag, String msg, Exception e) { 
+        Log.e(tag, msg, e); 
+    }
 
     private void setupExtraKeys() {
+        // Elite specialized buttons for HK-Operation
         findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
         findViewById(R.id.slash).setOnClickListener(v -> injectChar("/"));
         findViewById(R.id.dash).setOnClickListener(v -> injectChar("-"));
@@ -68,15 +75,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void toggleMod(View v, String type) {
-        if(type.equals("CTRL")) { isCtrl = !isCtrl; v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0x00000000); }
-        else { isAlt = !isAlt; v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0x00000000); }
+        if(type.equals("CTRL")) { 
+            isCtrl = !isCtrl; 
+            v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0x00000000); 
+        } else { 
+            isAlt = !isAlt; 
+            v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0x00000000); 
+        }
     }
 
     private void moveCursor(int off) {
         if (outputView == null) return;
         int target = outputView.getSelectionStart() + off;
         int limit = outputView.getText().toString().lastIndexOf("root@pshacker:~# ") + 17;
-        if (target >= limit && target <= outputView.length()) Selection.setSelection((Spannable) outputView.getText(), target);
+        if (target >= limit && target <= outputView.length()) {
+            Selection.setSelection((Spannable) outputView.getText(), target);
+        }
     }
 
     private void cycleHistory(int dir) {
@@ -120,14 +134,19 @@ public class MainActivity extends AppCompatActivity {
         Selection.setSelection((Spannable) outputView.getText(), outputView.getText().toString().lastIndexOf("root@pshacker:~# ") + 17);
     }
 
-    private void jumpToEnd() { if (outputView != null) Selection.setSelection((Spannable) outputView.getText(), outputView.length()); }
+    private void jumpToEnd() { 
+        if (outputView != null) Selection.setSelection((Spannable) outputView.getText(), outputView.length()); 
+    }
 
-    private void sendSystemKey(int code) { if (outputView != null) outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code)); }
+    private void sendSystemKey(int code) { 
+        if (outputView != null) outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code)); 
+    }
 
     public static class TerminalTabFragment extends Fragment {
         private int type;
         public TerminalTabFragment() {}
         public TerminalTabFragment(int t) { this.type = t; }
+        
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             if (type != 0) return new View(getContext());
@@ -138,11 +157,13 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true); outputView.setFocusableInTouchMode(true);
             outputView.setClickable(true); outputView.setTextIsSelectable(true);
             outputView.setCursorVisible(true);
+            
             outputView.setOnClickListener(v -> {
                 v.requestFocus();
                 InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
             });
+            
             outputView.setOnKeyListener((v, code, ev) -> {
                 if (ev.getAction() == KeyEvent.ACTION_DOWN && code == KeyEvent.KEYCODE_ENTER) {
                     String full = outputView.getText().toString();
@@ -154,5 +175,9 @@ public class MainActivity extends AppCompatActivity {
             scroll.addView(outputView); return scroll;
         }
     }
-    @Override protected void onDestroy() { super.onDestroy(); TerminalEngine.stopAmSocketServer(); }
+    
+    @Override protected void onDestroy() { 
+        super.onDestroy(); 
+        TerminalEngine.stopAmSocketServer(); 
+    }
 }
