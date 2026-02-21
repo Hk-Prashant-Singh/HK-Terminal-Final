@@ -1,6 +1,3 @@
-cketServer(); 
-    }
-    }
 package com.hk.hkterminal;
 
 import android.content.*;
