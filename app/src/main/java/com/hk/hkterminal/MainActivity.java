@@ -29,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Resizing logic taaki keyboard aane par layout fix rahe
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
@@ -51,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
     public static void logError(String tag, String msg, Exception e) { Log.e(tag, msg, e); }
 
     private void setupExtraKeys() {
-        // ROW 1 Logic
         findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
         findViewById(R.id.slash).setOnClickListener(v -> injectChar("/"));
         findViewById(R.id.dash).setOnClickListener(v -> injectChar("-"));
@@ -60,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.end).setOnClickListener(v -> jumpToEnd());
         findViewById(R.id.pgup).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_UP));
 
-        // ROW 2 Logic
         findViewById(R.id.left_arrow).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_TAB));
         findViewById(R.id.ctrl).setOnClickListener(v -> toggleMod(v, "CTRL"));
         findViewById(R.id.alt).setOnClickListener(v -> toggleMod(v, "ALT"));
@@ -71,13 +68,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void toggleMod(View v, String type) {
-        if(type.equals("CTRL")) { 
-            isCtrl = !isCtrl; 
-            v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0x00000000); 
-        } else { 
-            isAlt = !isAlt; 
-            v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0x00000000); 
-        }
+        if(type.equals("CTRL")) { isCtrl = !isCtrl; v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0x00000000); }
+        else { isAlt = !isAlt; v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0x00000000); }
     }
 
     private void moveCursor(int off) {
@@ -145,9 +137,11 @@ public class MainActivity extends AppCompatActivity {
             outputView.setText(">> HK Prashant Singh\nroot@pshacker:~# ");
             outputView.setFocusable(true); outputView.setFocusableInTouchMode(true);
             outputView.setClickable(true); outputView.setTextIsSelectable(true);
+            outputView.setCursorVisible(true);
             outputView.setOnClickListener(v -> {
                 v.requestFocus();
-                ((InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
+                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
             });
             outputView.setOnKeyListener((v, code, ev) -> {
                 if (ev.getAction() == KeyEvent.ACTION_DOWN && code == KeyEvent.KEYCODE_ENTER) {
