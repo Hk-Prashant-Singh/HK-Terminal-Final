@@ -3,6 +3,7 @@ package com.hk.hkterminal;
 import android.Manifest;
 import android.os.*;
 import android.view.*;
+import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.widget.*;
 import androidx.annotation.NonNull;
@@ -20,6 +21,10 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     private List<String> history = new ArrayList<>();
 
+    public interface Callback { 
+        void onOutput(String line); 
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
         inputCommand = findViewById(R.id.inputCommand);
         headerProgress = findViewById(R.id.headerProgress);
 
-        // Required Alpha Permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{
                 Manifest.permission.RECORD_AUDIO,
@@ -52,16 +56,14 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // Nano Navigation Mapping
-        findViewById(R.id.btnUp).setOnClickListener(v -> sendNanoKey(19));   // DPAD_UP
-        findViewById(R.id.btnDown).setOnClickListener(v -> sendNanoKey(20)); // DPAD_DOWN
-        findViewById(R.id.btnLeft).setOnClickListener(v -> sendNanoKey(21)); // DPAD_LEFT
-        findViewById(R.id.btnRight).setOnClickListener(v -> sendNanoKey(22));// DPAD_RIGHT
+        findViewById(R.id.btnUp).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_UP));
+        findViewById(R.id.btnDown).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_DOWN));
+        findViewById(R.id.btnLeft).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_LEFT));
+        findViewById(R.id.btnRight).setOnClickListener(v -> sendNanoKey(KeyEvent.KEYCODE_DPAD_RIGHT));
         findViewById(R.id.btnCLR).setOnClickListener(v -> { if(outputView!=null) outputView.setText(">> HK READY\n"); });
     }
 
     private void sendNanoKey(int keyCode) {
-        // Simulating physical key for Nano/Terminal navigation
         BaseInputConnection ic = new BaseInputConnection(inputCommand, true);
         ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
     }
@@ -85,9 +87,8 @@ public class MainActivity extends AppCompatActivity {
                 outputView = new TextView(getContext());
                 outputView.setTextColor(0xFF00FF00);
                 outputView.setTypeface(android.graphics.Typeface.MONOSPACE);
-                outputView.setTextIsSelectable(true); // Copy/Paste Fix
+                outputView.setTextIsSelectable(true); 
                 
-                // TOUCH-TO-EDIT & ZOOM LOGIC
                 ScaleGestureDetector gd = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override public boolean onScale(ScaleGestureDetector d) {
                         mScale *= d.getScaleFactor();
@@ -99,7 +100,6 @@ public class MainActivity extends AppCompatActivity {
                 outputView.setOnTouchListener((v, event) -> {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         int offset = outputView.getOffsetForPosition(event.getX(), event.getY());
-                        // Trigger cursor jump in Nano via coordinates
                         ((MainActivity)getActivity()).execute("jump-to-offset " + offset);
                     }
                     return gd.onTouchEvent(event);
@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 sv.addView(outputView);
                 return sv;
             } else {
-                return new View(getContext()); // Package tab placeholder
+                return new View(getContext()); 
             }
         }
     }
@@ -122,4 +122,4 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override public int getItemCount() { return 2; }
     }
-}
+            }
