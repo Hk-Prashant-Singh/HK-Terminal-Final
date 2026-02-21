@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,43 +8,42 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="55dp"
         android:background="#0A0A0A"
-        android:padding="8dp">
-        <TextView
+        android:padding="10dp">
+        <ImageView
+            android:id="@+id/shieldLogo"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_lock_idle_lock"
+            android:layout_centerVertical="true"
+            android:tint="#FF0000" /> <TextView
             android:id="@+id/tagPSHacker"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🛡️ PS HACKER"
+            android:layout_toEndOf="@id/shieldLogo"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="8dp"
+            android:text="PS HACKER"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:fontFamily="monospace"
-            android:textStyle="bold"/>
-        
-        <LinearLayout
-            android:id="@+id/loadingPanel"
-            android:layout_width="wrap_content"
+            android:textStyle="bold" />
+        <ProgressBar
+            android:id="@+id/headerProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:visibility="gone">
-            <ProgressBar
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="80dp"
-                android:layout_height="20dp"
-                android:progressTint="#FF0000"/> <TextView
-                android:id="@+id/txtProgress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0%"
-                android:textColor="#FF0000"
-                android:layout_marginStart="5dp"/>
-        </LinearLayout>
+            android:layout_centerVertical="true"
+            android:progressTint="#FF0000"
+            android:visibility="gone"/>
     </RelativeLayout>
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="45dp"
         android:background="#0A0A0A"
         app:tabSelectedTextColor="#00FF00"
         app:tabIndicatorColor="#00FF00" />
@@ -59,26 +59,31 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="#111111"
-        android:padding="5dp">
-        
-        <ImageButton android:id="@+id/btnUp" android:layout_width="40dp" android:layout_height="35dp" 
+        android:padding="5dp"
+        android:gravity="center_vertical">
+        <ImageButton android:id="@+id/btnUp" android:layout_width="35dp" android:layout_height="35dp" 
             android:src="@android:drawable/arrow_up_float" android:backgroundTint="#222222" android:tint="#00FF00" />
-        <ImageButton android:id="@+id/btnDown" android:layout_width="40dp" android:layout_height="35dp" 
-            android:src="@android:drawable/arrow_down_float" android:backgroundTint="#222222" android:tint="#00FF00" />
-        
+        <ImageButton android:id="@+id/btnDown" android:layout_width="35dp" android:layout_height="35dp" 
+            android:src="@android:drawable/arrow_down_float" android:backgroundTint="#222222" android:tint="#00FF00" android:layout_marginStart="2dp"/>
+        <Button android:id="@+id/btnCtrl" android:layout_width="50dp" android:layout_height="35dp" 
+            android:text="CTRL" android:textSize="10sp" android:backgroundTint="#333333" android:textColor="#FF0000" android:layout_marginStart="5dp"/>
+        <Button android:id="@+id/btnDash" android:layout_width="35dp" android:layout_height="35dp" 
+            android:text="-" android:textSize="14sp" android:backgroundTint="#333333" android:textColor="#00FF00" android:layout_marginStart="2dp"/>
+        <Button android:id="@+id/btnSlash" android:layout_width="35dp" android:layout_height="35dp" 
+            android:text="/" android:textSize="14sp" android:backgroundTint="#333333" android:textColor="#00FF00" android:layout_marginStart="2dp"/>
+        <Button android:id="@+id/btnCLR" android:layout_width="45dp" android:layout_height="35dp" 
+            android:text="CLR" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#FFFF00" android:layout_marginStart="2dp"/>
         <EditText
             android:id="@+id/inputCommand"
             android:layout_width="0dp"
-            android:layout_height="45dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:hint="root@pshacker:~#"
             android:textColor="#00FF00"
             android:background="@null"
             android:fontFamily="monospace"
             android:imeOptions="actionSend"
-            android:inputType="textNoSuggestions"/>
-            
-        <Button android:id="@+id/btnCLR" android:layout_width="50dp" android:layout_height="35dp" 
-            android:text="CLR" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
+            android:inputType="textNoSuggestions"
+            android:paddingStart="10dp"/>
     </LinearLayout>
 </LinearLayout>
