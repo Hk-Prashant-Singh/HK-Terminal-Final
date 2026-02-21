@@ -31,6 +31,15 @@
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
                 android:fontFamily="monospace" />
+            <ProgressBar
+                android:id="@+id/headerProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:progressTint="#00FF00"
+                android:visibility="gone" />
         </RelativeLayout>
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
@@ -46,21 +55,37 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/topBar"
-        android:layout_above="@+id/shortcutRow" />
-
-    <LinearLayout
-        android:id="@+id/shortcutRow"
+        android:layout_above="@+id/extraKeysLayout" /> <LinearLayout
+        android:id="@+id/extraKeysLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="#111111"
-        android:gravity="center"
-        android:padding="5dp">
-        <Button android:id="@+id/btnCLR" android:layout_width="45dp" android:layout_height="40dp" android:text="CL" android:textColor="#FFFF00" android:backgroundTint="#222222" />
-        <Button android:id="@+id/btnDash" android:layout_width="35dp" android:layout_height="40dp" android:text="-" android:textColor="#00FF00" android:layout_marginStart="2dp" />
-        <Button android:id="@+id/btnSlash" android:layout_width="35dp" android:layout_height="40dp" android:text="/" android:textColor="#00FF00" android:layout_marginStart="2dp" />
-        <ImageButton android:id="@+id/btnUp" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/arrow_up_float" android:layout_marginStart="5dp" />
-        <ImageButton android:id="@+id/btnDown" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/arrow_down_float" android:layout_marginStart="2dp" />
+        android:gravity="center_vertical"
+        android:padding="5dp"
+        android:orientation="horizontal">
+
+        <Button android:id="@+id/btnCtrl" android:layout_width="45dp" android:layout_height="40dp"
+            android:text="CTR" android:textColor="#FFFFFF" android:backgroundTint="#FF0000" android:textSize="10sp" />
+
+        <Button android:id="@+id/btnAlt" android:layout_width="45dp" android:layout_height="40dp"
+            android:text="ALT" android:textColor="#00FF00" android:backgroundTint="#333333" android:textSize="10sp" android:layout_marginStart="2dp" />
+
+        <Button android:id="@+id/btnFn" android:layout_width="45dp" android:layout_height="40dp"
+            android:text="FN" android:textColor="#00FFFF" android:backgroundTint="#333333" android:textSize="10sp" android:layout_marginStart="2dp" />
+
+        <Button android:id="@+id/btnCLR" android:layout_width="45dp" android:layout_height="40dp"
+            android:text="CL" android:textColor="#FFFF00" android:backgroundTint="#222222" android:textSize="10sp" android:layout_marginStart="5dp" />
+
+        <ImageButton android:id="@+id/btnUp" android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@android:drawable/arrow_up_float" android:tint="#00FF00" android:backgroundTint="#333333" android:layout_marginStart="5dp" />
+
+        <ImageButton android:id="@+id/btnDown" android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@android:drawable/arrow_down_float" android:tint="#00FF00" android:backgroundTint="#333333" android:layout_marginStart="2dp" />
+
+        <ImageButton android:id="@+id/btnDrawer" android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_more" android:tint="#FFFFFF" android:backgroundTint="#333333" android:layout_marginStart="5dp" />
+
     </LinearLayout>
+
 </RelativeLayout>
-    
