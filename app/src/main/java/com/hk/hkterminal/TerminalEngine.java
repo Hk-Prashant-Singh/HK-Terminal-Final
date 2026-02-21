@@ -1,51 +1,18 @@
 package com.hk.hkterminal;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 
 public class TerminalEngine {
-
-    public interface CommandCallback {
-        void onOutput(String output);
-    }
-
-    public static void runCommand(String command, boolean rootMode, CommandCallback callback) {
-
+    public static void run(String cmd, MainActivity.Callback cb) {
         new Thread(() -> {
-            StringBuilder output = new StringBuilder();
-
             try {
-                Process process;
-
-                if (rootMode) {
-                    process = Runtime.getRuntime().exec(new String[]{"su","-c",command});
-                } else {
-                    process = Runtime.getRuntime().exec(command);
-                }
-
-                BufferedReader stdReader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()));
-                BufferedReader errReader = new BufferedReader(
-                        new InputStreamReader(process.getErrorStream()));
-
-                String line;
-                while ((line = stdReader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-                while ((line = errReader.readLine()) != null) {
-                    output.append("[ERROR] ").append(line).append("\n");
-                }
-
-                process.waitFor();
-                stdReader.close();
-                errReader.close();
-
-            } catch (Exception e) {
-                output.append("Exception: ").append(e.getMessage());
-            }
-
-            callback.onOutput(output.toString());
-
+                // Route/Non-Root intelligent switching
+                String shell = RootUtils.isRootAvailable() ? "su" : "sh";
+                String[] env = {"PATH=$PATH:/system/bin:/data/local/bin", "HOME=/data/local/tmp"};
+                Process p = Runtime.getRuntime().exec(new String[]{shell, "-c", cmd}, env);
+                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String l;
+                while ((l = r.readLine()) != null) cb.onOutput(l);
+            } catch (Exception e) { cb.onOutput("[ERR]: " + e.getMessage()); }
         }).start();
     }
 }
