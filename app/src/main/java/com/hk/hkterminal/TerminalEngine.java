@@ -5,17 +5,13 @@ public class TerminalEngine {
     public static void run(String cmd, MainActivity.Callback cb) {
         new Thread(() -> {
             try {
-                // Alpha System Access
-                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", cmd});
+                // Professional Path Environment
+                String[] env = {"PATH=$PATH:/system/bin:/data/local/bin", "HOME=/data/data/com.hk.hkterminal/files/home"};
+                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", cmd}, env);
                 BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String l;
-                while ((l = r.readLine()) != null) {
-                    cb.onOutput(l);
-                }
-                p.waitFor();
-            } catch (Exception e) {
-                cb.onOutput("[ERROR]: " + e.getMessage());
-            }
+                String line;
+                while ((line = r.readLine()) != null) cb.onOutput(line);
+            } catch (Exception e) { cb.onOutput("[ERR]: " + e.getMessage()); }
         }).start();
     }
 }
