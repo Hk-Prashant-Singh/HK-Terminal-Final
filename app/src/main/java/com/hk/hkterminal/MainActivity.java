@@ -3,9 +3,7 @@ package com.hk.hkterminal;
 import android.content.*;
 import android.graphics.Typeface;
 import android.os.*;
-import android.text.Editable;
-import android.text.Selection;
-import android.text.Spannable;
+import android.text.*;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
@@ -31,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Resizing logic taaki keyboard aane par layout fix rahe
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
@@ -49,11 +48,10 @@ public class MainActivity extends AppCompatActivity {
         TerminalEngine.startAmSocketServer();
     }
 
-    public static void logError(String tag, String message, Exception e) {
-        Log.e(tag, message, e);
-    }
+    public static void logError(String tag, String msg, Exception e) { Log.e(tag, msg, e); }
 
     private void setupExtraKeys() {
+        // ROW 1 Logic
         findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
         findViewById(R.id.slash).setOnClickListener(v -> injectChar("/"));
         findViewById(R.id.dash).setOnClickListener(v -> injectChar("-"));
@@ -62,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.end).setOnClickListener(v -> jumpToEnd());
         findViewById(R.id.pgup).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_UP));
 
+        // ROW 2 Logic
         findViewById(R.id.left_arrow).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_TAB));
         findViewById(R.id.ctrl).setOnClickListener(v -> toggleMod(v, "CTRL"));
         findViewById(R.id.alt).setOnClickListener(v -> toggleMod(v, "ALT"));
@@ -72,23 +71,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void toggleMod(View v, String type) {
-        if(type.equals("CTRL")) {
-            isCtrl = !isCtrl;
-            v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
-        } else {
-            isAlt = !isAlt;
-            v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0xFF333333);
+        if(type.equals("CTRL")) { 
+            isCtrl = !isCtrl; 
+            v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0x00000000); 
+        } else { 
+            isAlt = !isAlt; 
+            v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0x00000000); 
         }
     }
 
     private void moveCursor(int off) {
         if (outputView == null) return;
         int target = outputView.getSelectionStart() + off;
-        String raw = outputView.getText().toString();
-        int limit = raw.lastIndexOf("root@pshacker:~# ") + 17;
-        if (target >= limit && target <= raw.length()) {
-            Selection.setSelection((Spannable) outputView.getText(), target);
-        }
+        int limit = outputView.getText().toString().lastIndexOf("root@pshacker:~# ") + 17;
+        if (target >= limit && target <= outputView.length()) Selection.setSelection((Spannable) outputView.getText(), target);
     }
 
     private void cycleHistory(int dir) {
@@ -97,9 +93,7 @@ public class MainActivity extends AppCompatActivity {
         String current = outputView.getText().toString();
         int lastP = current.lastIndexOf("root@pshacker:~# ");
         if (lastP != -1) {
-            String base = current.substring(0, lastP + 17);
-            String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
-            outputView.setText(base + cmd);
+            outputView.setText(current.substring(0, lastP + 17) + (hIndex == -1 ? "" : history.get(history.size() - 1 - hIndex)));
             jumpToEnd();
         }
     }
@@ -109,18 +103,16 @@ public class MainActivity extends AppCompatActivity {
         outputView.requestFocus();
         int start = Math.max(outputView.getSelectionStart(), 0);
         int end = Math.max(outputView.getSelectionEnd(), 0);
-        Editable edit = (Editable) outputView.getText();
-        edit.replace(Math.min(start, end), Math.max(start, end), s);
+        ((Editable) outputView.getText()).replace(Math.min(start, end), Math.max(start, end), s);
     }
 
     public void executeCommand(final String input) {
         if (input.trim().isEmpty()) return;
-        history.add(input);
-        hIndex = -1;
+        history.add(input); hIndex = -1;
         if (headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         outputView.append("\n");
         TerminalEngine.run(input, res -> runOnUiThread(() -> {
-            outputView.append(res + "\n");
+            outputView.append(res + "\nroot@pshacker:~# ");
             autoScroll();
             if (headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
@@ -133,55 +125,40 @@ public class MainActivity extends AppCompatActivity {
 
     private void jumpToPrompt() {
         if (outputView == null) return;
-        int boundary = outputView.getText().toString().lastIndexOf("root@pshacker:~# ") + 17;
-        Selection.setSelection((Spannable) outputView.getText(), boundary);
+        Selection.setSelection((Spannable) outputView.getText(), outputView.getText().toString().lastIndexOf("root@pshacker:~# ") + 17);
     }
 
-    private void jumpToEnd() {
-        if (outputView != null) Selection.setSelection((Spannable) outputView.getText(), outputView.length());
-    }
+    private void jumpToEnd() { if (outputView != null) Selection.setSelection((Spannable) outputView.getText(), outputView.length()); }
 
-    private void sendSystemKey(int code) {
-        if (outputView != null) outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
-    }
+    private void sendSystemKey(int code) { if (outputView != null) outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code)); }
 
     public static class TerminalTabFragment extends Fragment {
         private int type;
         public TerminalTabFragment() {}
         public TerminalTabFragment(int t) { this.type = t; }
-
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             if (type != 0) return new View(getContext());
-            final ScrollView scroll = new ScrollView(getContext());
-            scroll.setFillViewport(true);
+            final ScrollView scroll = new ScrollView(getContext()); scroll.setFillViewport(true);
             outputView = new TextView(getContext());
-            outputView.setTextColor(0xFF00FF00);
-            outputView.setTypeface(Typeface.MONOSPACE);
+            outputView.setTextColor(0xFF00FF00); outputView.setTypeface(Typeface.MONOSPACE);
             outputView.setText(">> HK Prashant Singh\nroot@pshacker:~# ");
-            outputView.setTextIsSelectable(true);
-            outputView.setFocusableInTouchMode(true);
-            outputView.setClickable(true);
+            outputView.setFocusable(true); outputView.setFocusableInTouchMode(true);
+            outputView.setClickable(true); outputView.setTextIsSelectable(true);
             outputView.setOnClickListener(v -> {
-                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(outputView, InputMethodManager.SHOW_IMPLICIT);
+                v.requestFocus();
+                ((InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(v, InputMethodManager.SHOW_IMPLICIT);
             });
             outputView.setOnKeyListener((v, code, ev) -> {
                 if (ev.getAction() == KeyEvent.ACTION_DOWN && code == KeyEvent.KEYCODE_ENTER) {
                     String full = outputView.getText().toString();
-                    String cmd = full.substring(full.lastIndexOf("root@pshacker:~# ") + 17).trim();
-                    ((MainActivity)getActivity()).executeCommand(cmd);
+                    ((MainActivity)getActivity()).executeCommand(full.substring(full.lastIndexOf("root@pshacker:~# ") + 17).trim());
                     return true;
                 }
                 return false;
             });
-            scroll.addView(outputView);
-            return scroll;
+            scroll.addView(outputView); return scroll;
         }
     }
-
-    @Override protected void onDestroy() {
-        super.onDestroy();
-        TerminalEngine.stopAmSocketServer();
-    }
+    @Override protected void onDestroy() { super.onDestroy(); TerminalEngine.stopAmSocketServer(); }
 }
