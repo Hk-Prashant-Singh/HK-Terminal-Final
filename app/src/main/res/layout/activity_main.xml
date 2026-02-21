@@ -50,26 +50,26 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="#111111"
-        android:padding="2dp"
+        android:padding="5dp"
         android:gravity="center">
 
         <Button
             android:id="@+id/btnUp"
             android:layout_width="60dp"
-            android:layout_height="35dp"
+            android:layout_height="40dp"
             android:text="↑"
             android:textColor="#00FF00"
             android:backgroundTint="#222222"
-            android:layout_marginEnd="5dp" />
+            android:layout_marginEnd="10dp" />
 
         <Button
             android:id="@+id/btnDown"
             android:layout_width="60dp"
-            android:layout_height="35dp"
+            android:layout_height="40dp"
             android:text="↓"
             android:textColor="#00FF00"
             android:backgroundTint="#222222"
-            android:layout_marginStart="5dp" />
+            android:layout_marginStart="10dp" />
     </LinearLayout>
 
     <LinearLayout
@@ -89,8 +89,7 @@
             android:background="@null"
             android:fontFamily="monospace"
             android:inputType="textNoSuggestions"
-            android:imeOptions="actionRun"/>
-        <Button
+            android:imeOptions="actionDone"/> <Button
             android:id="@+id/runButton"
             android:layout_width="80dp"
             android:layout_height="45dp"
