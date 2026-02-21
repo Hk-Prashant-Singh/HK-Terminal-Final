@@ -5,46 +5,48 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- Top Bar with Terminal Header -->
     <RelativeLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="55dp"
         android:background="#0A0A0A"
         android:padding="10dp">
+        <ImageView
+            android:id="@+id/shieldLogo"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_lock_idle_lock"
+            android:tint="#FF0000" />
         <TextView
             android:id="@+id/terminalHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/shieldLogo"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
             android:text="PS HACKER"
             android:textColor="#FFFFFF"
-            android:textSize="18sp"/>
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"/>
     </RelativeLayout>
 
-    <!-- Terminal Output View -->
-    <ScrollView
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-        <TextView
-            android:id="@+id/outputView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=">> PS HACKER READY\nroot@pshacker:~# "
-            android:textColor="#00FF00"/>
-    </ScrollView>
+        android:layout_height="45dp"
+        android:layout_below="@id/header"
+        android:background="#0A0A0A"
+        app:tabSelectedTextColor="#00FF00"
+        app:tabIndicatorColor="#00FF00" />
 
-    <!-- Button to clear output -->
-    <LinearLayout
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center">
-        <Button
-            android:id="@+id/btnCLR"
-            android:text="Clear"
-            android:textColor="#FFFF00"/>
-    </LinearLayout>
+        android:layout_height="match_parent"
+        android:layout_below="@id/tabLayout"
+        android:layout_above="@+id/shortcutRow" />
 
-    <!-- Button to scroll up and down in command history -->
     <LinearLayout
         android:id="@+id/shortcutRow"
         android:layout_width="match_parent"
@@ -52,17 +54,35 @@
         android:layout_alignParentBottom="true"
         android:background="#111111"
         android:gravity="center"
-        android:padding="5dp">
+        android:padding="5dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnCLR"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="CL"
+            android:textSize="10sp"
+            android:backgroundTint="#222222"
+            android:textColor="#FFFF00"/>
+
         <ImageButton
             android:id="@+id/btnUp"
-            android:layout_width="35dp"
+            android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/arrow_up_float"/>
+            android:layout_marginStart="10dp"
+            android:backgroundTint="#333333"
+            android:src="@android:drawable/arrow_up_float"
+            android:tint="#00FF00"/>
+
         <ImageButton
             android:id="@+id/btnDown"
-            android:layout_width="35dp"
+            android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/arrow_down_float"/>
+            android:layout_marginStart="5dp"
+            android:backgroundTint="#333333"
+            android:src="@android:drawable/arrow_down_float"
+            android:tint="#00FF00"/>
     </LinearLayout>
 
 </RelativeLayout>
