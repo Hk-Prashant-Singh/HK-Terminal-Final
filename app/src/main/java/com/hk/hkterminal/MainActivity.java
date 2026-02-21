@@ -3,6 +3,9 @@ package com.hk.hkterminal;
 import android.content.*;
 import android.graphics.Typeface;
 import android.os.*;
+import android.text.Editable;
+import android.text.Selection;
+import android.text.Spannable;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
@@ -14,6 +17,11 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.*;
 
+/**
+ * HK TERMINAL - MAIN CONTROL UNIT
+ * DEVELOPED BY: HK PRASHANT SINGH (TECH WIZARD)
+ * PROJECT: HK-OPERATION (SECRET)
+ */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
     private List<String> history = new ArrayList<>();
@@ -25,161 +33,198 @@ public class MainActivity extends AppCompatActivity {
     private boolean isCtrl = false;
     private boolean isAlt = false;
 
-    public interface Callback { void onOutput(String line); }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Ensure the layout adjusts when the keyboard is shown
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
+        // Terminal Tabs Configuration
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setAdapter(new FragmentStateAdapter(this) {
-            @Override public int getItemCount() { return 2; }
-            @Override public Fragment createFragment(int p) { return new TerminalTabFragment(p); }
+            @Override 
+            public int getItemCount() { 
+                return 2; 
+            }
+            @Override 
+            public Fragment createFragment(int position) { 
+                return new TerminalTabFragment(position); 
+            }
         });
-        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
-            tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
-        // --- NEW 2-LINE KEYBOARD BUTTONS INTEGRATION ---
+        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> {
+            if (pos == 0) {
+                tab.setText("TERMINAL");
+            } else {
+                tab.setText("PACKAGES");
+            }
+        }).attach();
+
+        // Initialize Specialized Key Listeners
         setupExtraKeys();
 
+        // Start Internal Socket Server for Terminal Operations
         TerminalEngine.startAmSocketServer();
     }
 
     private void setupExtraKeys() {
-        // Row 1
-        findViewById(R.id.esc).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_ESCAPE));
-        findViewById(R.id.slash).setOnClickListener(v -> appendChar("/"));
-        findViewById(R.id.dash).setOnClickListener(v -> appendChar("-"));
-        findViewById(R.id.home).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_MOVE_HOME));
-        findViewById(R.id.up).setOnClickListener(v -> navigateHistory(1));
-        findViewById(R.id.end).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_MOVE_END));
-        findViewById(R.id.pgup).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_PAGE_UP));
+        // --- ROW 1: System Commands ---
+        findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
+        findViewById(R.id.slash).setOnClickListener(v -> injectTextAtCursor("/"));
+        findViewById(R.id.dash).setOnClickListener(v -> injectTextAtCursor("-"));
+        findViewById(R.id.home).setOnClickListener(v -> moveCursorToPromptBoundary());
+        findViewById(R.id.up).setOnClickListener(v -> handleHistoryNavigation(1)); // Cycle History Up
+        findViewById(R.id.end).setOnClickListener(v -> moveCursorToAbsoluteEnd());
+        findViewById(R.id.pgup).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_UP));
 
-        // Row 2
-        findViewById(R.id.left_arrow).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_TAB)); // Tab for completion
+        // --- ROW 2: Navigation & Modifiers ---
+        findViewById(R.id.left_arrow).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_TAB));
+        
         findViewById(R.id.ctrl).setOnClickListener(v -> {
             isCtrl = !isCtrl;
             v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
         });
+
         findViewById(R.id.alt).setOnClickListener(v -> {
             isAlt = !isAlt;
-            v.setBackgroundColor(isAlt ? 0xFFFF0000 : 0xFF333333);
+            v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0xFF333333);
         });
-        findViewById(R.id.left).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_DPAD_LEFT));
-        findViewById(R.id.down).setOnClickListener(v -> navigateHistory(-1));
-        findViewById(R.id.right).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_DPAD_RIGHT));
-        findViewById(R.id.pgdn).setOnClickListener(v -> sendKey(KeyEvent.KEYCODE_PAGE_DOWN));
+
+        // Directional Logic: Left Arrow (←)
+        findViewById(R.id.left).setOnClickListener(v -> performCursorMovement(-1));
+
+        // Directional Logic: Down Arrow (↓)
+        findViewById(R.id.down).setOnClickListener(v -> handleHistoryNavigation(-1)); // Cycle History Down
+
+        // Directional Logic: Right Arrow (→)
+        findViewById(R.id.right).setOnClickListener(v -> performCursorMovement(1));
+
+        findViewById(R.id.pgdn).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_DOWN));
     }
 
-    private void appendChar(String c) {
-        if(outputView != null) outputView.append(c);
-    }
+    private void performCursorMovement(int direction) {
+        if (outputView == null) return;
+        
+        int currentSelection = outputView.getSelectionStart();
+        int targetPosition = currentSelection + direction;
+        String content = outputView.getText().toString();
+        
+        // Critical: Maintain prompt integrity
+        int promptEndIndex = content.lastIndexOf("root@pshacker:~# ") + 17;
 
-    private void sendKey(int keyCode) {
-        // Implementation for virtual key dispatch
-        if(outputView != null) {
-            KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
-            outputView.dispatchKeyEvent(event);
+        if (targetPosition >= promptEndIndex && targetPosition <= content.length()) {
+            Selection.setSelection((Spannable) outputView.getText(), targetPosition);
         }
     }
 
-    public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
+    private void handleHistoryNavigation(int direction) {
+        if (history.isEmpty()) return;
+        
+        hIndex = Math.max(-1, Math.min(hIndex + direction, history.size() - 1));
+        
+        String currentText = outputView.getText().toString();
+        int lastPromptPos = currentText.lastIndexOf("root@pshacker:~# ");
+        
+        if (lastPromptPos != -1) {
+            String terminalBase = currentText.substring(0, lastPromptPos + 17);
+            String commandFromHistory = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
+            
+            outputView.setText(terminalBase + commandFromHistory);
+            moveCursorToAbsoluteEnd();
+        }
+    }
 
-    public void executeCommand(final String command) {
-        history.add(command);
-        if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
+    private void injectTextAtCursor(String sequence) {
+        if (outputView == null) return;
+        
+        int start = Math.max(outputView.getSelectionStart(), 0);
+        int end = Math.max(outputView.getSelectionEnd(), 0);
+        
+        Editable editable = (Editable) outputView.getText();
+        editable.replace(Math.min(start, end), Math.max(start, end), sequence);
+    }
+
+    public void executeCommand(final String cmdInput) {
+        if (cmdInput.trim().isEmpty()) return;
+        
+        history.add(cmdInput);
+        hIndex = -1; // Reset history index on new execution
+        
+        if (headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         outputView.append("\n");
 
-        TerminalEngine.run(command, line -> runOnUiThread(() -> {
+        TerminalEngine.run(cmdInput, resultLine -> runOnUiThread(() -> {
             if (outputView != null) {
-                outputView.append(line + "\n");
-                final ScrollView sv = (ScrollView) outputView.getParent();
-                sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
+                outputView.append(resultLine + "\n");
+                triggerAutoScroll();
             }
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            if (headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
     }
 
-    private void navigateHistory(int dir) {
-        if (history.isEmpty()) return;
-        hIndex = Math.max(-1, Math.min(hIndex + dir, history.size() - 1));
-        if (hIndex != -1) {
-            String txt = outputView.getText().toString();
-            int last = txt.lastIndexOf("root@pshacker:~# ");
-            if (last != -1) outputView.setText(txt.substring(0, last + 17) + history.get(history.size() - 1 - hIndex));
-        }
+    private void triggerAutoScroll() {
+        final ScrollView scrollViewContainer = (ScrollView) outputView.getParent();
+        scrollViewContainer.post(() -> scrollViewContainer.fullScroll(View.FOCUS_DOWN));
+    }
+
+    private void moveCursorToPromptBoundary() {
+        String text = outputView.getText().toString();
+        int boundary = text.lastIndexOf("root@pshacker:~# ") + 17;
+        Selection.setSelection((Spannable) outputView.getText(), boundary);
+    }
+
+    private void moveCursorToAbsoluteEnd() {
+        Selection.setSelection((Spannable) outputView.getText(), outputView.length());
+    }
+
+    private void sendSystemKey(int code) {
+        outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
     }
 
     public static class TerminalTabFragment extends Fragment {
-        int type;
+        private int tabType;
+
         public TerminalTabFragment() {}
-        public TerminalTabFragment(int t) { this.type = t; }
+        public TerminalTabFragment(int type) { this.tabType = type; }
 
         @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
-            if (type != 0) return new View(getContext());
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            if (tabType != 0) return new View(getContext());
 
-            final ScrollView sv = new ScrollView(getContext());
-            sv.setFillViewport(true);
-            sv.setVerticalScrollBarEnabled(true);
+            final ScrollView scrollWrapper = new ScrollView(getContext());
+            scrollWrapper.setFillViewport(true);
 
             outputView = new TextView(getContext());
-            outputView.setTextColor(0xFF00FF00);
+            outputView.setTextColor(0xFF00FF00); // Matrix Green
             outputView.setTypeface(Typeface.MONOSPACE);
             outputView.setText(">> PS HACKER READY\nroot@pshacker:~# ");
+            outputView.setTextIsSelectable(true);
             outputView.setFocusableInTouchMode(true);
-            outputView.setCursorVisible(true);
-
-            final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
-                new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                    @Override public boolean onScale(ScaleGestureDetector d) {
-                        float size = outputView.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
-                        outputView.setTextSize(size * d.getScaleFactor());
-                        return true;
-                    }
-                });
-
-            sv.setOnTouchListener((v, e) -> {
-                scaleDetector.onTouchEvent(e);
-                if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
-                    outputView.requestFocus();
-                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.showSoftInput(outputView, InputMethodManager.SHOW_IMPLICIT);
-                }
-                return false; 
-            });
-
-            outputView.setOnKeyListener((v, code, ev) -> {
-                if (ev.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
-                        outputView.append(String.valueOf((char) ev.getUnicodeChar()));
-                        return true;
-                    }
-                    if (code == KeyEvent.KEYCODE_DEL) {
-                        String s = outputView.getText().toString();
-                        if (!s.endsWith("root@pshacker:~# ")) outputView.setText(s.substring(0, s.length()-1));
-                        return true;
-                    }
-                    if (code == KeyEvent.KEYCODE_ENTER) {
-                        String s = outputView.getText().toString();
-                        executeCommand(s.substring(s.lastIndexOf("root@pshacker:~# ") + 17).trim());
-                        return true;
-                    }
+            
+            outputView.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                    String fullText = outputView.getText().toString();
+                    String lastCmd = fullText.substring(fullText.lastIndexOf("root@pshacker:~# ") + 17).trim();
+                    ((MainActivity)getActivity()).executeCommand(lastCmd);
+                    return true;
                 }
                 return false;
             });
 
-            sv.addView(outputView);
-            return sv;
+            scrollWrapper.addView(outputView);
+            return scrollWrapper;
         }
-
-        private void executeCommand(String cmd) { ((MainActivity)getActivity()).executeCommand(cmd); }
     }
 
-    @Override protected void onDestroy() { super.onDestroy(); TerminalEngine.stopAmSocketServer(); }
+    @Override 
+    protected void onDestroy() { 
+        super.onDestroy(); 
+        TerminalEngine.stopAmSocketServer(); 
+    }
+}
 }
