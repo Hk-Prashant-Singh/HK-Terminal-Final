@@ -1,6 +1,6 @@
 package com.hk.hkterminal;
 
-import android.os.Bundle;
+import android.os.*;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
 import android.widget.*;
@@ -16,107 +16,106 @@ import java.util.*;
 public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
     private EditText inputCommand;
-    public static TextView outputView; // Static for fragment access
+    private ProgressBar headerProgress;
+    public static TextView outputView; // Global reference for fragments
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
-    private LinearLayout loadingPanel;
 
-    // Fix 1: Callback Interface Defined
-    public interface Callback {
-        void onOutput(String line);
-    }
+    public interface Callback { void onOutput(String line); }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // UI Initialization
         viewPager = findViewById(R.id.viewPager);
         inputCommand = findViewById(R.id.inputCommand);
-        loadingPanel = findViewById(R.id.loadingPanel);
+        headerProgress = findViewById(R.id.headerProgress);
 
-        // Fix 2: Adapter properly linked
+        // Storage Access for Prashant Bhai
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
+
         viewPager.setAdapter(new TerminalPagerAdapter(this));
         new TabLayoutMediator(findViewById(R.id.tabLayout), viewPager, (tab, pos) -> 
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
+        // Keyboard Enter Power
         inputCommand.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEND) {
                 String cmd = inputCommand.getText().toString();
-                if (outputView != null) outputView.append("\nroot@pshacker:~# " + cmd + "\n");
-                executeCommand(cmd);
-                history.add(cmd);
+                execute(cmd);
                 inputCommand.setText("");
-                hIndex = -1;
                 return true;
             }
             return false;
         });
 
+        // Shortcut Buttons Logic
+        findViewById(R.id.btnDash).setOnClickListener(v -> inputCommand.append("-"));
+        findViewById(R.id.btnSlash).setOnClickListener(v -> inputCommand.append("/"));
+        findViewById(R.id.btnCLR).setOnClickListener(v -> { if(outputView!=null) outputView.setText(">> HK READY\n"); });
         findViewById(R.id.btnUp).setOnClickListener(v -> {
             if(!history.isEmpty() && hIndex < history.size()-1) {
                 hIndex++;
                 inputCommand.setText(history.get(history.size()-1-hIndex));
             }
         });
-
-        findViewById(R.id.btnCLR).setOnClickListener(v -> {
-            if (outputView != null) outputView.setText(">> HK TERMINAL READY\n");
-        });
     }
 
-    private void executeCommand(String cmd) {
-        loadingPanel.setVisibility(View.VISIBLE);
+    public void execute(String cmd) {
+        if (outputView != null) outputView.append("\nroot@pshacker:~# " + cmd + "\n");
+        history.add(cmd);
+        headerProgress.setVisibility(View.VISIBLE);
         TerminalEngine.run(cmd, line -> runOnUiThread(() -> {
-            if (outputView != null) {
-                outputView.append(line + "\n");
-                // Auto-scroll logic
-                final int scrollAmount = outputView.getLayout().getLineTop(outputView.getLineCount()) - outputView.getHeight();
-                if (scrollAmount > 0) outputView.scrollTo(0, scrollAmount);
-            }
-            if (line.contains("complete") || line.contains("Error")) {
-                loadingPanel.setVisibility(View.GONE);
-            }
+            if (outputView != null) outputView.append(line + "\n");
+            if (line.contains("complete") || line.contains("Error")) headerProgress.setVisibility(View.GONE);
         }));
     }
 
-    // Fix 3: Internal Adapter Class
     private class TerminalPagerAdapter extends FragmentStateAdapter {
-        public TerminalPagerAdapter(@NonNull AppCompatActivity activity) { super(activity); }
+        public TerminalPagerAdapter(AppCompatActivity activity) { super(activity); }
         @NonNull @Override public Fragment createFragment(int position) {
-            TabFragment frag = new TabFragment();
-            Bundle b = new Bundle(); b.putInt("type", position);
-            frag.setArguments(b);
-            return frag;
+            TabFragment fragment = new TabFragment();
+            Bundle args = new Bundle(); args.putInt("type", position);
+            fragment.setArguments(args);
+            return fragment;
         }
         @Override public int getItemCount() { return 2; }
     }
 
-    // Fix 4: Fragment with Zoom & Copy
     public static class TabFragment extends Fragment {
-        private float mScale = 14f;
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            if (getArguments().getInt("type") == 0) {
+            int type = getArguments().getInt("type");
+            if (type == 0) { // Terminal View
                 ScrollView sv = new ScrollView(getContext());
                 outputView = new TextView(getContext());
                 outputView.setTextColor(0xFF00FF00);
-                outputView.setTypeface(android.graphics.Typeface.MONOSPACE);
-                outputView.setTextIsSelectable(true); 
-                outputView.setPadding(20, 20, 20, 20);
-                
-                ScaleGestureDetector gd = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                    @Override public boolean onScale(ScaleGestureDetector d) {
-                        mScale *= d.getScaleFactor();
-                        outputView.setTextSize(mScale);
-                        return true;
-                    }
-                });
-                sv.setOnTouchListener((v, e) -> { gd.onTouchEvent(e); return false; });
+                outputView.setTextIsSelectable(true);
+                outputView.setPadding(10,10,10,10);
                 sv.addView(outputView);
                 return sv;
+            } else { // Packages View
+                LinearLayout layout = new LinearLayout(getContext());
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setGravity(Gravity.BOTTOM);
+                Button btnInstall = new Button(getContext());
+                btnInstall.setText("INSTALL ALL ALPHA PACKAGES");
+                btnInstall.setBackgroundColor(0xFFFF0000);
+                btnInstall.setOnClickListener(v -> ((MainActivity)getActivity()).autoSetup());
+                layout.addView(btnInstall);
+                return layout;
             }
-            return new ListView(getContext());
         }
     }
-}
+
+    private void autoSetup() {
+        viewPager.setCurrentItem(0);
+        String[] pkgs = {"pkg update -y", "pkg install python git -y", "pip install requests flask"};
+        for(String p : pkgs) execute(p);
+    }
+                    }
+
