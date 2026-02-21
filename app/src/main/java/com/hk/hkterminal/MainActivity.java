@@ -22,18 +22,31 @@ import java.util.*;
  * PROJECT: HK-OPERATION (SECRET)
  * IDENTITY: HK PRASHANT SINGH (TECH WIZARD)
  * ROLE: ELITE ALPHA INDIAN HACKER | DIGITAL GUARDIAN
- * VERSION: 2026.02.22 (FINAL STABLE)
  * -------------------------------------------------------------------------
  */
 
 public class MainActivity extends AppCompatActivity {
+    // Global Access for Terminal Display
     public static TextView outputView;
+    
+    // Command History Engine
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
+    
+    // UI Interface Components
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
+    
+    // Keyboard State Handlers
     private boolean isCtrl = false;
     private boolean isAlt = false;
+
+    /**
+     * Specialized Callback interface required by TerminalEngine
+     */
+    public interface Callback { 
+        void onOutput(String line); 
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
+        // ViewPager for Multi-Tab Functionality
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setAdapter(new FragmentStateAdapter(this) {
             @Override public int getItemCount() { return 2; }
@@ -53,37 +67,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Synchronizing Tab Layout with Page View
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> {
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES");
         }).attach();
 
-        setupExtraKeys(); // Initialize all 14 specialized buttons
+        // Mapping Custom HK Keyboard
+        setupExtraKeys();
+
+        // Initializing HK Terminal Engine
         TerminalEngine.startAmSocketServer();
     }
 
     /**
-     * Critical logging bridge to fix "cannot find symbol" errors
+     * Fixes the "cannot find symbol" error for logging bridge
      */
     public static void logError(String tag, String message, Exception e) {
         Log.e(tag, message, e);
     }
 
     private void setupExtraKeys() {
-        // --- ROW 1: System Commands ---
+        // ROW 1: System Commands
         findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
         findViewById(R.id.slash).setOnClickListener(v -> injectChar("/"));
         findViewById(R.id.dash).setOnClickListener(v -> injectChar("-"));
         findViewById(R.id.home).setOnClickListener(v -> jumpToPrompt());
-        findViewById(R.id.up).setOnClickListener(v -> cycleHistory(1)); // History Cycle UP
+        findViewById(R.id.up).setOnClickListener(v -> cycleHistory(1)); // History UP
         findViewById(R.id.end).setOnClickListener(v -> jumpToEnd());
         findViewById(R.id.pgup).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_UP));
 
-        // --- ROW 2: Navigation & Directional Logic ---
+        // ROW 2: Navigation & Modifiers
         findViewById(R.id.left_arrow).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_TAB));
         findViewById(R.id.ctrl).setOnClickListener(v -> toggleMod(v, "CTRL"));
         findViewById(R.id.alt).setOnClickListener(v -> toggleMod(v, "ALT"));
         findViewById(R.id.left).setOnClickListener(v -> moveCursor(-1)); // Cursor Left
-        findViewById(R.id.down).setOnClickListener(v -> cycleHistory(-1)); // History Cycle DOWN
+        findViewById(R.id.down).setOnClickListener(v -> cycleHistory(-1)); // History DOWN
         findViewById(R.id.right).setOnClickListener(v -> moveCursor(1)); // Cursor Right
         findViewById(R.id.pgdn).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_DOWN));
     }
