@@ -7,13 +7,13 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="50dp"
         android:background="#0A0A0A"
-        android:padding="10dp">
+        android:padding="8dp">
         <ImageView
             android:id="@+id/shieldLogo"
-            android:layout_width="35dp"
-            android:layout_height="35dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@android:drawable/ic_lock_idle_lock" 
             android:layout_centerVertical="true"
             android:tint="#FF0000"/>
@@ -25,7 +25,7 @@
             android:layout_marginStart="10dp"
             android:text="PS HACKER"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:fontFamily="monospace"
             android:textStyle="bold"/>
     </RelativeLayout>
@@ -49,35 +49,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#111111"
-        android:padding="5dp"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnUp"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
-            android:text="↑"
-            android:textColor="#00FF00"
-            android:backgroundTint="#222222"
-            android:layout_marginEnd="10dp" />
-
-        <Button
-            android:id="@+id/btnDown"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
-            android:text="↓"
-            android:textColor="#00FF00"
-            android:backgroundTint="#222222"
-            android:layout_marginStart="10dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:background="#0A0A0A"
-        android:padding="5dp">
+        android:padding="5dp"
+        android:gravity="center_vertical">
+
         <EditText
             android:id="@+id/inputCommand"
             android:layout_width="0dp"
@@ -89,12 +64,23 @@
             android:background="@null"
             android:fontFamily="monospace"
             android:inputType="textNoSuggestions"
-            android:imeOptions="actionDone"/> <Button
-            android:id="@+id/runButton"
-            android:layout_width="80dp"
+            android:imeOptions="actionSend"/> <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="45dp"
             android:layout_height="45dp"
-            android:text="RUN"
+            android:src="@android:drawable/arrow_up_float"
             android:backgroundTint="#222222"
-            android:textColor="#00FF00"/>
+            android:tint="#00FF00"
+            android:layout_marginEnd="2dp"
+            android:contentDescription="History Up" />
+
+        <ImageButton
+            android:id="@+id/btnDown"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:src="@android:drawable/arrow_down_float"
+            android:backgroundTint="#222222"
+            android:tint="#00FF00"
+            android:contentDescription="History Down" />
     </LinearLayout>
 </LinearLayout>
