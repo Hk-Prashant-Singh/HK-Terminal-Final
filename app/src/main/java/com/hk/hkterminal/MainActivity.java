@@ -1,3 +1,6 @@
+cketServer(); 
+    }
+    }
 package com.hk.hkterminal;
 
 import android.content.*;
@@ -18,33 +21,53 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.*;
 
 /**
- * HK TERMINAL - MAIN CONTROL UNIT
- * DEVELOPED BY: HK PRASHANT SINGH (TECH WIZARD)
+ * -------------------------------------------------------------------------
  * PROJECT: HK-OPERATION (SECRET)
+ * IDENTITY: HK PRASHANT SINGH (TECH WIZARD)
+ * ROLE: ELITE ALPHA INDIAN HACKER
+ * VERSION: 2.0.26
+ * -------------------------------------------------------------------------
+ * This is the core terminal engine for HK Terminal. 
+ * Designed for professional-level command execution and UI management.
+ * -------------------------------------------------------------------------
  */
+
 public class MainActivity extends AppCompatActivity {
+    // Global Static Output View for Terminal Access
     public static TextView outputView;
+    
+    // Command History Storage and Navigation Index
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
+    
+    // UI Component References
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
-    // Status flags for modifier keys
+    // Modifier Key State Management
     private boolean isCtrl = false;
     private boolean isAlt = false;
+
+    /**
+     * Interface for handling asynchronous terminal output.
+     */
+    public interface Callback { 
+        void onOutput(String line); 
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        // Ensure the layout adjusts when the keyboard is shown
+        // Ensure UI adjusts correctly when virtual keyboard appears
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
+        // Initialize Core UI Components
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
-        // Terminal Tabs Configuration
+        // Setup ViewPager2 for Multi-Tab Interface (Terminal & Packages)
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setAdapter(new FragmentStateAdapter(this) {
             @Override 
@@ -57,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Sync TabLayout with ViewPager2
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> {
             if (pos == 0) {
                 tab.setText("TERMINAL");
@@ -65,48 +89,56 @@ public class MainActivity extends AppCompatActivity {
             }
         }).attach();
 
-        // Initialize Specialized Key Listeners
+        // Initialize Terminal Key Listeners
         setupExtraKeys();
 
-        // Start Internal Socket Server for Terminal Operations
+        // Initialize Terminal Engine Socket Server
         TerminalEngine.startAmSocketServer();
     }
 
+    /**
+     * Maps physical button IDs to their respective terminal functions.
+     */
     private void setupExtraKeys() {
         // --- ROW 1: System Commands ---
         findViewById(R.id.esc).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_ESCAPE));
         findViewById(R.id.slash).setOnClickListener(v -> injectTextAtCursor("/"));
         findViewById(R.id.dash).setOnClickListener(v -> injectTextAtCursor("-"));
         findViewById(R.id.home).setOnClickListener(v -> moveCursorToPromptBoundary());
-        findViewById(R.id.up).setOnClickListener(v -> handleHistoryNavigation(1)); // Cycle History Up
+        findViewById(R.id.up).setOnClickListener(v -> handleHistoryNavigation(1)); // Function: Up Arrow
         findViewById(R.id.end).setOnClickListener(v -> moveCursorToAbsoluteEnd());
         findViewById(R.id.pgup).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_UP));
 
         // --- ROW 2: Navigation & Modifiers ---
         findViewById(R.id.left_arrow).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_TAB));
         
+        // CTRL Toggle Logic
         findViewById(R.id.ctrl).setOnClickListener(v -> {
             isCtrl = !isCtrl;
             v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
         });
 
+        // ALT Toggle Logic
         findViewById(R.id.alt).setOnClickListener(v -> {
             isAlt = !isAlt;
             v.setBackgroundColor(isAlt ? 0xFF00FF00 : 0xFF333333);
         });
 
-        // Directional Logic: Left Arrow (←)
+        // Directional Logic: Move Cursor Left (←)
         findViewById(R.id.left).setOnClickListener(v -> performCursorMovement(-1));
 
-        // Directional Logic: Down Arrow (↓)
-        findViewById(R.id.down).setOnClickListener(v -> handleHistoryNavigation(-1)); // Cycle History Down
+        // Directional Logic: History Cycle Down (↓)
+        findViewById(R.id.down).setOnClickListener(v -> handleHistoryNavigation(-1));
 
-        // Directional Logic: Right Arrow (→)
+        // Directional Logic: Move Cursor Right (→)
         findViewById(R.id.right).setOnClickListener(v -> performCursorMovement(1));
 
         findViewById(R.id.pgdn).setOnClickListener(v -> sendSystemKey(KeyEvent.KEYCODE_PAGE_DOWN));
     }
 
+    /**
+     * Logic for precise cursor movement on the command line.
+     */
     private void performCursorMovement(int direction) {
         if (outputView == null) return;
         
@@ -114,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         int targetPosition = currentSelection + direction;
         String content = outputView.getText().toString();
         
-        // Critical: Maintain prompt integrity
+        // Critical: Maintain prompt integrity (Restrict movement behind prompt)
         int promptEndIndex = content.lastIndexOf("root@pshacker:~# ") + 17;
 
         if (targetPosition >= promptEndIndex && targetPosition <= content.length()) {
@@ -122,11 +154,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Logic for cycling through previous terminal commands.
+     */
     private void handleHistoryNavigation(int direction) {
         if (history.isEmpty()) return;
         
         hIndex = Math.max(-1, Math.min(hIndex + direction, history.size() - 1));
-        
         String currentText = outputView.getText().toString();
         int lastPromptPos = currentText.lastIndexOf("root@pshacker:~# ");
         
@@ -139,9 +173,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Injects special characters at the current cursor position.
+     */
     private void injectTextAtCursor(String sequence) {
         if (outputView == null) return;
-        
         int start = Math.max(outputView.getSelectionStart(), 0);
         int end = Math.max(outputView.getSelectionEnd(), 0);
         
@@ -149,6 +185,9 @@ public class MainActivity extends AppCompatActivity {
         editable.replace(Math.min(start, end), Math.max(start, end), sequence);
     }
 
+    /**
+     * Core execution unit for terminal commands.
+     */
     public void executeCommand(final String cmdInput) {
         if (cmdInput.trim().isEmpty()) return;
         
@@ -186,9 +225,11 @@ public class MainActivity extends AppCompatActivity {
         outputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
     }
 
+    /**
+     * Fragment class for the Terminal and Packages tabs.
+     */
     public static class TerminalTabFragment extends Fragment {
         private int tabType;
-
         public TerminalTabFragment() {}
         public TerminalTabFragment(int type) { this.tabType = type; }
 
@@ -200,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
             scrollWrapper.setFillViewport(true);
 
             outputView = new TextView(getContext());
-            outputView.setTextColor(0xFF00FF00); // Matrix Green
+            outputView.setTextColor(0xFF00FF00); // PS Hacker Matrix Green
             outputView.setTypeface(Typeface.MONOSPACE);
             outputView.setText(">> PS HACKER READY\nroot@pshacker:~# ");
             outputView.setTextIsSelectable(true);
@@ -226,5 +267,4 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy(); 
         TerminalEngine.stopAmSocketServer(); 
     }
-}
 }
