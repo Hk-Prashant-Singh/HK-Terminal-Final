@@ -68,29 +68,29 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="45dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/esc" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="ESC" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/slash" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="/" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/dash" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="—" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/home" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="HOME" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/up" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="↑" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/end" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="END" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/pgup" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="PGUP" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
+            <Button android:id="@+id/esc" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ESC" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/slash" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="/" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/dash" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="—" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/home" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="HOME" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/up" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="↑" android:textSize="12sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/end" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="END" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/pgup" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="PGUP" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="45dp"
             android:orientation="horizontal"
-            android:layout_marginTop="2dp">
-            <Button android:id="@+id/left_arrow" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="⇇" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/ctrl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="CTRL" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#FFFFFF"/>
-            <Button android:id="@+id/alt" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="ALT" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/left" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="←" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/down" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="↓" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/right" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="→" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
-            <Button android:id="@+id/pgdn" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:text="PGDN" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00"/>
+            android:layout_marginTop="1dp">
+            <Button android:id="@+id/left_arrow" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="⇇" android:textSize="12sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/ctrl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="CTRL" android:textSize="10sp" android:backgroundTint="#333333" android:textColor="#FFFFFF" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/alt" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ALT" android:textSize="10sp" android:backgroundTint="#333333" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/left" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="←" android:textSize="12sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/down" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="↓" android:textSize="12sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/right" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="→" android:textSize="12sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
+            <Button android:id="@+id/pgdn" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="PGDN" android:textSize="10sp" android:backgroundTint="#222222" android:textColor="#00FF00" style="?android:attr/borderlessButtonStyle"/>
         </LinearLayout>
     </LinearLayout>
 
