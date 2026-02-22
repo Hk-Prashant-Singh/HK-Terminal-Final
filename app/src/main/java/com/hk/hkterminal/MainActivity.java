@@ -43,9 +43,9 @@ public class MainActivity extends AppCompatActivity {
             @Override public int getItemCount() { return 2; }
             @Override public Fragment createFragment(int p) { return new TerminalTabFragment(p); }
         });
-        
-        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
-            tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
+
+        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) ->
+                tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
         setupSystemButtons();
         TerminalEngine.startAmSocketServer();
@@ -58,21 +58,20 @@ public class MainActivity extends AppCompatActivity {
             input.setTextColor(0xFF00FF00);
             input.setBackgroundColor(0xFF111111);
             input.setTypeface(Typeface.MONOSPACE);
-            
+
             new android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
                 .setTitle("COMMAND BOX")
                 .setView(input)
                 .setPositiveButton("EXECUTE", (d, w) -> {
                     String cmd = input.getText().toString().trim();
                     if(!cmd.isEmpty()) {
-                        outputView.append(cmd); 
+                        outputView.append(cmd);
                         executeCommand(cmd);
                     }
                 }).setNegativeButton("CANCEL", null).show();
-            
+
             input.requestFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            if(imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+            showSoftKeyboard(input);
         });
 
         findViewById(R.id.btnCtrl).setOnClickListener(v -> {
@@ -87,11 +86,20 @@ public class MainActivity extends AppCompatActivity {
 
     public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
 
+    private void showSoftKeyboard(EditText input) {
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+        } catch (Exception e) {
+            logError("KeyboardError", "Failed to show keyboard", e);
+        }
+    }
+
     public void executeCommand(final String command) {
         if (command.isEmpty()) return;
         history.add(command);
         hIndex = -1;
-        if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
+        if (headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         outputView.append("\n");
 
         TerminalEngine.run(command, line -> runOnUiThread(() -> {
@@ -100,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 final ScrollView sv = (ScrollView) outputView.getParent();
                 sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
             }
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            if (headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
     }
 
@@ -135,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
             outputView.setCursorVisible(true);
 
             // --- SCALE/ZOOM LOGIC ---
-            final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
+            final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(),
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override public boolean onScale(ScaleGestureDetector d) {
                         float size = outputView.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
@@ -149,28 +157,30 @@ public class MainActivity extends AppCompatActivity {
                 scaleDetector.onTouchEvent(e);
                 if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
                     outputView.requestFocus();
-                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.showSoftInput(outputView, InputMethodManager.SHOW_IMPLICIT);
+                    showSoftKeyboard(outputView);
                 }
-                return false; 
+                return false;
             });
 
             // --- PERFECT TYPING LOGIC ---
             outputView.setOnKeyListener((v, code, ev) -> {
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
+                    // Handle character typing
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
                         return true;
                     }
+                    // Handle DEL key
                     if (code == KeyEvent.KEYCODE_DEL) {
                         String s = outputView.getText().toString();
-                        if (!s.endsWith("root@pshacker:~# ")) outputView.setText(s.substring(0, s.length()-1));
+                        if (!s.endsWith("root@pshacker:~# ")) outputView.setText(s.substring(0, s.length() - 1));
                         return true;
                     }
+                    // Handle ENTER key
                     if (code == KeyEvent.KEYCODE_ENTER) {
                         String s = outputView.getText().toString();
                         int start = s.lastIndexOf("root@pshacker:~# ") + 17;
-                        ((MainActivity)getActivity()).executeCommand(s.substring(start).trim());
+                        ((MainActivity) getActivity()).executeCommand(s.substring(start).trim());
                         return true;
                     }
                 }
@@ -182,5 +192,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override protected void onDestroy() { super.onDestroy(); TerminalEngine.stopAmSocketServer(); }
+    @Override protected void onDestroy() { 
+        super.onDestroy(); 
+        TerminalEngine.stopAmSocketServer(); 
+    }
 }
