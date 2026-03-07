@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayoutMediator;
+import java.io.File;
 import java.util.*;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
+        // HK-Operation: Auto-grant executable powers to binaries
+        initHKEnvironment();
+
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setAdapter(new FragmentStateAdapter(this) {
             @Override public int getItemCount() { return 2; }
@@ -45,12 +49,36 @@ public class MainActivity extends AppCompatActivity {
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
         setupSystemButtons();
+        
+        // Start Socket & Ignite the Persistent Ghost Engine
         TerminalEngine.startAmSocketServer();
+        TerminalEngine.igniteEngine(line -> runOnUiThread(() -> {
+            if (outputView != null) {
+                // Output logic maintained as per your requirement
+                outputView.append(line + "\nroot@pshacker:~# ");
+                final ScrollView sv = (ScrollView) outputView.getParent();
+                sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
+            }
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+        }));
+    }
+
+    // Surgical function to grant execute powers to binaries silently
+    private void initHKEnvironment() {
+        new Thread(() -> {
+            File usrDir = new File(TerminalEngine.PREFIX_PATH);
+            if (usrDir.exists()) {
+                try {
+                    Runtime.getRuntime().exec("chmod -R 755 " + TerminalEngine.PREFIX_PATH).waitFor();
+                } catch (Exception e) {
+                    Log.e("HK_INIT", "Permission Grant Failed", e);
+                }
+            }
+        }).start();
     }
 
     private void setupSystemButtons() {
-        // IDs fixed to match common layout naming conventions
-        View btnCb = findViewById(R.id.esc); // Placeholder fix: use your actual XML ID here
+        View btnCb = findViewById(R.id.esc); 
         if (btnCb != null) btnCb.setOnClickListener(v -> showCommandBox());
 
         View btnCtrl = findViewById(R.id.ctrl);
@@ -62,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         // Prompt restored for Elite Alpha energy
         View btnCLR = findViewById(R.id.slash); 
         if (btnCLR != null) btnCLR.setOnClickListener(v -> 
-            outputView.setText(">> HK Prashant Singh\nroot@pshacker:~# "));
+            outputView.setText(">> HK Prashant Bhai\nroot@pshacker:~# "));
 
         View btnUp = findViewById(R.id.up);
         if (btnUp != null) btnUp.setOnClickListener(v -> navigateHistory(1));
@@ -73,7 +101,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void showCommandBox() {
         final EditText input = new EditText(this);
-        input.setTextColor(0xFF00FF00);
+        // Changed to Clean White
+        input.setTextColor(0xFFFFFFFF);
         input.setBackgroundColor(0xFF111111);
         input.setTypeface(Typeface.MONOSPACE);
         
@@ -104,16 +133,16 @@ public class MainActivity extends AppCompatActivity {
         history.add(command);
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
+        
         outputView.append("\n");
 
-        TerminalEngine.run(command, line -> runOnUiThread(() -> {
-            if (outputView != null) {
-                outputView.append(line + "\nroot@pshacker:~# ");
-                final ScrollView sv = (ScrollView) outputView.getParent();
-                sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
-            }
+        // Fire command directly into the living shell
+        TerminalEngine.run(command);
+        
+        // Fallback progress hide
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-        }));
+        }, 500);
     }
 
     private void navigateHistory(int dir) {
@@ -138,9 +167,10 @@ public class MainActivity extends AppCompatActivity {
             final ScrollView sv = new ScrollView(getContext());
             sv.setFillViewport(true);
             outputView = new TextView(getContext());
-            outputView.setTextColor(0xFF00FF00);
+            // Changed to Clean White
+            outputView.setTextColor(0xFFFFFFFF);
             outputView.setTypeface(Typeface.MONOSPACE);
-            outputView.setText(">> HK Prashant Singh\nroot@pshacker:~# ");
+            outputView.setText(">> HK Prashant Bhai\nroot@pshacker:~# ");
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
 
@@ -187,5 +217,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override protected void onDestroy() { super.onDestroy(); TerminalEngine.stopAmSocketServer(); }
+    @Override protected void onDestroy() { 
+        super.onDestroy(); 
+        TerminalEngine.stopAmSocketServer(); 
+    }
 }
