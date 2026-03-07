@@ -14,12 +14,18 @@ public class TerminalEngine {
 
     private static ServerSocket amSocketServer;
     private static Thread amSocketThread;
+    
+    // HK-Operation Core Paths (System DNA)
+    public static final String DATA_DIR = "/data/data/com.hk.hkterminal/files";
+    public static final String HOME_PATH = DATA_DIR + "/home";
+    public static final String PREFIX_PATH = DATA_DIR + "/usr";
+    public static final String BIN_PATH = PREFIX_PATH + "/bin";
+    public static final String LIB_PATH = PREFIX_PATH + "/lib";
 
-    public static void openPtmx() {
-        Log.d("PS_HACKER_JNI", "Opening /dev/ptmx via JNI (Placeholder)");
-    }
+    // Persistent Shell Vectors (The Ghost in the Machine)
+    private static Process persistentShell;
+    private static DataOutputStream shellInput;
 
-    // SYSTEM CORE: AmSocketServer Initialization
     public static void startAmSocketServer() {
         if (amSocketThread != null && amSocketThread.isAlive()) return;
         amSocketThread = new Thread(() -> {
@@ -36,18 +42,12 @@ public class TerminalEngine {
         amSocketThread.start();
     }
 
-    // FIXED: Added missing stopAmSocketServer method for Security Cleanup
     public static void stopAmSocketServer() {
         if (amSocketThread != null) {
             amSocketThread.interrupt();
             if (amSocketServer != null && !amSocketServer.isClosed()) {
-                try {
-                    amSocketServer.close();
-                } catch (IOException e) {
-                    MainActivity.logError("AM_SOCKET", "Error closing server socket", e);
-                }
+                try { amSocketServer.close(); } catch (IOException e) {}
             }
-            Log.d("PS_HACKER_SOCKET", "AmSocketServer stopped successfully");
         }
     }
 
@@ -58,69 +58,69 @@ public class TerminalEngine {
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 String msg;
-                while ((msg = in.readLine()) != null) {
-                    Log.d("PS_HACKER_SOCKET", "Received: " + msg);
-                }
-            } catch (IOException e) {
-                MainActivity.logError("AM_SOCKET_HANDLER", "Error handling client", e);
-            }
+                while ((msg = in.readLine()) != null) {}
+            } catch (IOException e) {}
         }
     }
 
-    public static void launchActivitySafely(Context context, Intent intent) {
-        try {
-            context.startActivity(intent);
-        } catch (Exception e) {
-            MainActivity.logError("ACTIVITY_UTIL", "Failed to launch activity", e);
-            Toast.makeText(context, "Error launching activity!", Toast.LENGTH_SHORT).show();
-        }
-    }
+    // 1. ENGINE IGNITION: Start the Persistent Shell
+    // (Call this ONCE in MainActivity onCreate)
+    public static void igniteEngine(final MainActivity.Callback cb) {
+        if (persistentShell != null) return; // Engine is already running
 
-    public static String calculateSHA256(File file) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            FileInputStream fis = new FileInputStream(file);
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                digest.update(buffer, 0, bytesRead);
-            }
-            fis.close();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : digest.digest()) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (IOException | NoSuchAlgorithmException e) {
-            MainActivity.logError("SHA256", "Error calculating SHA-256", e);
-            return null;
-        }
-    }
-
-    public static void run(final String cmd, final MainActivity.Callback cb) {
         new Thread(() -> {
             try {
-                Process p = Runtime.getRuntime().exec(isRooted() ? "su" : "sh");
-                OutputStream os = p.getOutputStream();
-                os.write((cmd + "\nexit\n").getBytes());
-                os.flush();
-                BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String l;
-                while ((l = r.readLine()) != null) {
-                    if (cb != null) cb.onOutput(l);
+                // Foundation Verification
+                File homeDir = new File(HOME_PATH);
+                if (!homeDir.exists()) homeDir.mkdirs();
+                File usrDir = new File(PREFIX_PATH);
+                if (!usrDir.exists()) usrDir.mkdirs();
+
+                // Build the Core Shell (Non-Root by default)
+                ProcessBuilder pb = new ProcessBuilder("sh");
+                pb.directory(homeDir);
+                
+                // Injecting HK-Terminal DNA
+                pb.environment().put("HOME", HOME_PATH);
+                pb.environment().put("PREFIX", PREFIX_PATH);
+                pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
+                pb.environment().put("LD_LIBRARY_PATH", LIB_PATH);
+                pb.environment().put("TERM", "xterm-256color");
+                pb.environment().put("LANG", "en_US.UTF-8");
+                
+                pb.redirectErrorStream(true); // Catch all errors in the same stream
+
+                persistentShell = pb.start();
+                shellInput = new DataOutputStream(persistentShell.getOutputStream());
+
+                // Continuous Output Reader (The Terminal's Eyes)
+                BufferedReader reader = new BufferedReader(new InputStreamReader(persistentShell.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (cb != null) cb.onOutput(line);
                 }
-                p.waitFor();
+
+                // If the shell gets killed
+                persistentShell.waitFor();
+                persistentShell = null;
+                if (cb != null) cb.onOutput("\n[HK-ENGINE TERMINATED]\n");
+
             } catch (Exception e) {
-                if (cb != null) cb.onOutput("Error: " + e.getMessage());
+                if (cb != null) cb.onOutput("\nHK_CORE_ERROR: " + e.getMessage() + "\n");
             }
         }).start();
     }
 
-    public static boolean isRooted() {
-        String[] paths = {"/system/xbin/su", "/system/bin/su", "/sbin/su", "/vendor/xbin/su"};
-        for (String path : paths) {
-            if (new File(path).exists()) return true;
-        }
-        return false;
+    // 2. COMMAND INJECTION: Fire commands into the living shell
+    public static void run(final String cmd) {
+        if (shellInput == null) return;
+        new Thread(() -> {
+            try {
+                shellInput.writeBytes(cmd + "\n");
+                shellInput.flush();
+            } catch (IOException e) {
+                Log.e("HK_EXEC", "Command Injection Failed", e);
+            }
+        }).start();
     }
 }
