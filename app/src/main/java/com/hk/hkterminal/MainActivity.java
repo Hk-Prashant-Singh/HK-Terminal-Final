@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.*;
 import android.text.*;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
@@ -18,8 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER
- * IDENTITY     : HK Prashant Bhai (Tech Wizard)
+ * HK-OPERATION : ELITE COMMAND CENTER (DYNAMIC COLOR MATRIX EDITION)
+ * IDENTITY     : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Stealth White Terminal with Intelligent Chishti Orange Error Deflector
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -67,19 +69,14 @@ public class MainActivity extends AppCompatActivity {
         String[] env = {"PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", "TERM=xterm-256color", "HOME=" + TerminalEngine.HOME_PATH};
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Background Thread for Native JNI Output
+        // Background Thread for Native JNI Output (Glitch-Free Intelligent Matrix)
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
                 int read;
                 while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
                     String output = new String(buffer, 0, read, "UTF-8");
-                    runOnUiThread(() -> {
-                        if (outputView != null) {
-                            outputView.append(output);
-                            scrollToBottom();
-                        }
-                    });
+                    runOnUiThread(() -> appendMatrixText(output));
                 }
             } catch (Exception e) {
                 Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
@@ -88,12 +85,44 @@ public class MainActivity extends AppCompatActivity {
 
         // Legacy Terminal Engine Fallback
         TerminalEngine.igniteEngine(line -> runOnUiThread(() -> {
-            if (outputView != null) {
-                outputView.append(line + "\n");
-                scrollToBottom();
-            }
+            appendMatrixText(line + "\n");
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
+    }
+
+    // ALPHA INTELLIGENT ROUTER: Separates Stealth White from Chishti Orange Error Streams
+    private void appendMatrixText(String rawText) {
+        if (outputView == null || rawText == null) return;
+
+        // Clean Carriage Returns to prevent line overlapping
+        String cleanText = rawText.replace("\r", "");
+        SpannableStringBuilder ssb = new SpannableStringBuilder();
+        
+        // Split strings by lines to isolate errors precisely
+        String[] lines = cleanText.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            SpannableString ss = new SpannableString(line);
+            String lower = line.toLowerCase();
+
+            // Intercepting failure anomalies instantly
+            if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
+                || lower.contains("failure") || lower.contains("[-]")) {
+                // Apply high-contrast Chishti Orange to error vectors
+                ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                // System operational text remains Stealth White
+                ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            
+            ssb.append(ss);
+            if (i < lines.length - 1) {
+                ssb.append("\n");
+            }
+        }
+        
+        outputView.append(ssb);
+        scrollToBottom();
     }
 
     private void scrollToBottom() {
@@ -126,19 +155,23 @@ public class MainActivity extends AppCompatActivity {
         View btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) btnCtrl.setOnClickListener(v -> {
             isCtrl = !isCtrl;
-            v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
+            v.setBackgroundColor(isCtrl ? 0xFF8A2BE2 : 0xFF333333); // Purple visual feedback
+            
             if (isCtrl && ptyBridge != null) {
-                ptyBridge.kill(2); // SIGINT for Job Control
-                if (outputView != null) outputView.append("^C\n" + currentPrompt);
+                ptyBridge.kill(2); // SIGINT: Kernel execution breaker
+                appendMatrixText("^C\n"); 
                 isCtrl = false;
-                v.setBackgroundColor(0xFF333333);
+                v.setBackgroundColor(0xFF333333); 
             }
         });
 
-        // Prompt restored for Elite Alpha energy dynamically
+        // Prompt clear matrix updated with identity verification
         View btnCLR = findViewById(R.id.slash); 
         if (btnCLR != null) btnCLR.setOnClickListener(v -> {
-            if (outputView != null) outputView.setText(">> HK Prashant Bhai\n" + currentPrompt);
+            if (outputView != null) {
+                outputView.setText("");
+                appendMatrixText(">> HK Prashant Singh\n" + currentPrompt);
+            }
         });
 
         View btnUp = findViewById(R.id.up);
@@ -150,9 +183,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void showCommandBox() {
         final EditText input = new EditText(this);
-        // Changed to Clean White
-        input.setTextColor(0xFF00FF41); // Aggressive Hacker Green
-        input.setBackgroundColor(0xFF050505);
+        input.setTextColor(Color.parseColor("#FFFFFF")); // Inputs are synced to Stealth White
+        input.setBackgroundColor(Color.parseColor("#050505"));
         input.setTypeface(Typeface.MONOSPACE);
         
         new android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
@@ -161,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
                 if(!cmd.isEmpty()) {
-                    if (outputView != null) outputView.append(cmd); 
+                    appendMatrixText(cmd); 
                     executeCommand(cmd);
                 }
             }).setNegativeButton("CANCEL", null).show();
@@ -183,61 +215,50 @@ public class MainActivity extends AppCompatActivity {
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
-        outputView.append("\n");
+        appendMatrixText("\n");
+        String trimmedCmd = command.trim();
 
-        // 1. Intercept HKPackageManager Directives
-        if (command.startsWith("hk-pkg install ")) {
-            String pkg = command.replace("hk-pkg install ", "").trim();
-            HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
-                if (outputView != null) {
-                    outputView.append(msg + "\n" + currentPrompt);
-                    scrollToBottom();
-                }
-            }));
+        // 1. Intercept Minimalist HKPackageManager Directives (hk install python)
+        if (trimmedCmd.startsWith("hk install ")) {
+            String pkg = trimmedCmd.replace("hk install ", "").trim();
+            if (!pkg.isEmpty()) {
+                HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
+            } else {
+                appendMatrixText("[-] HK-PKG Error: Specify package name. (e.g., hk install python)\n" + currentPrompt);
+            }
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
         // 2. Intercept HK-Guardian Protocol
-        if (command.equals("hk-guardian")) {
-            HKGuardian.activateShield(msg -> runOnUiThread(() -> {
-                if (outputView != null) {
-                    outputView.append(msg + "\n" + currentPrompt);
-                    scrollToBottom();
-                }
-            }));
+        if (trimmedCmd.equals("hk-guardian")) {
+            HKGuardian.activateShield(msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
         // 3. Intercept Storage Setup
-        if (command.equals("hk-setup-storage")) {
-            HKGuardian.setupStorage(msg -> runOnUiThread(() -> {
-                if (outputView != null) {
-                    outputView.append(msg + "\n" + currentPrompt);
-                    scrollToBottom();
-                }
-            }));
+        if (trimmedCmd.equals("hk-setup-storage")) {
+            HKGuardian.setupStorage(msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
         // 4. Intercept Dynamic Root Escalation
-        String trimmedCmd = command.trim();
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
                 currentPrompt = "root@pshacker:~# ";
             } else {
-                outputView.append("su: Permission denied (System Guardian blocked request)\n");
+                appendMatrixText("su: Permission denied (System Guardian blocked request)\n");
             }
-            outputView.append(currentPrompt);
+            appendMatrixText(currentPrompt);
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
-            outputView.append(currentPrompt);
+            appendMatrixText(currentPrompt);
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
@@ -262,7 +283,8 @@ public class MainActivity extends AppCompatActivity {
         int last = txt.lastIndexOf(currentPrompt);
         if (last != -1) {
             String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
-            outputView.setText(txt.substring(0, last + currentPrompt.length()) + cmd);
+            outputView.setText(txt.substring(0, last + currentPrompt.length()));
+            appendMatrixText(cmd);
         }
     }
 
@@ -276,19 +298,20 @@ public class MainActivity extends AppCompatActivity {
             if (type != 0) return new View(getContext());
             final ScrollView sv = new ScrollView(getContext());
             sv.setFillViewport(true);
-            sv.setBackgroundColor(Color.parseColor("#050505")); // Abyss Black UI
+            sv.setBackgroundColor(Color.parseColor("#050505")); 
 
             outputView = new TextView(getContext());
             
-            // HK-OPERATION: Radioactive UI Matrix Styling
-            outputView.setTextColor(Color.parseColor("#00FF41")); // Hacker Green
+            // [!] ALPHA UPGRADE: Text color shifted to solid white, heavy green shadow eliminated
+            outputView.setTextColor(Color.parseColor("#FFFFFF")); 
             outputView.setBackgroundColor(Color.parseColor("#050505"));
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-            outputView.setShadowLayer(8f, 0f, 0f, Color.parseColor("#00FF41")); // Neon Glow
             outputView.setPadding(10, 10, 10, 10);
             
+            // Identity string updated to 'HK Prashant Singh'
             String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
-            outputView.setText(">> HK Prashant Bhai\n" + prompt);
+            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
+            
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
 
