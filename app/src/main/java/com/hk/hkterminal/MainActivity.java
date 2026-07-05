@@ -17,6 +17,10 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.io.File;
 import java.util.*;
 
+/**
+ * HK-OPERATION : ELITE COMMAND CENTER
+ * IDENTITY     : HK Prashant Bhai (Tech Wizard)
+ */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
     private List<String> history = new ArrayList<>();
@@ -185,14 +189,40 @@ public class MainActivity extends AppCompatActivity {
         if (command.startsWith("hk-pkg install ")) {
             String pkg = command.replace("hk-pkg install ", "").trim();
             HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
-                outputView.append(msg + "\n" + currentPrompt);
-                scrollToBottom();
+                if (outputView != null) {
+                    outputView.append(msg + "\n" + currentPrompt);
+                    scrollToBottom();
+                }
             }));
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
-        // 2. Intercept Dynamic Root Escalation
+        // 2. Intercept HK-Guardian Protocol
+        if (command.equals("hk-guardian")) {
+            HKGuardian.activateShield(msg -> runOnUiThread(() -> {
+                if (outputView != null) {
+                    outputView.append(msg + "\n" + currentPrompt);
+                    scrollToBottom();
+                }
+            }));
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            return;
+        }
+
+        // 3. Intercept Storage Setup
+        if (command.equals("hk-setup-storage")) {
+            HKGuardian.setupStorage(msg -> runOnUiThread(() -> {
+                if (outputView != null) {
+                    outputView.append(msg + "\n" + currentPrompt);
+                    scrollToBottom();
+                }
+            }));
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            return;
+        }
+
+        // 4. Intercept Dynamic Root Escalation
         String trimmedCmd = command.trim();
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
@@ -212,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 3. Fire command directly into the living Native PTY Tunnel
+        // 5. Fire command directly into the living Native PTY Tunnel
         if (ptyBridge != null) {
             ptyBridge.writeCommand(command + "\n");
         } else {
