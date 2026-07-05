@@ -1,6 +1,7 @@
 package com.hk.hkterminal;
 
 import android.content.*;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.*;
 import android.text.*;
@@ -23,6 +24,11 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     private boolean isCtrl = false;
+
+    // HK-OPERATION : ALPHA NATIVE BRIDGES
+    private PtyBridge ptyBridge;
+    private String currentPrompt = "pshacker@hk:~$ ";
+    private boolean isRootMode = false;
 
     public interface Callback { void onOutput(String line); }
 
@@ -52,15 +58,47 @@ public class MainActivity extends AppCompatActivity {
         
         // Start Socket & Ignite the Persistent Ghost Engine
         TerminalEngine.startAmSocketServer();
+        
+        // 15-Second System Access: Ignite Native C++ Kernel Bridge
+        String[] env = {"PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", "TERM=xterm-256color", "HOME=" + TerminalEngine.HOME_PATH};
+        ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
+
+        // Background Thread for Native JNI Output
+        new Thread(() -> {
+            try {
+                byte[] buffer = new byte[4096];
+                int read;
+                while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
+                    String output = new String(buffer, 0, read, "UTF-8");
+                    runOnUiThread(() -> {
+                        if (outputView != null) {
+                            outputView.append(output);
+                            scrollToBottom();
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
+            }
+        }).start();
+
+        // Legacy Terminal Engine Fallback
         TerminalEngine.igniteEngine(line -> runOnUiThread(() -> {
             if (outputView != null) {
-                // Output logic maintained as per your requirement
-                outputView.append(line + "\nroot@pshacker:~# ");
-                final ScrollView sv = (ScrollView) outputView.getParent();
-                sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
+                outputView.append(line + "\n");
+                scrollToBottom();
             }
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
+    }
+
+    private void scrollToBottom() {
+        final ScrollView sv = (ScrollView) outputView.getParent();
+        if (sv != null) sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
+    }
+
+    public String getCurrentPrompt() {
+        return currentPrompt;
     }
 
     // Surgical function to grant execute powers to binaries silently
@@ -85,12 +123,19 @@ public class MainActivity extends AppCompatActivity {
         if (btnCtrl != null) btnCtrl.setOnClickListener(v -> {
             isCtrl = !isCtrl;
             v.setBackgroundColor(isCtrl ? 0xFFFF0000 : 0xFF333333);
+            if (isCtrl && ptyBridge != null) {
+                ptyBridge.kill(2); // SIGINT for Job Control
+                if (outputView != null) outputView.append("^C\n" + currentPrompt);
+                isCtrl = false;
+                v.setBackgroundColor(0xFF333333);
+            }
         });
 
-        // Prompt restored for Elite Alpha energy
+        // Prompt restored for Elite Alpha energy dynamically
         View btnCLR = findViewById(R.id.slash); 
-        if (btnCLR != null) btnCLR.setOnClickListener(v -> 
-            outputView.setText(">> HK Prashant Bhai\nroot@pshacker:~# "));
+        if (btnCLR != null) btnCLR.setOnClickListener(v -> {
+            if (outputView != null) outputView.setText(">> HK Prashant Bhai\n" + currentPrompt);
+        });
 
         View btnUp = findViewById(R.id.up);
         if (btnUp != null) btnUp.setOnClickListener(v -> navigateHistory(1));
@@ -102,17 +147,17 @@ public class MainActivity extends AppCompatActivity {
     private void showCommandBox() {
         final EditText input = new EditText(this);
         // Changed to Clean White
-        input.setTextColor(0xFFFFFFFF);
-        input.setBackgroundColor(0xFF111111);
+        input.setTextColor(0xFF00FF41); // Aggressive Hacker Green
+        input.setBackgroundColor(0xFF050505);
         input.setTypeface(Typeface.MONOSPACE);
         
         new android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
-            .setTitle("COMMAND BOX")
+            .setTitle("HK DIRECTIVE INPUT")
             .setView(input)
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
                 if(!cmd.isEmpty()) {
-                    outputView.append(cmd); 
+                    if (outputView != null) outputView.append(cmd); 
                     executeCommand(cmd);
                 }
             }).setNegativeButton("CANCEL", null).show();
@@ -136,8 +181,43 @@ public class MainActivity extends AppCompatActivity {
         
         outputView.append("\n");
 
-        // Fire command directly into the living shell
-        TerminalEngine.run(command);
+        // 1. Intercept HKPackageManager Directives
+        if (command.startsWith("hk-pkg install ")) {
+            String pkg = command.replace("hk-pkg install ", "").trim();
+            HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
+                outputView.append(msg + "\n" + currentPrompt);
+                scrollToBottom();
+            }));
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            return;
+        }
+
+        // 2. Intercept Dynamic Root Escalation
+        String trimmedCmd = command.trim();
+        if (trimmedCmd.equals("su")) {
+            if (RootUtils.isRootAvailable()) {
+                isRootMode = true;
+                currentPrompt = "root@pshacker:~# ";
+            } else {
+                outputView.append("su: Permission denied (System Guardian blocked request)\n");
+            }
+            outputView.append(currentPrompt);
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            return;
+        } else if (trimmedCmd.equals("exit") && isRootMode) {
+            isRootMode = false;
+            currentPrompt = "pshacker@hk:~$ ";
+            outputView.append(currentPrompt);
+            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            return;
+        }
+
+        // 3. Fire command directly into the living Native PTY Tunnel
+        if (ptyBridge != null) {
+            ptyBridge.writeCommand(command + "\n");
+        } else {
+            TerminalEngine.run(command);
+        }
         
         // Fallback progress hide
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -146,13 +226,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void navigateHistory(int dir) {
-        if (history.isEmpty()) return;
+        if (history.isEmpty() || outputView == null) return;
         hIndex = Math.max(-1, Math.min(hIndex + dir, history.size() - 1));
         String txt = outputView.getText().toString();
-        int last = txt.lastIndexOf("root@pshacker:~# ");
+        int last = txt.lastIndexOf(currentPrompt);
         if (last != -1) {
             String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
-            outputView.setText(txt.substring(0, last + 17) + cmd);
+            outputView.setText(txt.substring(0, last + currentPrompt.length()) + cmd);
         }
     }
 
@@ -166,11 +246,19 @@ public class MainActivity extends AppCompatActivity {
             if (type != 0) return new View(getContext());
             final ScrollView sv = new ScrollView(getContext());
             sv.setFillViewport(true);
+            sv.setBackgroundColor(Color.parseColor("#050505")); // Abyss Black UI
+
             outputView = new TextView(getContext());
-            // Changed to Clean White
-            outputView.setTextColor(0xFFFFFFFF);
-            outputView.setTypeface(Typeface.MONOSPACE);
-            outputView.setText(">> HK Prashant Bhai\nroot@pshacker:~# ");
+            
+            // HK-OPERATION: Radioactive UI Matrix Styling
+            outputView.setTextColor(Color.parseColor("#00FF41")); // Hacker Green
+            outputView.setBackgroundColor(Color.parseColor("#050505"));
+            outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+            outputView.setShadowLayer(8f, 0f, 0f, Color.parseColor("#00FF41")); // Neon Glow
+            outputView.setPadding(10, 10, 10, 10);
+            
+            String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
+            outputView.setText(">> HK Prashant Bhai\n" + prompt);
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
 
@@ -193,6 +281,7 @@ public class MainActivity extends AppCompatActivity {
             });
 
             outputView.setOnKeyListener((v, code, ev) -> {
+                String activePrompt = ((MainActivity)getActivity()).getCurrentPrompt();
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
@@ -200,12 +289,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (code == KeyEvent.KEYCODE_DEL) {
                         String s = outputView.getText().toString();
-                        if (!s.endsWith("root@pshacker:~# ")) outputView.setText(s.substring(0, s.length()-1));
+                        if (!s.endsWith(activePrompt)) {
+                            outputView.setText(s.substring(0, s.length()-1));
+                        }
                         return true;
                     }
                     if (code == KeyEvent.KEYCODE_ENTER) {
                         String s = outputView.getText().toString();
-                        int start = s.lastIndexOf("root@pshacker:~# ") + 17;
+                        int start = s.lastIndexOf(activePrompt) + activePrompt.length();
                         ((MainActivity)getActivity()).executeCommand(s.substring(start).trim());
                         return true;
                     }
@@ -220,5 +311,6 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onDestroy() { 
         super.onDestroy(); 
         TerminalEngine.stopAmSocketServer(); 
+        if (ptyBridge != null) ptyBridge.destroy();
     }
 }
