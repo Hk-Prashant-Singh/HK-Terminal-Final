@@ -19,7 +19,7 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (ARSENAL MATRIX EDITION)
+ * HK-OPERATION : ELITE COMMAND CENTER (ARSENAL MATRIX EDITION - PATCHED)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
  * DIRECTIVE    : Live Package Manager UI & Alpha Sync Terminal
  */
@@ -194,6 +194,15 @@ public class MainActivity extends AppCompatActivity {
             }).setNegativeButton("CANCEL", null).show();
         
         input.requestFocus();
+        forceKeyboard(input);
+    }
+
+    // [!] RESTORED ALPHA HELPERS: Required for System execution
+    public static void logError(String t, String m, Throwable e) { 
+        Log.e(t, m, e); 
+    }
+
+    public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
@@ -282,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
             if (type == 1) { 
                 ScrollView sv = new ScrollView(getContext());
                 sv.setFillViewport(true);
-                sv.setBackgroundColor(Color.parseColor("#050505")); // Stealth Abyss Black
+                sv.setBackgroundColor(Color.parseColor("#050505")); 
 
                 LinearLayout rootLayout = new LinearLayout(getContext());
                 rootLayout.setOrientation(LinearLayout.VERTICAL);
@@ -361,22 +370,20 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             
-            // Title Header
             TextView title = new TextView(context);
             title.setText(">> HK WEAPON ARSENAL");
-            title.setTextColor(Color.parseColor("#00FF41")); // Matrix Green
+            title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
             title.setTextSize(18f);
             rootLayout.addView(title);
 
-            // Scan the Core Binary Path
             File binDir = new File(TerminalEngine.BIN_PATH);
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
                     for (File file : files) {
-                        if (file.isDirectory()) continue; // Skip hidden folders
+                        if (file.isDirectory()) continue; 
 
                         LinearLayout row = new LinearLayout(context);
                         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -390,10 +397,9 @@ public class MainActivity extends AppCompatActivity {
                         pkgName.setTextSize(16f);
                         pkgName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-                        // Destructive Delete Button
                         Button delBtn = new Button(context);
                         delBtn.setText("DEL");
-                        delBtn.setTextColor(Color.parseColor("#FF003C")); // Blood Red Warning
+                        delBtn.setTextColor(Color.parseColor("#FF003C")); 
                         delBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
                         delBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
                         
@@ -404,7 +410,7 @@ public class MainActivity extends AppCompatActivity {
                         delBtn.setOnClickListener(v -> {
                             if (file.delete()) {
                                 Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
-                                renderPackagesMatrix(rootLayout, context); // Live UI Refresh
+                                renderPackagesMatrix(rootLayout, context); 
                             } else {
                                 Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
                             }
@@ -424,7 +430,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // Manual Scan/Refresh Button
             Button refreshBtn = new Button(context);
             refreshBtn.setText("SCAN MATRIX");
             refreshBtn.setTextColor(Color.parseColor("#00FF41"));
