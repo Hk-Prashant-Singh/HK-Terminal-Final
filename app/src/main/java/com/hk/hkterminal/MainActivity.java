@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (DYNAMIC COLOR MATRIX EDITION)
+ * HK-OPERATION : ELITE COMMAND CENTER (ARSENAL MATRIX EDITION)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Stealth White Terminal with Intelligent Chishti Orange Error Deflector
+ * DIRECTIVE    : Live Package Manager UI & Alpha Sync Terminal
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     public LinearLayout extraKeysLayout;
     private boolean isCtrl = false;
 
-    // HK-OPERATION : ALPHA NATIVE BRIDGES
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
@@ -43,12 +42,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        // Elite resizing for professional terminal feel
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
-        // HK-Operation: Auto-grant executable powers to binaries
         initHKEnvironment();
 
         ViewPager2 vp = findViewById(R.id.viewPager);
@@ -61,15 +58,19 @@ public class MainActivity extends AppCompatActivity {
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
         setupSystemButtons();
-        
-        // Start Socket & Ignite the Persistent Ghost Engine
         TerminalEngine.startAmSocketServer();
         
-        // 15-Second System Access: Ignite Native C++ Kernel Bridge
-        String[] env = {"PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", "TERM=xterm-256color", "HOME=" + TerminalEngine.HOME_PATH};
+        // ALPHA SYNC: Shell Environment Locked
+        String[] env = {
+            "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
+            "TERM=dumb", 
+            "HOME=" + TerminalEngine.HOME_PATH,
+            "PS1=" 
+        };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Background Thread for Native JNI Output (Glitch-Free Intelligent Matrix)
+        ptyBridge.writeCommand("stty -echo\n"); 
+
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
@@ -83,42 +84,43 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
-        // Legacy Terminal Engine Fallback
         TerminalEngine.igniteEngine(line -> runOnUiThread(() -> {
             appendMatrixText(line + "\n");
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
         }));
     }
 
-    // ALPHA INTELLIGENT ROUTER: Separates Stealth White from Chishti Orange Error Streams
     private void appendMatrixText(String rawText) {
         if (outputView == null || rawText == null) return;
 
-        // Clean Carriage Returns to prevent line overlapping
-        String cleanText = rawText.replace("\r", "");
+        String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
+        cleanText = cleanText.replace("\r", "").replaceAll(".\\x08", "");
+
+        if (cleanText.contains("stty -echo")) return;
+
+        if (cleanText.contains("HK-SYNC-DONE")) {
+            cleanText = cleanText.replace("HK-SYNC-DONE", currentPrompt);
+            if (headerProgress != null) headerProgress.setVisibility(View.GONE); 
+        }
+
+        if (cleanText.trim().isEmpty() && !cleanText.contains(" ")) return; 
+
         SpannableStringBuilder ssb = new SpannableStringBuilder();
-        
-        // Split strings by lines to isolate errors precisely
         String[] lines = cleanText.split("\n", -1);
+        
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
             SpannableString ss = new SpannableString(line);
             String lower = line.toLowerCase();
 
-            // Intercepting failure anomalies instantly
             if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
-                || lower.contains("failure") || lower.contains("[-]")) {
-                // Apply high-contrast Chishti Orange to error vectors
+                || lower.contains("not found") || lower.contains("[-]")) {
                 ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
-                // System operational text remains Stealth White
                 ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             
             ssb.append(ss);
-            if (i < lines.length - 1) {
-                ssb.append("\n");
-            }
+            if (i < lines.length - 1) ssb.append("\n");
         }
         
         outputView.append(ssb);
@@ -134,16 +136,12 @@ public class MainActivity extends AppCompatActivity {
         return currentPrompt;
     }
 
-    // Surgical function to grant execute powers to binaries silently
     private void initHKEnvironment() {
         new Thread(() -> {
             File usrDir = new File(TerminalEngine.PREFIX_PATH);
             if (usrDir.exists()) {
-                try {
-                    Runtime.getRuntime().exec("chmod -R 755 " + TerminalEngine.PREFIX_PATH).waitFor();
-                } catch (Exception e) {
-                    Log.e("HK_INIT", "Permission Grant Failed", e);
-                }
+                try { Runtime.getRuntime().exec("chmod -R 755 " + TerminalEngine.PREFIX_PATH).waitFor(); } 
+                catch (Exception e) { Log.e("HK_INIT", "Permission Grant Failed", e); }
             }
         }).start();
     }
@@ -155,17 +153,17 @@ public class MainActivity extends AppCompatActivity {
         View btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) btnCtrl.setOnClickListener(v -> {
             isCtrl = !isCtrl;
-            v.setBackgroundColor(isCtrl ? 0xFF8A2BE2 : 0xFF333333); // Purple visual feedback
+            v.setBackgroundColor(isCtrl ? 0xFF8A2BE2 : 0xFF333333); 
             
             if (isCtrl && ptyBridge != null) {
-                ptyBridge.kill(2); // SIGINT: Kernel execution breaker
-                appendMatrixText("^C\n"); 
+                ptyBridge.kill(2); 
+                appendMatrixText("^C\n" + currentPrompt); 
                 isCtrl = false;
                 v.setBackgroundColor(0xFF333333); 
+                if (headerProgress != null) headerProgress.setVisibility(View.GONE);
             }
         });
 
-        // Prompt clear matrix updated with identity verification
         View btnCLR = findViewById(R.id.slash); 
         if (btnCLR != null) btnCLR.setOnClickListener(v -> {
             if (outputView != null) {
@@ -183,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showCommandBox() {
         final EditText input = new EditText(this);
-        input.setTextColor(Color.parseColor("#FFFFFF")); // Inputs are synced to Stealth White
+        input.setTextColor(Color.parseColor("#FFFFFF")); 
         input.setBackgroundColor(Color.parseColor("#050505"));
         input.setTypeface(Typeface.MONOSPACE);
         
@@ -192,19 +190,10 @@ public class MainActivity extends AppCompatActivity {
             .setView(input)
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
-                if(!cmd.isEmpty()) {
-                    appendMatrixText(cmd); 
-                    executeCommand(cmd);
-                }
+                if(!cmd.isEmpty()) executeCommand(cmd);
             }).setNegativeButton("CANCEL", null).show();
         
         input.requestFocus();
-        forceKeyboard(input);
-    }
-
-    public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
-
-    private void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
@@ -215,36 +204,33 @@ public class MainActivity extends AppCompatActivity {
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
-        appendMatrixText("\n");
+        appendMatrixText(command + "\n");
         String trimmedCmd = command.trim();
 
-        // 1. Intercept Minimalist HKPackageManager Directives (hk install python)
         if (trimmedCmd.startsWith("hk install ")) {
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
-                HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
+                HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
+                    appendMatrixText(msg + "\n" + currentPrompt);
+                    if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+                }));
             } else {
-                appendMatrixText("[-] HK-PKG Error: Specify package name. (e.g., hk install python)\n" + currentPrompt);
+                appendMatrixText("[-] HK-PKG Error: Specify package name.\n" + currentPrompt);
+                if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             }
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
-        // 2. Intercept HK-Guardian Protocol
-        if (trimmedCmd.equals("hk-guardian")) {
-            HKGuardian.activateShield(msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+        if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
+            MainActivity.Callback cb = msg -> runOnUiThread(() -> {
+                appendMatrixText(msg + "\n" + currentPrompt);
+                if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            });
+            if (trimmedCmd.equals("hk-guardian")) HKGuardian.activateShield(cb);
+            else HKGuardian.setupStorage(cb);
             return;
         }
 
-        // 3. Intercept Storage Setup
-        if (trimmedCmd.equals("hk-setup-storage")) {
-            HKGuardian.setupStorage(msg -> runOnUiThread(() -> appendMatrixText(msg + "\n" + currentPrompt)));
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-            return;
-        }
-
-        // 4. Intercept Dynamic Root Escalation
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
@@ -263,17 +249,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 5. Fire command directly into the living Native PTY Tunnel
         if (ptyBridge != null) {
             ptyBridge.writeCommand(command + "\n");
+            ptyBridge.writeCommand("echo 'HK-SYNC-DONE'\n");
         } else {
             TerminalEngine.run(command);
         }
-        
-        // Fallback progress hide
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-        }, 500);
     }
 
     private void navigateHistory(int dir) {
@@ -295,20 +276,36 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
-            if (type != 0) return new View(getContext());
+            // ==================================================
+            // [!] ALPHA UPGRADE: PACKAGES TAB MATRIX (TAB 2)
+            // ==================================================
+            if (type == 1) { 
+                ScrollView sv = new ScrollView(getContext());
+                sv.setFillViewport(true);
+                sv.setBackgroundColor(Color.parseColor("#050505")); // Stealth Abyss Black
+
+                LinearLayout rootLayout = new LinearLayout(getContext());
+                rootLayout.setOrientation(LinearLayout.VERTICAL);
+                rootLayout.setPadding(40, 40, 40, 40);
+                sv.addView(rootLayout);
+
+                renderPackagesMatrix(rootLayout, getContext());
+                return sv;
+            }
+
+            // ==================================================
+            // TERMINAL TAB MATRIX (TAB 1)
+            // ==================================================
             final ScrollView sv = new ScrollView(getContext());
             sv.setFillViewport(true);
             sv.setBackgroundColor(Color.parseColor("#050505")); 
 
             outputView = new TextView(getContext());
-            
-            // [!] ALPHA UPGRADE: Text color shifted to solid white, heavy green shadow eliminated
             outputView.setTextColor(Color.parseColor("#FFFFFF")); 
             outputView.setBackgroundColor(Color.parseColor("#050505"));
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             outputView.setPadding(10, 10, 10, 10);
             
-            // Identity string updated to 'HK Prashant Singh'
             String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
             ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
             
@@ -342,9 +339,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (code == KeyEvent.KEYCODE_DEL) {
                         String s = outputView.getText().toString();
-                        if (!s.endsWith(activePrompt)) {
-                            outputView.setText(s.substring(0, s.length()-1));
-                        }
+                        if (!s.endsWith(activePrompt)) outputView.setText(s.substring(0, s.length()-1));
                         return true;
                     }
                     if (code == KeyEvent.KEYCODE_ENTER) {
@@ -358,6 +353,88 @@ public class MainActivity extends AppCompatActivity {
             });
             sv.addView(outputView);
             return sv;
+        }
+
+        // ==================================================
+        // HK-OPERATION: PACKAGE RENDER & DELETE PROTOCOL
+        // ==================================================
+        private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
+            rootLayout.removeAllViews();
+            
+            // Title Header
+            TextView title = new TextView(context);
+            title.setText(">> HK WEAPON ARSENAL");
+            title.setTextColor(Color.parseColor("#00FF41")); // Matrix Green
+            title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+            title.setPadding(0, 0, 0, 50);
+            title.setTextSize(18f);
+            rootLayout.addView(title);
+
+            // Scan the Core Binary Path
+            File binDir = new File(TerminalEngine.BIN_PATH);
+            if (binDir.exists() && binDir.isDirectory()) {
+                File[] files = binDir.listFiles();
+                if (files != null && files.length > 0) {
+                    for (File file : files) {
+                        if (file.isDirectory()) continue; // Skip hidden folders
+
+                        LinearLayout row = new LinearLayout(context);
+                        row.setOrientation(LinearLayout.HORIZONTAL);
+                        row.setPadding(0, 20, 0, 20);
+                        row.setGravity(Gravity.CENTER_VERTICAL);
+
+                        TextView pkgName = new TextView(context);
+                        pkgName.setText(file.getName());
+                        pkgName.setTextColor(Color.parseColor("#FFFFFF"));
+                        pkgName.setTypeface(Typeface.MONOSPACE);
+                        pkgName.setTextSize(16f);
+                        pkgName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                        // Destructive Delete Button
+                        Button delBtn = new Button(context);
+                        delBtn.setText("DEL");
+                        delBtn.setTextColor(Color.parseColor("#FF003C")); // Blood Red Warning
+                        delBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
+                        delBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+                        
+                        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        btnLp.setMargins(20, 0, 0, 0);
+                        delBtn.setLayoutParams(btnLp);
+                        
+                        delBtn.setOnClickListener(v -> {
+                            if (file.delete()) {
+                                Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
+                                renderPackagesMatrix(rootLayout, context); // Live UI Refresh
+                            } else {
+                                Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+                        row.addView(pkgName);
+                        row.addView(delBtn);
+                        rootLayout.addView(row);
+                    }
+                } else {
+                    TextView empty = new TextView(context);
+                    empty.setText("[-] Arsenal is empty.\nUse 'hk install <pkg>' to load weapons.");
+                    empty.setTextColor(Color.parseColor("#888888"));
+                    empty.setTypeface(Typeface.MONOSPACE);
+                    empty.setPadding(0, 20, 0, 0);
+                    rootLayout.addView(empty);
+                }
+            }
+
+            // Manual Scan/Refresh Button
+            Button refreshBtn = new Button(context);
+            refreshBtn.setText("SCAN MATRIX");
+            refreshBtn.setTextColor(Color.parseColor("#00FF41"));
+            refreshBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
+            refreshBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 80, 0, 0);
+            refreshBtn.setLayoutParams(lp);
+            refreshBtn.setOnClickListener(v -> renderPackagesMatrix(rootLayout, context));
+            rootLayout.addView(refreshBtn);
         }
     }
 
