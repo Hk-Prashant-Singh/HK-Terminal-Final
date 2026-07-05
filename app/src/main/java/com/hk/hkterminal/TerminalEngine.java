@@ -10,12 +10,17 @@ import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * HK-OPERATION : ALPHA SILENT ROUTER & CORE KERNEL
+ * IDENTITY     : HK Prashant Bhai (Tech Wizard)
+ * DIRECTIVE    : 15-Second Access Engine & Digital Guardian Proxy
+ */
 public class TerminalEngine {
 
     private static ServerSocket amSocketServer;
     private static Thread amSocketThread;
     
-    // HK-Operation Core Paths (System DNA)
+    // HK-Operation Core Paths (System DNA Matrix)
     public static final String DATA_DIR = "/data/data/com.hk.hkterminal/files";
     public static final String HOME_PATH = DATA_DIR + "/home";
     public static final String PREFIX_PATH = DATA_DIR + "/usr";
@@ -26,17 +31,19 @@ public class TerminalEngine {
     private static Process persistentShell;
     private static DataOutputStream shellInput;
 
+    // 1. ADVANCED SOCKET IPC: Bind external triggers to the core engine
     public static void startAmSocketServer() {
         if (amSocketThread != null && amSocketThread.isAlive()) return;
         amSocketThread = new Thread(() -> {
             try {
                 amSocketServer = new ServerSocket(8080);
+                Log.i("HK_SOCKET", "[+] Alpha Socket Matrix Online on Port 8080");
                 while (!Thread.currentThread().isInterrupted()) {
                     Socket clientSocket = amSocketServer.accept();
                     new Thread(new AmSocketClientHandler(clientSocket)).start();
                 }
             } catch (IOException e) {
-                MainActivity.logError("AM_SOCKET", "Error starting AmSocketServer", e);
+                MainActivity.logError("AM_SOCKET", "[-] Error igniting AmSocketServer", e);
             }
         });
         amSocketThread.start();
@@ -46,41 +53,57 @@ public class TerminalEngine {
         if (amSocketThread != null) {
             amSocketThread.interrupt();
             if (amSocketServer != null && !amSocketServer.isClosed()) {
-                try { amSocketServer.close(); } catch (IOException e) {}
+                try { 
+                    amSocketServer.close(); 
+                    Log.i("HK_SOCKET", "[*] Alpha Socket Matrix Offline");
+                } catch (IOException e) {
+                    Log.e("HK_SOCKET", "[-] Port Closure Failed", e);
+                }
             }
         }
     }
 
+    // Upgraded Handler: Now routes incoming socket traffic directly into the living shell
     private static class AmSocketClientHandler implements Runnable {
         private Socket clientSocket;
         public AmSocketClientHandler(Socket socket) { this.clientSocket = socket; }
+        
         @Override
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 String msg;
-                while ((msg = in.readLine()) != null) {}
-            } catch (IOException e) {}
+                while ((msg = in.readLine()) != null) {
+                    // Injecting intercepted network strings straight to the execution engine
+                    Log.i("HK_SOCKET", "[>] Intercepted payload: " + msg);
+                    TerminalEngine.run(msg); 
+                }
+            } catch (IOException e) {
+                Log.e("HK_SOCKET", "[-] Client Connection Dropped", e);
+            }
         }
     }
 
-    // 1. ENGINE IGNITION: Start the Persistent Shell
-    // (Call this ONCE in MainActivity onCreate)
+    // 2. ENGINE IGNITION: Start the Stealth Persistent Shell
     public static void igniteEngine(final MainActivity.Callback cb) {
-        if (persistentShell != null) return; // Engine is already running
+        if (persistentShell != null) return; // Core is already burning
 
         new Thread(() -> {
             try {
-                // Foundation Verification
+                // Foundation Verification (Silent Directory Generation)
                 File homeDir = new File(HOME_PATH);
                 if (!homeDir.exists()) homeDir.mkdirs();
                 File usrDir = new File(PREFIX_PATH);
                 if (!usrDir.exists()) usrDir.mkdirs();
+                File binDir = new File(BIN_PATH);
+                if (!binDir.exists()) binDir.mkdirs();
+                File libDir = new File(LIB_PATH);
+                if (!libDir.exists()) libDir.mkdirs();
 
-                // Build the Core Shell (Non-Root by default)
+                // Build the Core Shell Matrix (Stealth Mode)
                 ProcessBuilder pb = new ProcessBuilder("sh");
                 pb.directory(homeDir);
                 
-                // Injecting HK-Terminal DNA
+                // Injecting HK-Terminal DNA with full environment control
                 pb.environment().put("HOME", HOME_PATH);
                 pb.environment().put("PREFIX", PREFIX_PATH);
                 pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
@@ -88,38 +111,39 @@ public class TerminalEngine {
                 pb.environment().put("TERM", "xterm-256color");
                 pb.environment().put("LANG", "en_US.UTF-8");
                 
-                pb.redirectErrorStream(true); // Catch all errors in the same stream
+                pb.redirectErrorStream(true); // Catch all fatal and standard outputs in one stream
 
                 persistentShell = pb.start();
                 shellInput = new DataOutputStream(persistentShell.getOutputStream());
 
-                // Continuous Output Reader (The Terminal's Eyes)
+                // Continuous Output Reader (The Terminal's Eyes - Zero Lag)
                 BufferedReader reader = new BufferedReader(new InputStreamReader(persistentShell.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (cb != null) cb.onOutput(line);
                 }
 
-                // If the shell gets killed
+                // If the system guardian kills the shell
                 persistentShell.waitFor();
                 persistentShell = null;
-                if (cb != null) cb.onOutput("\n[HK-ENGINE TERMINATED]\n");
+                if (cb != null) cb.onOutput("\n[!] HK-ENGINE TERMINATED BY OS KERNEL\n");
 
             } catch (Exception e) {
-                if (cb != null) cb.onOutput("\nHK_CORE_ERROR: " + e.getMessage() + "\n");
+                if (cb != null) cb.onOutput("\n[-] HK_CORE_FATAL_ERROR: " + e.getMessage() + "\n");
             }
         }).start();
     }
 
-    // 2. COMMAND INJECTION: Fire commands into the living shell
+    // 3. COMMAND INJECTION: Direct raw command execution payload
     public static void run(final String cmd) {
         if (shellInput == null) return;
         new Thread(() -> {
             try {
+                // Fire directly into the living process without UI interference
                 shellInput.writeBytes(cmd + "\n");
                 shellInput.flush();
             } catch (IOException e) {
-                Log.e("HK_EXEC", "Command Injection Failed", e);
+                Log.e("HK_EXEC", "[-] Command Injection Failed: Tunnel collapsed", e);
             }
         }).start();
     }
