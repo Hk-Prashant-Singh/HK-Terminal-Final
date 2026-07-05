@@ -14,6 +14,17 @@ android {
         versionName "1.0"
     }
 
+    // ==========================================
+    // [!] HK-OPERATION: NATIVE C++ KERNEL LINK [!]
+    // ==========================================
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.10.2"
+        }
+    }
+    // ==========================================
+
     signingConfigs {
         release {
             storeFile file("hk_key.jks") 
