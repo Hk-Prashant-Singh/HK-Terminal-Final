@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (INTEGRATED RUNTIME MATRIX)
+ * HK-OPERATION : MASTER COMMAND CENTER (TOTAL LOGIC MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Safe Interceptors, Thread-Safe Sync, Continuous Deletion, Precise ID Layouts
+ * DIRECTIVE    : Absolute Ambiguity Fix, Blinking Cursor, Thread-Safe Pipeline, Zero Missing Code
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -30,13 +30,14 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
+    // ALPHA STATE ENGINE
     private boolean isCtrl = false;
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
     private final Object streamLock = new Object();
 
-    // Blinking Cursor Setup
+    // DYNAMIC CURSOR MATRIX
     private Handler cursorHandler = new Handler(Looper.getMainLooper());
     private boolean isCursorVisible = true;
 
@@ -51,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
+        // Core Environment Director
         File homeDir = new File(TerminalEngine.HOME_PATH);
         if (!homeDir.exists()) homeDir.mkdirs();
         
@@ -82,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         ptyBridge.writeCommand("cd $HOME\n"); 
         ptyBridge.writeCommand("clear\n"); 
 
+        // Native Shell Input Pipeline
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
@@ -95,9 +98,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
+        // Active Blinking Cursor Loop Activation
         cursorHandler.postDelayed(cursorRunnable, 500);
     }
 
+    // ==========================================
+    // [!] ALPHA BLINKING CURSOR ENGINE
+    // ==========================================
     private Runnable cursorRunnable = new Runnable() {
         @Override
         public void run() {
@@ -210,9 +217,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ==========================================
+    // [!] EXPLICIT CLIPBOARD ARSENAL (FIXED)
+    // ==========================================
     public void copyTerminalClipboard() {
         if (outputView == null) return;
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("HK_MATRIX_LOG", outputView.getText().toString().replace("_", ""));
         if (clipboard != null) {
             clipboard.setPrimaryClip(clip);
@@ -221,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pasteTerminalClipboard() {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null && clipboard.hasPrimaryClip() && outputView != null) {
             ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
             CharSequence pasteData = item.getText();
@@ -263,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Exact match confirmation with activity_main.xml layout notation framework ID '@+id/dash'
         View btnDash = findViewById(R.id.dash); 
         if (btnDash != null) {
             btnDash.setOnClickListener(v -> {
@@ -362,9 +371,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // ====================================================================
-        // [!] THE UNIVERSAL INTERCEPTOR: Catch any dynamically dropped wrapper
-        // ====================================================================
+        // The Polymorphic Universal Wrapper Interceptor
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
@@ -492,6 +499,7 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setTextIsSelectable(true); 
 
+            // Copy-Paste Interactive Custom Context Menu
             outputView.setOnLongClickListener(v -> {
                 final PopupMenu popup = new PopupMenu(getContext(), outputView);
                 popup.getMenu().add("COPY ALL LOGS");
