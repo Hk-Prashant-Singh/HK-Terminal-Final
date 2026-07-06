@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (AUTO-FOCUS MATRIX)
+ * HK-OPERATION : ELITE COMMAND CENTER (PERMISSION BYPASS MATRIX)
  * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Keyboard Auto-Scroll, Pure PTY Bridge, Active Hardware CTRL
+ * DIRECTIVE    : Directory Forcer, Pure PTY Bridge, Active Hardware CTRL
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
-    // ALPHA UPGRADE: Hardware CTRL State
     private boolean isCtrl = false;
 
     private PtyBridge ptyBridge;
@@ -47,6 +46,13 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
+
+        // [!] ALPHA FIX: Force create core directories BEFORE shell boots
+        File homeDir = new File(TerminalEngine.HOME_PATH);
+        if (!homeDir.exists()) homeDir.mkdirs();
+        
+        File binDir = new File(TerminalEngine.BIN_PATH);
+        if (!binDir.exists()) binDir.mkdirs();
 
         initHKEnvironment();
 
@@ -74,7 +80,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Force OS Shell to use our Elite Prompt natively
         ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
-        ptyBridge.writeCommand("clear\n"); // Clean the screen immediately after export
+        // [!] SECURITY BYPASS: Force jump into the private HOME directory to avoid Root Permission Denied errors
+        ptyBridge.writeCommand("cd $HOME\n"); 
+        ptyBridge.writeCommand("clear\n"); // Clean the screen immediately
 
         new Thread(() -> {
             try {
@@ -93,12 +101,11 @@ public class MainActivity extends AppCompatActivity {
     private void appendMatrixText(String rawText) {
         if (outputView == null || rawText == null) return;
 
-        // Clean basic escape characters (ANSI Stripper)
         String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
         cleanText = cleanText.replace("\r", "");
 
-        // Hide the initial configuration commands from UI
         cleanText = cleanText.replace("export PS1='pshacker@hk:~$ '", "");
+        cleanText = cleanText.replace("cd $HOME", ""); // Hide internal cd command
         cleanText = cleanText.replace("clear", "");
 
         if (cleanText.isEmpty()) return; 
@@ -111,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
             SpannableString ss = new SpannableString(line);
             String lower = line.toLowerCase();
 
-            // Intelligent Error Highlighting (Chishti Orange)
             if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
                 || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
                 ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -127,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         scrollToBottom();
     }
 
-    // [!] ALPHA FIX: Changed to public so key-presses can access it live
     public void scrollToBottom() {
         final ScrollView sv = (ScrollView) outputView.getParent();
         if (sv != null) sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
@@ -137,15 +142,13 @@ public class MainActivity extends AppCompatActivity {
         return currentPrompt;
     }
 
-    // ALPHA CTRL LOGIC EXPOSED FOR KEYBOARD LISTENER
     public boolean isCtrlActive() {
         return isCtrl;
     }
 
-    // [!] ALPHA RESET PROTOCOL: Auto-reset CTRL button back to Original Green after SIGINT
     public void sendSigInt() {
         if (ptyBridge != null) {
-            ptyBridge.kill(2); // SIGINT Triggered
+            ptyBridge.kill(2); 
             appendMatrixText("^C\n");
         }
         isCtrl = false;
@@ -170,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
         View btnCb = findViewById(R.id.esc); 
         if (btnCb != null) btnCb.setOnClickListener(v -> showCommandBox());
 
-        // [!] FIXED CTRL BUTTON: Active = Red Flash, Off = Hacker Green
         TextView btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) {
             btnCtrl.setOnClickListener(v -> {
@@ -216,9 +218,7 @@ public class MainActivity extends AppCompatActivity {
         forceKeyboard(input);
     }
 
-    public static void logError(String t, String m, Throwable e) { 
-        Log.e(t, m, e); 
-    }
+    public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
 
     public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -236,14 +236,24 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk install ")) {
-            appendMatrixText(command + "\n"); // Manual append for our custom internal tool
+            appendMatrixText(command + "\n"); 
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
-                HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
-                    appendMatrixText(msg + "\n" + currentPrompt);
-                    if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-                }));
+                HKPackageManager.installPackage(pkg, new HKPackageManager.InstallListener() {
+                    @Override
+                    public void onUpdate(String msg) {
+                        runOnUiThread(() -> appendMatrixText(msg + "\n"));
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        runOnUiThread(() -> {
+                            appendMatrixText(currentPrompt);
+                            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+                        });
+                    }
+                });
             } else {
                 appendMatrixText("[-] HK-PKG Error: Specify package name.\n" + currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
@@ -282,7 +292,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ptyBridge != null) {
-            // Send pure raw command to OS. No manual appending!
             ptyBridge.writeCommand(command + "\n");
         } else {
             TerminalEngine.run(command);
@@ -325,9 +334,8 @@ public class MainActivity extends AppCompatActivity {
             sv.setFillViewport(true);
             sv.setBackgroundColor(Color.parseColor("#050505")); 
 
-            // [!] ALPHA FIX 1: Listen for Keyboard Popup Resize and Auto-Scroll
             sv.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-                if (bottom < oldBottom) { // Means keyboard just popped up and pushed the layout up
+                if (bottom < oldBottom) { 
                     sv.postDelayed(() -> sv.fullScroll(View.FOCUS_DOWN), 100);
                 }
             });
@@ -368,7 +376,6 @@ public class MainActivity extends AppCompatActivity {
                 
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
                     
-                    // CTRL+C HARDWARE LOGIC
                     if (mainActivity.isCtrlActive()) {
                         if (code == KeyEvent.KEYCODE_C) {
                             mainActivity.sendSigInt(); 
@@ -378,14 +385,12 @@ public class MainActivity extends AppCompatActivity {
 
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
-                        // [!] ALPHA FIX 2: Live Keystroke Auto-Scroll
                         mainActivity.scrollToBottom();
                         return true;
                     }
                     if (code == KeyEvent.KEYCODE_DEL) {
                         String s = outputView.getText().toString();
                         if (!s.endsWith(activePrompt)) outputView.setText(s.substring(0, s.length()-1));
-                        // [!] ALPHA FIX 3: Backspace Auto-Scroll
                         mainActivity.scrollToBottom();
                         return true;
                     }
@@ -395,10 +400,7 @@ public class MainActivity extends AppCompatActivity {
                         if (start != -1) {
                             start += activePrompt.length();
                             String cmd = s.substring(start);
-                            
-                            // Wipe the manually typed command from UI just before execution.
                             outputView.setText(s.substring(0, start)); 
-                            
                             mainActivity.executeCommand(cmd.trim());
                         }
                         return true;
