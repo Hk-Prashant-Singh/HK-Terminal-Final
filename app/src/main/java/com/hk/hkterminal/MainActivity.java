@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,9 +22,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ANTI-CRASH MATRIX)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE STABILITY MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Infinite Loop Fix, Hardware Enter Hook, Flawless Native Execution
+ * DIRECTIVE    : Zero Double Text, InputConnection Hook (Ctrl Fix), Crash-Free Execution
  */
 public class MainActivity extends AppCompatActivity {
     public static EditText outputView;
@@ -103,7 +104,14 @@ public class MainActivity extends AppCompatActivity {
                 String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
                 cleanText = cleanText.replace("\r", "");
                 
-                if (cleanText.contains("cd $HOME") || cleanText.contains("clear")) return;
+                if (cleanText.contains("cd $HOME")) return;
+                
+                // Native Clear Protocol Sync
+                if (cleanText.contains("clear\n") || cleanText.contains("clear")) {
+                    outputView.setText("");
+                    cleanText = cleanText.replace("clear\n", "").replace("clear", "").trim();
+                }
+
                 if (cleanText.isEmpty()) return; 
 
                 SpannableStringBuilder ssb = new SpannableStringBuilder();
@@ -147,11 +155,13 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
+    // [!] ALPHA CLEAR MATRIX (Ctrl + L Execution)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
                 outputView.setText("");
-                appendMatrixText(">> HK Prashant Singh\n" + currentPrompt);
+                appendMatrixText(">> HK Prashant Singh\n");
+                if (ptyBridge != null) { ptyBridge.writeCommand("clear\n"); }
                 resetCtrlState();
             }
         });
@@ -305,9 +315,7 @@ public class MainActivity extends AppCompatActivity {
             .setView(input)
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
-                if(!cmd.isEmpty()) {
-                    executeCommand(cmd);
-                }
+                if(!cmd.isEmpty()) { executeCommand(cmd); }
             }).setNegativeButton("CANCEL", null).show();
         
         input.requestFocus();
@@ -363,6 +371,7 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
+        // Manual Appends for internal engine commands only
         if (trimmedCmd.equals("ifconfig")) {
             appendMatrixText(command + "\n");
             appendMatrixText(getNetworkDetails() + "\n" + currentPrompt);
@@ -372,7 +381,6 @@ public class MainActivity extends AppCompatActivity {
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
-            appendMatrixText(command + "\n");
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
                 ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
@@ -437,8 +445,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (ptyBridge != null) { ptyBridge.writeCommand(command + "\n"); } 
-        else { TerminalEngine.run(command); }
+        // Standard command drop -> Sent to shell, shell natively echoes it. ZERO DOUBLE TEXT.
+        if (ptyBridge != null) { 
+            ptyBridge.writeCommand(command + "\n"); 
+        } else { 
+            TerminalEngine.run(command); 
+        }
     }
 
     private void navigateHistory(int dir) {
@@ -475,7 +487,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] ALPHA FIX: Anti-Loop & Anti-Crash Execution Class
+    // [!] KERNEL-LEVEL INPUT INTERCEPTOR: Hooks into deepest soft-keyboard layers
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         public CustomEditText(Context context) { super(context); }
         
@@ -484,26 +496,35 @@ public class MainActivity extends AppCompatActivity {
             InputConnection ic = super.onCreateInputConnection(outAttrs);
             outAttrs.imeOptions = EditorInfo.IME_ACTION_GO;
             outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
-            return ic;
+            
+            // Bypass TextWatcher, intercept characters safely
+            return new InputConnectionWrapper(ic, true) {
+                @Override
+                public boolean commitText(CharSequence text, int newCursorPosition) {
+                    MainActivity main = (MainActivity) getContext();
+                    if (main != null && main.isCtrlActive() && text.length() == 1) {
+                        char c = Character.toLowerCase(text.charAt(0));
+                        if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                if (c == 'c') main.sendSigInt();
+                                else if (c == 'l') main.clearTerminal();
+                                else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
+                                else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
+                                else if (c == 'd') main.exitApplication();
+                            });
+                            return true; // Consume character entirely
+                        }
+                    }
+                    return super.commitText(text, newCursorPosition);
+                }
+            };
         }
 
-        // Intercepts hardware & soft-keyboard keys BEFORE they hit the text stream
         @Override
         public boolean onKeyDown(int keyCode, KeyEvent event) {
             MainActivity main = (MainActivity) getContext();
             if (main == null) return super.onKeyDown(keyCode, event);
 
-            // 1. Safe CTRL Interception Loop Bypass
-            if (main.isCtrlActive() && event.getUnicodeChar() != 0) {
-                char c = Character.toLowerCase((char) event.getUnicodeChar());
-                if (c == 'c') { main.sendSigInt(); return true; }
-                if (c == 'l') { main.clearTerminal(); return true; }
-                if (c == 'x') { main.sendCtrlKey("\u0018", "^X"); return true; }
-                if (c == 'z') { main.sendCtrlKey("\u001A", "^Z"); return true; }
-                if (c == 'd') { main.exitApplication(); return true; }
-            }
-
-            // 2. Safe Backspace Protection
             if (keyCode == KeyEvent.KEYCODE_DEL) {
                 int selStart = getSelectionStart();
                 int selEnd = getSelectionEnd();
@@ -511,8 +532,8 @@ public class MainActivity extends AppCompatActivity {
                 int promptIdx = s.lastIndexOf(main.getCurrentPrompt());
                 int minPos = promptIdx != -1 ? promptIdx + main.getCurrentPrompt().length() : 0;
                 
-                if (selStart <= minPos && selStart == selEnd) return true; // Block delete
-                if (selStart < minPos) return true; // Block overlap
+                if (selStart <= minPos && selStart == selEnd) return true; // Safe block
+                if (selStart < minPos) return true; 
             }
             return super.onKeyDown(keyCode, event);
         }
@@ -545,7 +566,6 @@ public class MainActivity extends AppCompatActivity {
                 if (bottom < oldBottom) { sv.postDelayed(() -> sv.fullScroll(View.FOCUS_DOWN), 100); }
             });
 
-            // [!] ALPHA FIX: Switched to Custom Anti-Crash EditText Engine
             outputView = new CustomEditText(getContext());
             outputView.setGravity(Gravity.TOP | Gravity.START);
             outputView.setTextColor(Color.parseColor("#FFFFFF")); 
@@ -556,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
 
-            // [!] ALPHA FIX: Hardware Enter Key Action Hook
+            // [!] ALPHA ENTER HOOK: Executes shell command and PREVENTS double text printing
             outputView.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_GO || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
                     MainActivity mainActivity = (MainActivity) getActivity();
@@ -564,14 +584,17 @@ public class MainActivity extends AppCompatActivity {
                         String s = outputView.getText().toString();
                         int promptIdx = s.lastIndexOf(mainActivity.getCurrentPrompt());
                         if (promptIdx != -1) {
-                            String cmd = s.substring(promptIdx + mainActivity.getCurrentPrompt().length());
+                            int cmdStart = promptIdx + mainActivity.getCurrentPrompt().length();
+                            String cmd = s.substring(cmdStart);
                             
-                            // Safe execution trigger
-                            mainActivity.appendMatrixText(cmd + "\n");
+                            // Immediately delete the typed command from screen.
+                            // The PTY shell will echo it back authentically. ZERO DOUBLE TEXT.
+                            outputView.getText().delete(cmdStart, s.length());
+                            
                             mainActivity.executeCommand(cmd.trim());
                         }
                     }
-                    return true; // Consume event to prevent OS from dropping '\n'
+                    return true; 
                 }
                 return false;
             });
