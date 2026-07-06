@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (GHOST WIPER EDITION)
+ * HK-OPERATION : ELITE COMMAND CENTER (GHOST WIPER 2.0 EDITION)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure Shell Sanitization, Zero Garbage, Double-Echo Fix
+ * DIRECTIVE    : Native PS1 Override, Zero Double Echo, Clean Output
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
+    
+    // ALPHA FIX: Track last command to erase native shell echo
+    private String lastSentCommand = "";
 
     public interface Callback { void onOutput(String line); }
 
@@ -61,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         TerminalEngine.startAmSocketServer();
         
         // ==========================================
-        // [!] NATIVE SHELL INITIATION
+        // [!] NATIVE SHELL INITIATION MATRIX
         // ==========================================
         String[] env = {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
@@ -70,8 +73,8 @@ public class MainActivity extends AppCompatActivity {
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Attempt to mute the shell internally
-        ptyBridge.writeCommand("export PS1=\"\"\n"); 
+        // [!] ALPHA SYNC: Replace garbage OS prompt with an invisible matrix marker
+        ptyBridge.writeCommand("export PS1='[HK-END]'\n"); 
 
         new Thread(() -> {
             try {
@@ -98,20 +101,28 @@ public class MainActivity extends AppCompatActivity {
         String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
         cleanText = cleanText.replace("\r", "").replaceAll(".\\x08", "");
 
-        // ==========================================
-        // [!] THE GHOST WIPER (Regex Matrix)
-        // System ke default garbage paths (e.g., 127|:/data/data/...) ko hawa mein destroy karo
-        // ==========================================
-        cleanText = cleanText.replaceAll("(\\d+\\|)?\\:?/data/data/com\\.hk\\.hkterminal[^\\$]*\\$ ?", "");
-        
-        // Hide our silent sync and export commands from the user UI
-        cleanText = cleanText.replace("export PS1=\"\"", "");
-        cleanText = cleanText.replace("echo 'HK-SYNC-DONE'", "");
+        // Hide the configuration command from user UI
+        cleanText = cleanText.replace("export PS1='[HK-END]'", "");
 
-        if (cleanText.contains("HK-SYNC-DONE")) {
-            cleanText = cleanText.replace("HK-SYNC-DONE", currentPrompt);
+        // ==========================================
+        // [!] GHOST WIPER: Erase double command echo
+        // ==========================================
+        if (!lastSentCommand.isEmpty() && cleanText.contains(lastSentCommand)) {
+            // Remove the exact command string sent to shell to avoid "lsls" glitches
+            cleanText = cleanText.replaceFirst(java.util.regex.Pattern.quote(lastSentCommand) + "\\s*", "");
+            lastSentCommand = ""; // Target destroyed, clear memory
+        }
+
+        // ==========================================
+        // [!] NATIVE PROMPT SYNC
+        // ==========================================
+        if (cleanText.contains("[HK-END]")) {
+            cleanText = cleanText.replace("[HK-END]", currentPrompt);
             if (headerProgress != null) headerProgress.setVisibility(View.GONE); 
         }
+
+        // Failsafe OS garbage path killer
+        cleanText = cleanText.replaceAll("(\\d+\\|)?\\:?/data/data/com\\.hk\\.hkterminal[^\\$]*\\$ ?", "");
 
         if (cleanText.trim().isEmpty() && !cleanText.contains(" ")) return; 
 
@@ -223,15 +234,12 @@ public class MainActivity extends AppCompatActivity {
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
-        // [!] ALPHA FIX: Removed manual appendMatrixText(command) here
-        // Isse double command typing wala bug permanently fix ho jayega.
-        // Shell ab naturally command echo karega bina kisi overlap ke.
-        
+        // [!] FIXED DOUBLE ECHO: User has already typed it on screen. Just add a newline.
+        appendMatrixText("\n");
         String trimmedCmd = command.trim();
+        lastSentCommand = trimmedCmd; // Store command to wipe its native echo
 
         if (trimmedCmd.startsWith("hk install ")) {
-            // Humne manual echo hata diya hai, isliye custom command manual dikhani hogi
-            appendMatrixText(command + "\n");
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
                 HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
@@ -246,7 +254,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
-            appendMatrixText(command + "\n");
             MainActivity.Callback cb = msg -> runOnUiThread(() -> {
                 appendMatrixText(msg + "\n" + currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
@@ -257,7 +264,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("su")) {
-            appendMatrixText(command + "\n");
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
                 currentPrompt = "root@pshacker:~# ";
@@ -268,7 +274,6 @@ public class MainActivity extends AppCompatActivity {
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
-            appendMatrixText(command + "\n");
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
             appendMatrixText(currentPrompt);
@@ -278,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (ptyBridge != null) {
             ptyBridge.writeCommand(command + "\n");
-            ptyBridge.writeCommand("echo 'HK-SYNC-DONE'\n");
+            // Native PS1 override '[HK-END]' will automatically fire here without needing echo
         } else {
             TerminalEngine.run(command);
         }
@@ -291,10 +296,7 @@ public class MainActivity extends AppCompatActivity {
         int last = txt.lastIndexOf(currentPrompt);
         if (last != -1) {
             String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
-            outputView.setText(txt.substring(0, last + currentPrompt.length()));
-            
-            // Re-simulate typing the command visually
-            // (We don't need to appendMatrixText here, setText is enough for history)
+            outputView.setText(txt.substring(0, last + currentPrompt.length()) + cmd);
         }
     }
 
@@ -305,9 +307,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
-            // ==================================================
-            // PACKAGES TAB MATRIX (TAB 2)
-            // ==================================================
             if (type == 1) { 
                 ScrollView sv = new ScrollView(getContext());
                 sv.setFillViewport(true);
@@ -322,9 +321,6 @@ public class MainActivity extends AppCompatActivity {
                 return sv;
             }
 
-            // ==================================================
-            // TERMINAL TAB MATRIX (TAB 1)
-            // ==================================================
             final ScrollView sv = new ScrollView(getContext());
             sv.setFillViewport(true);
             sv.setBackgroundColor(Color.parseColor("#050505")); 
@@ -384,9 +380,6 @@ public class MainActivity extends AppCompatActivity {
             return sv;
         }
 
-        // ==================================================
-        // HK-OPERATION: PACKAGE RENDER & DELETE PROTOCOL
-        // ==================================================
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             
