@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Smart Native Unlocker, Perfect Copy/Paste, Ghost Clear, Memory Persistence, 100% Keyboard Lock
+ * DIRECTIVE    : Smart Native Unlocker, Perfect Copy/Paste Guard, Ghost Clear, Memory Persistence, 100% Keyboard Lock
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -671,7 +671,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (With Absolute Keyboard Lock)
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Smart Edit Guard & Free Selection)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -711,36 +711,39 @@ public class MainActivity extends AppCompatActivity {
             return super.onTextContextMenuItem(id);
         }
 
-        @Override protected void onSelectionChanged(int selStart, int selEnd) {
-            MainActivity main = (MainActivity) getContext();
-            if (main != null) {
-                String s = getText() != null ? getText().toString() : "";
-                int promptIdx = s.lastIndexOf("$ ");
-                if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
-                int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
-                
-                if (selStart < minPos || selEnd < minPos) {
-                    setSelection(Math.max(minPos, selEnd), Math.max(minPos, selStart));
-                    return; 
-                }
-            }
-            super.onSelectionChanged(selStart, selEnd);
-        }
-
         @Override public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
             InputConnection ic = super.onCreateInputConnection(outAttrs);
-            // [!] THE ALPHA FIX: Stops OS from auto-closing keyboard
             outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_ENTER_ACTION; 
             outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE;
             
             return new InputConnectionWrapper(ic, true) {
+                
+                // [!] Guard against deleting terminal output with software keyboard backspace
+                @Override public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+                    String s = getText().toString();
+                    int promptIdx = s.lastIndexOf("$ ");
+                    if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
+                    int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
+                    
+                    if (getSelectionStart() <= minPos) return false;
+                    return super.deleteSurroundingText(beforeLength, afterLength);
+                }
+
                 @Override public boolean commitText(CharSequence text, int newCursorPosition) {
                     MainActivity main = (MainActivity) getContext();
                     if (main == null) return super.commitText(text, newCursorPosition);
                     
+                    // [!] SMART EDIT GUARD: Jumps cursor to the bottom if typing in history
+                    String s = getText().toString();
+                    int promptIdx = s.lastIndexOf("$ ");
+                    if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
+                    int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
+                    if (getSelectionStart() < minPos) {
+                        setSelection(getText().length());
+                    }
+
                     if (text.toString().equals("\n")) {
                         main.executeExtractedCommand();
-                        // Delay keeps the keyboard locked on screen
                         new Handler(Looper.getMainLooper()).postDelayed(() -> main.forceKeyboard(CustomEditText.this), 50);
                         return true; 
                     }
@@ -768,6 +771,8 @@ public class MainActivity extends AppCompatActivity {
             if (main == null) return super.onKeyDown(keyCode, event);
             
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
+                // Ensure execution happens from the prompt line
+                setSelection(getText().length());
                 main.executeExtractedCommand();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> main.forceKeyboard(this), 50);
                 return true;
@@ -826,7 +831,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
 
-            // [!] Secondary Keyboard UI Interceptor
             outputView.setOnEditorActionListener((v, actionId, event) -> {
                 boolean isEnter = (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
                 if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_UNSPECIFIED || isEnter) {
