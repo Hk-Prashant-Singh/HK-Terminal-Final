@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BLOCK 2: THE GHOST WIPE (No 'clear' text artifact)
+    // [!] BLOCK 2: THE GHOST WIPE
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
@@ -562,7 +562,7 @@ public class MainActivity extends AppCompatActivity {
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
-            targetBin.setExecutable(true, false); // THIS FIXES PERMISSION DENIED INSTANTLY
+            targetBin.setExecutable(true, false); 
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
                 ptyBridge.writeCommand(TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
@@ -666,15 +666,15 @@ public class MainActivity extends AppCompatActivity {
             return super.onTouchEvent(event); 
         }
 
-        // [!] THE COPY-PASTE INTERCEPTOR (Paste humesha prompt ke aage hi hoga)
+        // [!] THE COPY-PASTE INTERCEPTOR (Fully Qualified Path Fix)
         @Override
         public boolean onTextContextMenuItem(int id) {
             if (id == android.R.id.paste) {
-                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                // FIXED AMBIGUITY: explicitly calling android.content.ClipboardManager
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 if (clipboard != null && clipboard.hasPrimaryClip()) {
                     ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
                     if (item != null && item.getText() != null) {
-                        // Force lock cursor to the very end before pasting any copied text
                         setSelection(getText().length());
                         getText().insert(getSelectionEnd(), item.getText());
                         return true;
@@ -798,7 +798,7 @@ public class MainActivity extends AppCompatActivity {
             outputView.setPadding(10, 10, 10, 10);
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
-            outputView.setTextIsSelectable(true); // Enables Native Copy Selection Matrix
+            outputView.setTextIsSelectable(true); 
 
             outputView.setOnTouchListener((v, e) -> {
                 if (e.getAction() == MotionEvent.ACTION_UP) {
