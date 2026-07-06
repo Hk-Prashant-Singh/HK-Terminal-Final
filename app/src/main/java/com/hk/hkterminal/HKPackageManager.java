@@ -6,9 +6,9 @@ import java.io.File;
 import java.io.FileWriter;
 
 /**
- * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE (NANO GUI MATRIX)
+ * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Visual Simulation of Interactive Binaries & ANSI Panel Drawing
+ * DIRECTIVE    : Automated Git SSL Bypass, Interactive Python, & TUI Loop Matrix
  */
 public class HKPackageManager {
 
@@ -62,41 +62,59 @@ public class HKPackageManager {
                 writer.write("#!/system/bin/sh\n");
                 writer.write("EXE_NAME=$(basename \"$0\")\n");
                 
-                // [!] OPERATION 3: NANO GUI / ANSI BOX MATRIX
-                writer.write("if [ \"$EXE_NAME\" = \"nano\" ]; then\n");
-                writer.write("    clear\n");
-                // Inverse Background Header (White BG, Black Text)
-                writer.write("    echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
-                writer.write("    echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
-                // Inverse Background Box Footer (White BG, Black Text)
-                writer.write("    echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
-                writer.write("    echo -e \"^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location  \"\n");
-                writer.write("    echo -e \"^X Exit      ^R Read File ^\\\\ Replace   ^U Paste     ^J Justify   ^_ Go To Line\"\n");
-                writer.write("    exit 0\n");
-                writer.write("fi\n");
+                // [!] ADVANCED TUI & SHELL LOGIC INTEGRATION
+                if (pkgName.equals("nano")) {
+                    writer.write("printf '\\033c'\n");
+                    writer.write("while true; do\n");
+                    writer.write("    echo -e \"\\033[42m\\033[30m  GNU nano 7.2                  File: $1                                       \\033[0m\"\n");
+                    writer.write("    echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
+                    writer.write("    echo -e \"\\033[1;32m[+] EDITING MODE ACTIVE: PRESS CTRL+X TO EXIT\\033[0m\"\n");
+                    writer.write("    echo -e \"\\n\\n\\n\"\n");
+                    writer.write("    echo -e \"\\033[42m\\033[30m ^G Help  ^O Save  ^W Where Is  ^K Cut  ^T Execute  ^C Location  ^X EXIT       \\033[0m\"\n");
+                    writer.write("    read -n 1 -s key\n");
+                    writer.write("    if [ \"$key\" = $'\x18' ]; then break; fi\n"); // Detects Ctrl+X
+                    writer.write("    printf '\\033c'\n");
+                    writer.write("done\n");
+                    writer.write("printf '\\033c'\n");
+                    writer.write("exit 0\n");
+                } 
+                else if (pkgName.equals("git")) {
+                    writer.write("export GIT_SSL_NO_VERIFY=true\n");
+                    writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [git] online and initialized.\\033[0m\"\n");
+                    // Mock behavior for successful git clone bypassing syntax errors
+                    writer.write("if [ \"$1\" = \"clone\" ]; then\n");
+                    writer.write("    echo \"Cloning into '${2##*/}'...\"\n");
+                    writer.write("    echo \"remote: Enumerating objects: 100, done.\"\n");
+                    writer.write("    echo \"remote: Counting objects: 100% (100/100), done.\"\n");
+                    writer.write("    echo \"remote: Compressing objects: 100% (80/80), done.\"\n");
+                    writer.write("    echo \"Receiving objects: 100% (100/100), 5.00 MiB | 2.50 MiB/s, done.\"\n");
+                    writer.write("    mkdir -p \"$HOME/workspace/${2##*/}\"\n");
+                    writer.write("    exit 0\n");
+                    writer.write("fi\n");
+                    writer.write("exec \"$EXE_NAME\" \"$@\"\n"); 
+                } 
+                else if (pkgName.equals("python")) {
+                    writer.write("echo \"Python 3.14.6 (HK-Matrix) Active\"\n");
+                    writer.write("python -i\n"); // Force Interactive Mode
+                    writer.write("exit 0\n");
+                } 
+                else {
+                    writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
+                    writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
+                }
                 
-                writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
-                writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
-                
-                writer.write("if [ \"$1\" = \"--help\" ] || [ \"$1\" = \"-h\" ]; then\n");
-                writer.write("    echo \"\\033[1;36mUsage:\\033[0m $EXE_NAME [options] [target_node]\"\n");
-                writer.write("    echo \"\\033[1;33mOptions:\\033[0m\"\n");
-                writer.write("      -h, --help       Display structural deployment syntax help\"\n");
-                writer.write("      -v, --version    Show secure build verification tag\"\n");
-                writer.write("      -e, --execute    Trigger real-time execution sequence mapping\"\n");
-                writer.write("elif [ \"$1\" = \"--version\" ] || [ \"$1\" = \"-v\" ]; then\n");
-                writer.write("    echo \"$EXE_NAME core framework build version: v3.14.9-Stable (Matrix-Sync: 2026)\"\n");
-                writer.write("elif [ \"$1\" = \"-e\" ] || [ \"$1\" = \"--execute\" ]; then\n");
-                writer.write("    echo \"\\033[1;31m[*] Initializing direct root array injection map... Please stand by.\\033[0m\"\n");
-                writer.write("    echo \"[+] Mapping stream linked safely to secure pipeline.\"\n");
-                writer.write("else\n");
-                writer.write("    echo \"Targeting matrix sequence initialized under process id: $$\"\n");
-                writer.write("    echo \"Type '$EXE_NAME --help' to view available operations console.\"\n");
-                writer.write("fi\n");
                 writer.close();
 
                 executableFile.setExecutable(true, false);
                 executableFile.setReadable(true, false);
+                
+                // Auto-fix permissions on workspace to prevent clone/write failures
+                try {
+                    File workspace = new File(TerminalEngine.HOME_PATH, "workspace");
+                    if (!workspace.exists()) workspace.mkdirs();
+                    Runtime.getRuntime().exec("chmod -R 777 " + workspace.getAbsolutePath()).waitFor();
+                } catch (Exception e) {}
+
                 Thread.sleep(500);
 
                 update(listener, "[+] Target Locked: Module '" + pkgName + "' has been synchronized into the Tech Wizard Arsenal.");
