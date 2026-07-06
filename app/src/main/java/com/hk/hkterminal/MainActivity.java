@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Ghost-Mode, Snap Cursor, Guardian Color Matrix, Native Execution
+ * DIRECTIVE    : Native Unlocker, Perfect Copy/Paste Enforcement, Ghost Clear
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -60,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
-        // [!] BLOCK 1: THE ENVIRONMENT & FOLDER CREATOR
         initHKEnvironment();
 
         ViewPager2 vp = findViewById(R.id.viewPager);
@@ -122,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    // [!] BLOCK 3: THE GUARDIAN COLOR MATRIX
     public void appendMatrixText(final String rawText) {
         if (rawText == null) return;
         synchronized (streamLock) {
@@ -191,13 +189,13 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BLOCK 2: GHOST-MODE CLEAR OVERRIDE (Artifacts Removed)
+    // [!] BLOCK 2: THE GHOST WIPE (No 'clear' text artifact)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
-                outputView.setText(""); // Pure Visual Wipe
+                outputView.setText(""); // Pure visual wipe
                 if (ptyBridge != null) { 
-                    ptyBridge.writeCommand("clear\n"); // Standard Native Clear
+                    ptyBridge.writeCommand("\n"); // Silent fresh prompt
                 }
                 resetCtrlState();
             }
@@ -560,13 +558,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE NATIVE EXECUTION MATRIX (Fixes ELF Binary 'unexpected (' Error)
+        // [!] THE NATIVE UNLOCKER (Fixes 'sl' Permission Error)
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
+            targetBin.setExecutable(true, false); // THIS FIXES PERMISSION DENIED INSTANTLY
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                // 'sh' prefix HATA DIYA HAI. Ab Native Binaries direct execute hongi!
                 ptyBridge.writeCommand(TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
             }
             return;
@@ -634,7 +632,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (LOCKED & SCALABLE)
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Copy/Paste Master Control)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -664,8 +662,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             scaleDetector.onTouchEvent(event);
-            if (scaleDetector.isInProgress()) return true; // Zoom interlock
-            return super.onTouchEvent(event);
+            if (scaleDetector.isInProgress()) return true; 
+            return super.onTouchEvent(event); 
+        }
+
+        // [!] THE COPY-PASTE INTERCEPTOR (Paste humesha prompt ke aage hi hoga)
+        @Override
+        public boolean onTextContextMenuItem(int id) {
+            if (id == android.R.id.paste) {
+                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null && clipboard.hasPrimaryClip()) {
+                    ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+                    if (item != null && item.getText() != null) {
+                        // Force lock cursor to the very end before pasting any copied text
+                        setSelection(getText().length());
+                        getText().insert(getSelectionEnd(), item.getText());
+                        return true;
+                    }
+                }
+            }
+            return super.onTextContextMenuItem(id);
         }
 
         @Override
@@ -782,9 +798,8 @@ public class MainActivity extends AppCompatActivity {
             outputView.setPadding(10, 10, 10, 10);
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
-            outputView.setTextIsSelectable(true); 
+            outputView.setTextIsSelectable(true); // Enables Native Copy Selection Matrix
 
-            // Zoom touch pass-through check
             outputView.setOnTouchListener((v, e) -> {
                 if (e.getAction() == MotionEvent.ACTION_UP) {
                     v.requestFocus();
@@ -863,7 +878,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] SYSTEM LOGGER MATRIX (Fixes TerminalEngine Error)
     public static void logError(String m, String t, Throwable e) { 
         Log.e(m, t, e); 
     }
