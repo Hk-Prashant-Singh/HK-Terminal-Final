@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (ULTIMATE MIX MATRIX)
+ * HK-OPERATION : ELITE COMMAND CENTER (AUTO-FOCUS MATRIX)
  * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Pure PTY Bridge, Active Hardware CTRL, Weapon Arsenal Live
+ * DIRECTIVE    : Keyboard Auto-Scroll, Pure PTY Bridge, Active Hardware CTRL
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Force OS Shell to use our Elite Prompt natively (No Java Hacks, fixes double typing)
+        // Force OS Shell to use our Elite Prompt natively
         ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
         ptyBridge.writeCommand("clear\n"); // Clean the screen immediately after export
 
@@ -127,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
         scrollToBottom();
     }
 
-    private void scrollToBottom() {
+    // [!] ALPHA FIX: Changed to public so key-presses can access it live
+    public void scrollToBottom() {
         final ScrollView sv = (ScrollView) outputView.getParent();
         if (sv != null) sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
     }
@@ -169,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         View btnCb = findViewById(R.id.esc); 
         if (btnCb != null) btnCb.setOnClickListener(v -> showCommandBox());
 
-        // [!] FIXED CTRL BUTTON: Active = Red Flash, Off = Hacker Green. No Purple Background.
+        // [!] FIXED CTRL BUTTON: Active = Red Flash, Off = Hacker Green
         TextView btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) {
             btnCtrl.setOnClickListener(v -> {
@@ -205,7 +206,10 @@ public class MainActivity extends AppCompatActivity {
             .setView(input)
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
-                if(!cmd.isEmpty()) executeCommand(cmd);
+                if(!cmd.isEmpty()) {
+                    appendMatrixText(cmd + "\n");
+                    executeCommand(cmd);
+                }
             }).setNegativeButton("CANCEL", null).show();
         
         input.requestFocus();
@@ -222,17 +226,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void executeCommand(final String command) {
-        if (command.isEmpty()) return;
+        if (command.isEmpty()) {
+            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+            return;
+        }
         history.add(command);
         hIndex = -1;
-        
-        // NO MANUAL APPENDING HERE! Native PTY will echo the command naturally,
-        // solving the "pwdpwd" and "lsls" double overlap bug permanently!
 
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk install ")) {
-            appendMatrixText(command + "\n"); // Only manual append for our custom internal tool
+            appendMatrixText(command + "\n"); // Manual append for our custom internal tool
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
@@ -278,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ptyBridge != null) {
-            // Send pure raw command to OS.
+            // Send pure raw command to OS. No manual appending!
             ptyBridge.writeCommand(command + "\n");
         } else {
             TerminalEngine.run(command);
@@ -321,6 +325,13 @@ public class MainActivity extends AppCompatActivity {
             sv.setFillViewport(true);
             sv.setBackgroundColor(Color.parseColor("#050505")); 
 
+            // [!] ALPHA FIX 1: Listen for Keyboard Popup Resize and Auto-Scroll
+            sv.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                if (bottom < oldBottom) { // Means keyboard just popped up and pushed the layout up
+                    sv.postDelayed(() -> sv.fullScroll(View.FOCUS_DOWN), 100);
+                }
+            });
+
             outputView = new TextView(getContext());
             outputView.setTextColor(Color.parseColor("#FFFFFF")); 
             outputView.setBackgroundColor(Color.parseColor("#050505"));
@@ -329,6 +340,9 @@ public class MainActivity extends AppCompatActivity {
             
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
+
+            String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
+            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Bhai\n" + prompt);
 
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -354,27 +368,39 @@ public class MainActivity extends AppCompatActivity {
                 
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
                     
-                    // [!] CTRL+C HARDWARE LOGIC
+                    // CTRL+C HARDWARE LOGIC
                     if (mainActivity.isCtrlActive()) {
                         if (code == KeyEvent.KEYCODE_C) {
-                            mainActivity.sendSigInt(); // Sends kill to PTY and resets color
+                            mainActivity.sendSigInt(); 
                             return true;
                         }
                     }
 
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
+                        // [!] ALPHA FIX 2: Live Keystroke Auto-Scroll
+                        mainActivity.scrollToBottom();
                         return true;
                     }
                     if (code == KeyEvent.KEYCODE_DEL) {
                         String s = outputView.getText().toString();
                         if (!s.endsWith(activePrompt)) outputView.setText(s.substring(0, s.length()-1));
+                        // [!] ALPHA FIX 3: Backspace Auto-Scroll
+                        mainActivity.scrollToBottom();
                         return true;
                     }
                     if (code == KeyEvent.KEYCODE_ENTER) {
                         String s = outputView.getText().toString();
-                        int start = s.lastIndexOf(activePrompt) + activePrompt.length();
-                        mainActivity.executeCommand(s.substring(start).trim());
+                        int start = s.lastIndexOf(activePrompt);
+                        if (start != -1) {
+                            start += activePrompt.length();
+                            String cmd = s.substring(start);
+                            
+                            // Wipe the manually typed command from UI just before execution.
+                            outputView.setText(s.substring(0, start)); 
+                            
+                            mainActivity.executeCommand(cmd.trim());
+                        }
                         return true;
                     }
                 }
