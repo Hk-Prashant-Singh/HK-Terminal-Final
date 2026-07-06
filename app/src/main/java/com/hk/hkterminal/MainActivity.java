@@ -7,6 +7,7 @@ import android.os.*;
 import android.text.*;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -22,12 +23,12 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (THE ALPHA EDITION)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE TACTICAL MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Anti-Echo, Absolute Enter Hook, Blank Stealth Startup, Swipe Locked
+ * DIRECTIVE    : Absolute Cursor Lock, Smooth Zoom, Enter Bypass
  */
 public class MainActivity extends AppCompatActivity {
-    public static EditText outputView;
+    public static CustomEditText outputView;
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
     private ProgressBar headerProgress;
@@ -61,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
         initHKEnvironment();
 
         ViewPager2 vp = findViewById(R.id.viewPager);
-        // [!] BUG FIX: Left-Right Swipe completely locked as requested
         vp.setUserInputEnabled(false); 
         
         vp.setAdapter(new FragmentStateAdapter(this) {
@@ -83,12 +83,10 @@ public class MainActivity extends AppCompatActivity {
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
         
-        // Stealth Initialization
         ptyBridge.writeCommand("stty -echo\n"); 
         ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
         ptyBridge.writeCommand("cd $HOME\n"); 
         
-        // [!] BUG FIX: Force absolute blank screen on startup
         new Handler(Looper.getMainLooper()).postDelayed(this::clearTerminal, 400);
 
         new Thread(() -> {
@@ -114,10 +112,8 @@ public class MainActivity extends AppCompatActivity {
                 String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
                 cleanText = cleanText.replace("\r", "");
                 
-                // Junk Filter
                 if (cleanText.contains("export PS1") || cleanText.contains("cd $HOME") || cleanText.contains("stty")) return;
                 
-                // [!] BUG FIX: The Anti-Echo Protocol (Removes Double Text)
                 if (lastSentCommand != null && !lastSentCommand.isEmpty()) {
                     if (cleanText.startsWith(lastSentCommand + "\n")) {
                         cleanText = cleanText.substring(lastSentCommand.length() + 1);
@@ -171,11 +167,11 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BUG FIX: Absolute Blank Clear Terminal (No Faltu Text)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
                 outputView.setText("");
+                appendMatrixText(">> HK Prashant Singh\n");
                 if (ptyBridge != null) { ptyBridge.writeCommand("clear\n"); }
                 resetCtrlState();
             }
@@ -415,7 +411,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] BUG FIX: The Execution Controller
     public void executeExtractedCommand() {
         runOnUiThread(() -> {
             if (outputView == null) return;
@@ -423,7 +418,6 @@ public class MainActivity extends AppCompatActivity {
             String[] lines = s.split("\n");
             String lastLine = lines[lines.length - 1];
             
-            // Extracts command flawlessly no matter what the prompt changes to
             int pIdx = lastLine.lastIndexOf("$ ");
             if (pIdx == -1) pIdx = lastLine.lastIndexOf("# ");
             if (pIdx == -1) pIdx = lastLine.lastIndexOf(currentPrompt); 
@@ -435,7 +429,7 @@ public class MainActivity extends AppCompatActivity {
                 cmd = lastLine.trim();
             }
             
-            outputView.append("\n"); // Move to new line
+            outputView.append("\n");
 
             if (!cmd.isEmpty()) {
                 if (cmd.equals("clear")) {
@@ -586,9 +580,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // [!] OPERATION 1: ABSOLUTE CURSOR LOCK & HOOK
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         public CustomEditText(Context context) { super(context); }
         
+        // Creates the invisible boundary wall for cursor
+        @Override
+        protected void onSelectionChanged(int selStart, int selEnd) {
+            super.onSelectionChanged(selStart, selEnd);
+            MainActivity main = (MainActivity) getContext();
+            if (main != null) {
+                String s = getText() != null ? getText().toString() : "";
+                int promptIdx = s.lastIndexOf("$ ");
+                if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
+                int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
+                
+                // If cursor gets dragged behind prompt, aggressively bounce it back
+                if (selStart < minPos || selEnd < minPos) {
+                    setSelection(Math.max(minPos, selEnd), Math.max(minPos, selStart));
+                }
+            }
+        }
+
         @Override
         public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
             InputConnection ic = super.onCreateInputConnection(outAttrs);
@@ -601,7 +614,6 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity main = (MainActivity) getContext();
                     if (main == null) return super.commitText(text, newCursorPosition);
                     
-                    // Hook for Soft Keyboard Enter 
                     if (text.toString().equals("\n")) {
                         main.executeExtractedCommand();
                         return true; 
@@ -630,7 +642,6 @@ public class MainActivity extends AppCompatActivity {
             MainActivity main = (MainActivity) getContext();
             if (main == null) return super.onKeyDown(keyCode, event);
             
-            // Hook for Hardware Keyboard Enter
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                 main.executeExtractedCommand();
                 return true;
@@ -688,19 +699,34 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
 
-            // [!] BUG FIX: Smooth Zooming Limits Applied (Min 8f, Max 50f)
+            outputView.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_GO || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                    MainActivity mainActivity = (MainActivity) getActivity();
+                    if (mainActivity != null) {
+                        mainActivity.executeExtractedCommand();
+                    }
+                    return true; 
+                }
+                return false;
+            });
+
+            // [!] OPERATION 2: SMOOTH ZOOM ENGINE
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override public boolean onScale(ScaleGestureDetector d) {
                         float size = outputView.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
-                        float newSize = Math.max(8f, Math.min(size * d.getScaleFactor(), 50f));
-                        outputView.setTextSize(newSize);
+                        float newSize = Math.max(10f, Math.min(size * d.getScaleFactor(), 40f));
+                        outputView.setTextSize(TypedValue.COMPLEX_UNIT_SP, newSize);
                         return true;
                     }
                 });
 
             outputView.setOnTouchListener((v, e) -> {
                 scaleDetector.onTouchEvent(e);
+                // Return true to prevent text selection interference while zooming
+                if (scaleDetector.isInProgress()) {
+                    return true; 
+                }
                 if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
                     v.requestFocus();
                     MainActivity mainActivity = (MainActivity) getActivity();
