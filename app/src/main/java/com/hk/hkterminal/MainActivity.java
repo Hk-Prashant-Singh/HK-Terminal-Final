@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (OS BYPASS MATRIX)
- * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : ifconfig OS Bypass, Shell Execution Wrapper, Live Arsenal
+ * HK-OPERATION : ELITE COMMAND CENTER (KEYBOARD SHORTCUT & CONTROL MATRIX)
+ * IDENTITY     : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Hyphen/Slash Fix, Pure Ctrl Shortcuts, Instantly Exit APK via Ctrl+D
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
+    // ALPHA STATE ENGINE
     private boolean isCtrl = false;
 
     private PtyBridge ptyBridge;
@@ -140,11 +141,33 @@ public class MainActivity extends AppCompatActivity {
         return isCtrl;
     }
 
+    // [!] ALPHA RE-CALIBRATION: CONTROL EXECUTION PIPELINE
+    public void sendCtrlKey(String controlChar, String visual) {
+        if (ptyBridge != null) {
+            ptyBridge.writeCommand(controlChar);
+        }
+        appendMatrixText(visual + "\n");
+        resetCtrlButton();
+    }
+
+    // [!] SYSTEM TERMINATION INTERCEPTOR: CLOSE APK INSTANTLY
+    public void exitApplication() {
+        appendMatrixText("^D\n[+] Terminating Terminal Session... Shuting Down Application Matrix.\n");
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            finishAffinity();
+            System.exit(0);
+        }, 200);
+    }
+
     public void sendSigInt() {
         if (ptyBridge != null) {
             ptyBridge.kill(2); 
             appendMatrixText("^C\n");
         }
+        resetCtrlButton();
+    }
+
+    private void resetCtrlButton() {
         isCtrl = false;
         TextView btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) {
@@ -176,13 +199,28 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        View btnCLR = findViewById(R.id.slash); 
-        if (btnCLR != null) btnCLR.setOnClickListener(v -> {
-            if (outputView != null) {
-                outputView.setText("");
-                appendMatrixText(">> HK Prashant Bhai\n" + currentPrompt);
-            }
-        });
+        // [!] FIXED SLASH LAYOUT BUTTON: Outputs '/' character safely instead of wiping text
+        View btnSlash = findViewById(R.id.slash); 
+        if (btnSlash != null) {
+            btnSlash.setOnClickListener(v -> {
+                if (outputView != null) {
+                    outputView.append("/");
+                    scrollToBottom();
+                }
+            });
+        }
+
+        // [!] FIXED HYPHEN LAYOUT BUTTON: Resolves button click lockups and drops '-' instantly
+        View btnMinus = findViewById(R.id.minus);
+        if (btnMinus == null) btnMinus = findViewById(R.id.hyphen);
+        if (btnMinus != null) {
+            btnMinus.setOnClickListener(v -> {
+                if (outputView != null) {
+                    outputView.append("-");
+                    scrollToBottom();
+                }
+            });
+        }
 
         View btnUp = findViewById(R.id.up);
         if (btnUp != null) btnUp.setOnClickListener(v -> navigateHistory(1));
@@ -219,10 +257,6 @@ public class MainActivity extends AppCompatActivity {
         if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
 
-    // ==========================================
-    // [!] ALPHA NETWORK BYPASS API
-    // Retrieves exact network details bypassing OS restrictions
-    // ==========================================
     private String getNetworkDetails() {
         StringBuilder sb = new StringBuilder();
         try {
@@ -265,11 +299,6 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        // ==========================================
-        // [!] THE INTERCEPTOR MATRIX
-        // ==========================================
-
-        // 1. IFCONFIG OS BYPASS
         if (trimmedCmd.equals("ifconfig")) {
             appendMatrixText(command + "\n");
             String ifconfigData = getNetworkDetails();
@@ -277,18 +306,15 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. PYTHON (W^X EXECUTION BYPASS)
         if (trimmedCmd.startsWith("python")) {
             appendMatrixText(command + "\n");
             if (ptyBridge != null) {
-                // By wrapping it in 'sh', we bypass the Android execution block
                 String args = trimmedCmd.substring(6).trim();
                 ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/python " + args + "\n");
             }
             return;
         }
 
-        // 3. HK INSTALLER
         if (trimmedCmd.startsWith("hk install ")) {
             appendMatrixText(command + "\n"); 
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
@@ -314,7 +340,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 4. GUARDIAN & ROOT
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
             appendMatrixText(command + "\n");
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
@@ -345,7 +370,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // 5. STANDARD OS COMMANDS
         if (ptyBridge != null) {
             ptyBridge.writeCommand(command + "\n");
         } else {
@@ -405,7 +429,7 @@ public class MainActivity extends AppCompatActivity {
             outputView.setCursorVisible(true);
 
             String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
-            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Bhai\n" + prompt);
+            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
 
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -431,9 +455,22 @@ public class MainActivity extends AppCompatActivity {
                 
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
                     
+                    // [!] SHORTCUT INTERCEPTOR MATRIX (CTRL SHORTCUTS MAPPED HERE)
                     if (mainActivity.isCtrlActive()) {
                         if (code == KeyEvent.KEYCODE_C) {
                             mainActivity.sendSigInt(); 
+                            return true;
+                        }
+                        if (code == KeyEvent.KEYCODE_X) {
+                            mainActivity.sendCtrlKey("\u0018", "^X");
+                            return true;
+                        }
+                        if (code == KeyEvent.KEYCODE_Z) {
+                            mainActivity.sendCtrlKey("\u001A", "^Z"); 
+                            return true;
+                        }
+                        if (code == KeyEvent.KEYCODE_D) {
+                            mainActivity.exitApplication(); 
                             return true;
                         }
                     }
@@ -471,7 +508,7 @@ public class MainActivity extends AppCompatActivity {
             rootLayout.removeAllViews();
             
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARArsenal");
+            title.setText(">> HK WEAPON ARSENAL");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
