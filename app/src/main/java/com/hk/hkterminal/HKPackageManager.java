@@ -6,9 +6,9 @@ import java.io.File;
 import java.io.FileWriter;
 
 /**
- * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE (NANO TUI MATRIX)
+ * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE (NANO GUI MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Visual Simulation of Interactive Binaries & Native Clear Routing
+ * DIRECTIVE    : Visual Simulation of Interactive Binaries & ANSI Panel Drawing
  */
 public class HKPackageManager {
 
@@ -62,12 +62,14 @@ public class HKPackageManager {
                 writer.write("#!/system/bin/sh\n");
                 writer.write("EXE_NAME=$(basename \"$0\")\n");
                 
-                // [!] NANO TUI SIMULATION MATRIX
+                // [!] OPERATION 3: NANO GUI / ANSI BOX MATRIX
                 writer.write("if [ \"$EXE_NAME\" = \"nano\" ]; then\n");
                 writer.write("    clear\n");
-                writer.write("    echo -e \"\\033[7m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
-                writer.write("    echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
-                writer.write("    echo -e \"                                [ New File ]\"\n");
+                // Inverse Background Header (White BG, Black Text)
+                writer.write("    echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
+                writer.write("    echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
+                // Inverse Background Box Footer (White BG, Black Text)
+                writer.write("    echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
                 writer.write("    echo -e \"^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location  \"\n");
                 writer.write("    echo -e \"^X Exit      ^R Read File ^\\\\ Replace   ^U Paste     ^J Justify   ^_ Go To Line\"\n");
                 writer.write("    exit 0\n");
