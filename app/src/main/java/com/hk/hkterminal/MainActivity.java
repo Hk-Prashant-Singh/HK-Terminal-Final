@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (GHOST WIPER 2.0 EDITION)
+ * HK-OPERATION : ELITE COMMAND CENTER (PERFECT EXECUTION MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Native PS1 Override, Zero Double Echo, Clean Output
+ * DIRECTIVE    : Pure PTY Bridge, Hardware CTRL Support, Arsenal Ready
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -29,14 +29,13 @@ public class MainActivity extends AppCompatActivity {
     private int hIndex = -1;
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
+    
+    // ALPHA UPGRADE: Hardware CTRL State
     private boolean isCtrl = false;
 
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
-    
-    // ALPHA FIX: Track last command to erase native shell echo
-    private String lastSentCommand = "";
 
     public interface Callback { void onOutput(String line); }
 
@@ -64,17 +63,18 @@ public class MainActivity extends AppCompatActivity {
         TerminalEngine.startAmSocketServer();
         
         // ==========================================
-        // [!] NATIVE SHELL INITIATION MATRIX
+        // [!] PURE NATIVE SHELL INITIATION
         // ==========================================
         String[] env = {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
-            "TERM=vt100", 
+            "TERM=xterm-256color", 
             "HOME=" + TerminalEngine.HOME_PATH
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // [!] ALPHA SYNC: Replace garbage OS prompt with an invisible matrix marker
-        ptyBridge.writeCommand("export PS1='[HK-END]'\n"); 
+        // Force Android Shell to use our Elite Prompt natively (No Java Hacks)
+        ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
+        ptyBridge.writeCommand("clear\n"); // Clean the screen immediately after export
 
         new Thread(() -> {
             try {
@@ -88,43 +88,20 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
             }
         }).start();
-
-        TerminalEngine.igniteEngine(line -> runOnUiThread(() -> {
-            appendMatrixText(line + "\n");
-        }));
     }
 
     private void appendMatrixText(String rawText) {
         if (outputView == null || rawText == null) return;
 
-        // Clean basic escape characters
+        // Clean basic escape characters (ANSI Stripper)
         String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
-        cleanText = cleanText.replace("\r", "").replaceAll(".\\x08", "");
+        cleanText = cleanText.replace("\r", "");
 
-        // Hide the configuration command from user UI
-        cleanText = cleanText.replace("export PS1='[HK-END]'", "");
+        // Hide the initial configuration commands from UI
+        cleanText = cleanText.replace("export PS1='pshacker@hk:~$ '", "");
+        cleanText = cleanText.replace("clear", "");
 
-        // ==========================================
-        // [!] GHOST WIPER: Erase double command echo
-        // ==========================================
-        if (!lastSentCommand.isEmpty() && cleanText.contains(lastSentCommand)) {
-            // Remove the exact command string sent to shell to avoid "lsls" glitches
-            cleanText = cleanText.replaceFirst(java.util.regex.Pattern.quote(lastSentCommand) + "\\s*", "");
-            lastSentCommand = ""; // Target destroyed, clear memory
-        }
-
-        // ==========================================
-        // [!] NATIVE PROMPT SYNC
-        // ==========================================
-        if (cleanText.contains("[HK-END]")) {
-            cleanText = cleanText.replace("[HK-END]", currentPrompt);
-            if (headerProgress != null) headerProgress.setVisibility(View.GONE); 
-        }
-
-        // Failsafe OS garbage path killer
-        cleanText = cleanText.replaceAll("(\\d+\\|)?\\:?/data/data/com\\.hk\\.hkterminal[^\\$]*\\$ ?", "");
-
-        if (cleanText.trim().isEmpty() && !cleanText.contains(" ")) return; 
+        if (cleanText.isEmpty()) return; 
 
         SpannableStringBuilder ssb = new SpannableStringBuilder();
         String[] lines = cleanText.split("\n", -1);
@@ -134,8 +111,9 @@ public class MainActivity extends AppCompatActivity {
             SpannableString ss = new SpannableString(line);
             String lower = line.toLowerCase();
 
+            // Intelligent Error Highlighting (Chishti Orange)
             if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
-                || lower.contains("not found") || lower.contains("[-]")) {
+                || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
                 ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
                 ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -158,6 +136,25 @@ public class MainActivity extends AppCompatActivity {
         return currentPrompt;
     }
 
+    // ALPHA CTRL LOGIC EXPOSED FOR KEYBOARD LISTENER
+    public boolean isCtrlActive() {
+        return isCtrl;
+    }
+
+    public void sendSigInt() {
+        if (ptyBridge != null) {
+            ptyBridge.kill(2); // SIGINT Triggered
+            appendMatrixText("^C\n");
+        }
+        // Reset CTRL state
+        isCtrl = false;
+        TextView btnCtrl = findViewById(R.id.ctrl);
+        if (btnCtrl != null) {
+            btnCtrl.setTextColor(Color.parseColor("#00FF41")); // Back to green
+            btnCtrl.setBackgroundColor(Color.TRANSPARENT);
+        }
+    }
+
     private void initHKEnvironment() {
         new Thread(() -> {
             File usrDir = new File(TerminalEngine.PREFIX_PATH);
@@ -172,19 +169,15 @@ public class MainActivity extends AppCompatActivity {
         View btnCb = findViewById(R.id.esc); 
         if (btnCb != null) btnCb.setOnClickListener(v -> showCommandBox());
 
-        View btnCtrl = findViewById(R.id.ctrl);
-        if (btnCtrl != null) btnCtrl.setOnClickListener(v -> {
-            isCtrl = !isCtrl;
-            v.setBackgroundColor(isCtrl ? 0xFF8A2BE2 : 0xFF333333); 
-            
-            if (isCtrl && ptyBridge != null) {
-                ptyBridge.kill(2); 
-                appendMatrixText("^C\n" + currentPrompt); 
-                isCtrl = false;
-                v.setBackgroundColor(0xFF333333); 
-                if (headerProgress != null) headerProgress.setVisibility(View.GONE);
-            }
-        });
+        // [!] FIXED CTRL BUTTON: No purple background, only white text, wait for 'C'
+        TextView btnCtrl = findViewById(R.id.ctrl);
+        if (btnCtrl != null) {
+            btnCtrl.setOnClickListener(v -> {
+                isCtrl = !isCtrl;
+                btnCtrl.setTextColor(isCtrl ? Color.parseColor("#FFFFFF") : Color.parseColor("#00FF41")); 
+                btnCtrl.setBackgroundColor(Color.TRANSPARENT); // Purple Bleach Destroyed
+            });
+        }
 
         View btnCLR = findViewById(R.id.slash); 
         if (btnCLR != null) btnCLR.setOnClickListener(v -> {
@@ -232,14 +225,15 @@ public class MainActivity extends AppCompatActivity {
         if (command.isEmpty()) return;
         history.add(command);
         hIndex = -1;
-        if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
-        // [!] FIXED DOUBLE ECHO: User has already typed it on screen. Just add a newline.
-        appendMatrixText("\n");
+        // NO MANUAL APPENDING HERE! Native PTY will echo the command naturally,
+        // solving the "pwdpwd" and "lsls" double overlap bug permanently!
+
         String trimmedCmd = command.trim();
-        lastSentCommand = trimmedCmd; // Store command to wipe its native echo
 
         if (trimmedCmd.startsWith("hk install ")) {
+            appendMatrixText(command + "\n"); // Only manual append for our custom internal tool
+            if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
                 HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
@@ -254,6 +248,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
+            appendMatrixText(command + "\n");
+            if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             MainActivity.Callback cb = msg -> runOnUiThread(() -> {
                 appendMatrixText(msg + "\n" + currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
@@ -264,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("su")) {
+            appendMatrixText(command + "\n");
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
                 currentPrompt = "root@pshacker:~# ";
@@ -271,19 +268,18 @@ public class MainActivity extends AppCompatActivity {
                 appendMatrixText("su: Permission denied (System Guardian blocked request)\n");
             }
             appendMatrixText(currentPrompt);
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
+            appendMatrixText(command + "\n");
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
             appendMatrixText(currentPrompt);
-            if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         }
 
         if (ptyBridge != null) {
+            // Send pure raw command to OS. No extra sync texts.
             ptyBridge.writeCommand(command + "\n");
-            // Native PS1 override '[HK-END]' will automatically fire here without needing echo
         } else {
             TerminalEngine.run(command);
         }
@@ -331,9 +327,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             outputView.setPadding(10, 10, 10, 10);
             
-            String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
-            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
-            
             outputView.setFocusableInTouchMode(true);
             outputView.setCursorVisible(true);
 
@@ -356,8 +349,19 @@ public class MainActivity extends AppCompatActivity {
             });
 
             outputView.setOnKeyListener((v, code, ev) -> {
-                String activePrompt = ((MainActivity)getActivity()).getCurrentPrompt();
+                MainActivity mainActivity = (MainActivity) getActivity();
+                String activePrompt = mainActivity.getCurrentPrompt();
+                
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
+                    
+                    // [!] CTRL+C HARDWARE LOGIC
+                    if (mainActivity.isCtrlActive()) {
+                        if (code == KeyEvent.KEYCODE_C) {
+                            mainActivity.sendSigInt(); // Sends kill to PTY
+                            return true;
+                        }
+                    }
+
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
                         return true;
@@ -370,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                     if (code == KeyEvent.KEYCODE_ENTER) {
                         String s = outputView.getText().toString();
                         int start = s.lastIndexOf(activePrompt) + activePrompt.length();
-                        ((MainActivity)getActivity()).executeCommand(s.substring(start).trim());
+                        mainActivity.executeCommand(s.substring(start).trim());
                         return true;
                     }
                 }
