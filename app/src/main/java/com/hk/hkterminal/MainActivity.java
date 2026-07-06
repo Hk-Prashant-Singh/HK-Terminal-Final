@@ -8,6 +8,7 @@ import android.text.*;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.*;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,9 +20,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE NATIVE MATRIX)
+ * HK-OPERATION : MASTER COMMAND CENTER (FINAL EXECUTION MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Full Native Selection, Middle-Text Editing, Hardware Key Mapping Sync
+ * DIRECTIVE    : Soft Keyboard Enter Bypass, Gravity Lock, TextWatcher Interceptors
  */
 public class MainActivity extends AppCompatActivity {
     public static EditText outputView;
@@ -69,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
         setupSystemButtons();
         TerminalEngine.startAmSocketServer();
         
-        // Stealth Environment setup
         String[] env = {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
             "TERM=xterm-256color", 
@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
             "PS1=" + currentPrompt
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
-
         ptyBridge.writeCommand("cd $HOME && clear\n"); 
 
         new Thread(() -> {
@@ -126,8 +125,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 outputView.append(ssb);
-                
-                // Keep cursor naturally at the end for new terminal streams
                 outputView.setSelection(outputView.getText().length()); 
                 scrollToBottom();
             });
@@ -146,7 +143,17 @@ public class MainActivity extends AppCompatActivity {
     public void sendCtrlKey(String controlChar, String visual) {
         if (ptyBridge != null) { ptyBridge.writeCommand(controlChar); }
         appendMatrixText(visual + "\n");
-        resetCtrlButton();
+        resetCtrlState();
+    }
+
+    public void clearTerminal() {
+        runOnUiThread(() -> {
+            if (outputView != null) {
+                outputView.setText("");
+                appendMatrixText(">> HK Prashant Singh\n" + currentPrompt);
+                resetCtrlState();
+            }
+        });
     }
 
     public void exitApplication() {
@@ -162,16 +169,18 @@ public class MainActivity extends AppCompatActivity {
             ptyBridge.kill(2); 
             appendMatrixText("^C\n");
         }
-        resetCtrlButton();
+        resetCtrlState();
     }
 
-    private void resetCtrlButton() {
+    public void resetCtrlState() {
         isCtrl = false;
-        TextView btnCtrl = findViewById(R.id.ctrl);
-        if (btnCtrl != null) {
-            btnCtrl.setTextColor(Color.parseColor("#FFFFFF")); 
-            btnCtrl.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#262626")));
-        }
+        runOnUiThread(() -> {
+            TextView btnCtrl = findViewById(R.id.ctrl);
+            if (btnCtrl != null) {
+                btnCtrl.setTextColor(Color.parseColor("#FFFFFF")); 
+                btnCtrl.setBackgroundColor(Color.parseColor("#262626"));
+            }
+        });
     }
 
     private void initHKEnvironment() {
@@ -184,9 +193,6 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ==========================================
-    // [!] HARDWARE DECK FULL BUTTON MAPPING 
-    // ==========================================
     private void setupSystemButtons() {
         View btnEsc = findViewById(R.id.esc); 
         if (btnEsc != null) btnEsc.setOnClickListener(v -> showCommandBox());
@@ -213,7 +219,6 @@ public class MainActivity extends AppCompatActivity {
         View btnDash = findViewById(R.id.dash); 
         if (btnDash != null) btnDash.setOnClickListener(v -> insertTextAtCursor("-"));
 
-        // [!] TRUE CURSOR NAVIGATION ARSENAL
         View btnLeft = findViewById(R.id.left);
         if (btnLeft != null) btnLeft.setOnClickListener(v -> moveCursor(-1));
 
@@ -443,10 +448,30 @@ public class MainActivity extends AppCompatActivity {
         int last = txt.lastIndexOf(currentPrompt);
         if (last != -1) {
             String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
-            // Replace ONLY the typed command, keeping prompt safe
             int minPos = last + currentPrompt.length();
             outputView.getText().replace(minPos, txt.length(), cmd);
             outputView.setSelection(outputView.getText().length());
+        }
+    }
+
+    public void copyTerminalClipboard() {
+        if (outputView == null) return;
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("HK_MATRIX_LOG", outputView.getText().toString());
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, "[+] Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void pasteTerminalClipboard() {
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null && clipboard.hasPrimaryClip() && outputView != null) {
+            ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+            CharSequence pasteData = item.getText();
+            if (pasteData != null) {
+                insertTextAtCursor(pasteData.toString());
+            }
         }
     }
 
@@ -477,19 +502,64 @@ public class MainActivity extends AppCompatActivity {
                 if (bottom < oldBottom) { sv.postDelayed(() -> sv.fullScroll(View.FOCUS_DOWN), 100); }
             });
 
-            // ==========================================
-            // [!] NATIVE OS EDITTEXT CONFIGURATION (TRUE TUI)
-            // ==========================================
             outputView = new EditText(getContext());
+            
+            // Core Alignment Setup
+            outputView.setGravity(Gravity.TOP | Gravity.START);
             outputView.setTextColor(Color.parseColor("#FFFFFF")); 
             outputView.setBackgroundColor(Color.TRANSPARENT);
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             outputView.setPadding(10, 10, 10, 10);
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
-            
-            // This line natively unlocks Android's blue selection teardrops & copy menu
             outputView.setTextIsSelectable(true); 
+
+            // [!] ALPHA ENTER BYPASS: Force keyboard to show execute/go button and remove suggestions
+            outputView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            outputView.setImeOptions(EditorInfo.IME_ACTION_GO);
+
+            // [!] THE MASTER INTERCEPTOR: Kernel Level Hook for Enter Key & CTRL Combinations
+            outputView.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    MainActivity main = (MainActivity) getActivity();
+                    if (main == null) return;
+                    
+                    // 1. Hook for CTRL Combinations
+                    if (main.isCtrlActive() && count == 1) {
+                        char c = Character.toLowerCase(s.charAt(start));
+                        if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                outputView.getText().delete(start, start + 1);
+                                if (c == 'c') main.sendSigInt();
+                                else if (c == 'l') main.clearTerminal();
+                                else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
+                                else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
+                                else if (c == 'd') main.exitApplication();
+                            });
+                            return;
+                        }
+                    }
+
+                    // 2. Hook for Soft Keyboard Enter Key (\n character)
+                    if (count == 1 && s.charAt(start) == '\n') {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            String activePrompt = main.getCurrentPrompt();
+                            
+                            // Destroy the newline forced by the OS keyboard immediately
+                            outputView.getText().delete(start, start + 1);
+                            
+                            String textAfterDel = outputView.getText().toString();
+                            int promptIdx = textAfterDel.lastIndexOf(activePrompt);
+                            if (promptIdx != -1) {
+                                String cmd = textAfterDel.substring(promptIdx + activePrompt.length());
+                                main.executeCommand(cmd.trim());
+                            }
+                        });
+                    }
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
 
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -507,25 +577,18 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity mainActivity = (MainActivity) getActivity();
                     if (mainActivity != null) mainActivity.forceKeyboard(v);
                 }
-                return false; // MUST remain false. Do not consume touch so selection teardrops work!
+                return false; 
             });
 
             String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
             ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
 
-            // [!] TRUE NATIVE MIDDLE EDITING ENGINE
+            // True fallback Native KeyListener for Hardware Keyboards
             outputView.setOnKeyListener((v, code, ev) -> {
                 MainActivity mainActivity = (MainActivity) getActivity();
                 String activePrompt = mainActivity.getCurrentPrompt();
                 
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
-                    if (mainActivity.isCtrlActive()) {
-                        if (code == KeyEvent.KEYCODE_C) { mainActivity.sendSigInt(); return true; }
-                        if (code == KeyEvent.KEYCODE_X) { mainActivity.sendCtrlKey("\u0018", "^X"); return true; }
-                        if (code == KeyEvent.KEYCODE_Z) { mainActivity.sendCtrlKey("\u001A", "^Z"); return true; }
-                        if (code == KeyEvent.KEYCODE_D) { mainActivity.exitApplication(); return true; }
-                    }
-
                     if (code == KeyEvent.KEYCODE_DEL) {
                         int selStart = outputView.getSelectionStart();
                         int selEnd = outputView.getSelectionEnd();
@@ -533,11 +596,10 @@ public class MainActivity extends AppCompatActivity {
                         int promptIdx = s.lastIndexOf(activePrompt);
                         int minPos = promptIdx != -1 ? promptIdx + activePrompt.length() : 0;
                         
-                        // Strict prompt boundary protection logic
-                        if (selStart <= minPos && selStart == selEnd) return true; // Block deleting prompt
-                        if (selStart < minPos) return true; // Block if selection intersects prompt
+                        if (selStart <= minPos && selStart == selEnd) return true; 
+                        if (selStart < minPos) return true; 
                         
-                        return false; // Let native EditText delete exactly where cursor is!
+                        return false; 
                     }
                     
                     if (code == KeyEvent.KEYCODE_ENTER) {
@@ -547,10 +609,9 @@ public class MainActivity extends AppCompatActivity {
                             String cmd = s.substring(promptIdx + activePrompt.length());
                             mainActivity.executeCommand(cmd.trim());
                         }
-                        return true; // Consume enter so it doesn't break terminal line manually
+                        return true; 
                     }
                 }
-                // Returning FALSE here lets Android naturally insert typed keys exactly at cursor!
                 return false; 
             });
             sv.addView(outputView);
