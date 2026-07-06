@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Ghost-Mode, Snap Cursor, Guardian Color Matrix, Vault Generation
+ * DIRECTIVE    : Ghost-Mode, Snap Cursor, Guardian Color Matrix, Native Execution
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
             "TERM=xterm-256color", 
             "HOME=" + TerminalEngine.HOME_PATH,
-            "GIT_CONFIG_NOSYSTEM=1", // Git patch support
+            "GIT_CONFIG_NOSYSTEM=1", 
             "GIT_AUTHOR_NAME=pshacker",
             "GIT_COMMITTER_NAME=pshacker",
             "PS1=" + currentPrompt
@@ -154,14 +154,13 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    // Dynamic Permission-Based Colors
                     if (line.contains("drwx")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Folders Green
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("-rwx")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Binaries Gold
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
                         || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Blood Red
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
@@ -192,13 +191,13 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BLOCK 2: GHOST-MODE CLEAR OVERRIDE
+    // [!] BLOCK 2: GHOST-MODE CLEAR OVERRIDE (Artifacts Removed)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
                 outputView.setText(""); // Pure Visual Wipe
                 if (ptyBridge != null) { 
-                    ptyBridge.writeCommand("printf '\\033c'\n"); // Hardware-level silent reset 
+                    ptyBridge.writeCommand("clear\n"); // Standard Native Clear
                 }
                 resetCtrlState();
             }
@@ -233,7 +232,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initHKEnvironment() {
-        // Architecture Folders Auto-Generation
         File baseHome = new File(TerminalEngine.HOME_PATH);
         if (!baseHome.exists()) baseHome.mkdirs();
         
@@ -277,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
                 writer.write("fi\n");
             }
             if (pkg.equals("nano")) {
-                writer.write("printf '\\033c'\n");
+                writer.write("clear\n");
                 writer.write("echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
                 writer.write("echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
                 writer.write("echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
@@ -562,12 +560,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // [!] THE NATIVE EXECUTION MATRIX (Fixes ELF Binary 'unexpected (' Error)
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
+                // 'sh' prefix HATA DIYA HAI. Ab Native Binaries direct execute hongi!
+                ptyBridge.writeCommand(TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
             }
             return;
         }
