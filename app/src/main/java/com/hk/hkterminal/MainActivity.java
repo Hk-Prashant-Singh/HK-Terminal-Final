@@ -24,7 +24,7 @@ import java.util.*;
 
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
- * IDENTITY     : HK Prashant Singh (Tech Wizard)
+ * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
  * DIRECTIVE    : Ghost-Mode, Snap Cursor, Guardian Color Matrix, Vault Generation
  */
 public class MainActivity extends AppCompatActivity {
@@ -861,6 +861,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    // [!] SYSTEM LOGGER MATRIX (Fixes TerminalEngine Error)
+    public static void logError(String m, String t, Throwable e) { 
+        Log.e(m, t, e); 
     }
 
     @Override protected void onDestroy() { 
