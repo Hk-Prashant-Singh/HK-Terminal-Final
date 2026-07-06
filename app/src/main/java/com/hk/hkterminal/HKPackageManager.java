@@ -6,9 +6,9 @@ import java.io.File;
 import java.io.FileWriter;
 
 /**
- * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE (POLYMORPHIC CORE)
+ * HK-OPERATION : UNIVERSAL ADVANCED PACKAGE ENGINE (NANO TUI MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Dynamic Binary Mapping, Argument Parsing Support for Any Random Package
+ * DIRECTIVE    : Visual Simulation of Interactive Binaries & Native Clear Routing
  */
 public class HKPackageManager {
 
@@ -20,7 +20,6 @@ public class HKPackageManager {
     public static void installPackage(final String pkgName, final InstallListener listener) {
         new Thread(() -> {
             try {
-                // Step 1: Initialize Universal Fetcher Sequence
                 update(listener, "[*] HK-PKG: Locating target module '" + pkgName + "' in secure network database...");
                 Thread.sleep(700);
 
@@ -36,7 +35,6 @@ public class HKPackageManager {
                 update(listener, "Preparing to unpack incoming automated structures for " + pkgName + "...");
                 Thread.sleep(600);
 
-                // Step 2: Live Universal Progress Bar Matrix Stream
                 for (int i = 1; i <= 100; i += 9) {
                     int progress = Math.min(i, 100);
                     StringBuilder bar = new StringBuilder("Progress: [");
@@ -53,9 +51,6 @@ public class HKPackageManager {
                 update(listener, "Progress: [100%] [####################]");
                 Thread.sleep(300);
 
-                // =========================================================
-                // [!] POLYMORPHIC BINARY DEPLOYMENT (HANDLES ANY RANDOM PKG)
-                // =========================================================
                 update(listener, "Configuring global environment layout for " + pkgName + " (Alpha-Release)...");
                 
                 File binDir = new File(TerminalEngine.BIN_PATH);
@@ -64,13 +59,23 @@ public class HKPackageManager {
                 File executableFile = new File(binDir, pkgName);
                 FileWriter writer = new FileWriter(executableFile);
 
-                // Dynamically injecting unix bash scripts utilizing basename logic
                 writer.write("#!/system/bin/sh\n");
                 writer.write("EXE_NAME=$(basename \"$0\")\n");
+                
+                // [!] NANO TUI SIMULATION MATRIX
+                writer.write("if [ \"$EXE_NAME\" = \"nano\" ]; then\n");
+                writer.write("    clear\n");
+                writer.write("    echo -e \"\\033[7m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
+                writer.write("    echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
+                writer.write("    echo -e \"                                [ New File ]\"\n");
+                writer.write("    echo -e \"^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location  \"\n");
+                writer.write("    echo -e \"^X Exit      ^R Read File ^\\\\ Replace   ^U Paste     ^J Justify   ^_ Go To Line\"\n");
+                writer.write("    exit 0\n");
+                writer.write("fi\n");
+                
                 writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
                 writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
                 
-                // Flexible handling engine to automatically interpret options for ANY tool name
                 writer.write("if [ \"$1\" = \"--help\" ] || [ \"$1\" = \"-h\" ]; then\n");
                 writer.write("    echo \"\\033[1;36mUsage:\\033[0m $EXE_NAME [options] [target_node]\"\n");
                 writer.write("    echo \"\\033[1;33mOptions:\\033[0m\"\n");
@@ -88,7 +93,6 @@ public class HKPackageManager {
                 writer.write("fi\n");
                 writer.close();
 
-                // Unlocking structural file descriptor runtime execution tags
                 executableFile.setExecutable(true, false);
                 executableFile.setReadable(true, false);
                 Thread.sleep(500);
