@@ -30,7 +30,7 @@ public class HKStorageProvider extends DocumentsProvider {
     public Cursor queryRoots(String[] projection) {
         MatrixCursor cursor = new MatrixCursor(projection != null ? projection : new String[]{
                 Root.COLUMN_ROOT_ID,
-                Root.COLUMN_MIME_TYPES,
+                Root.COLUMN_MIME_TYPES, // Root uses plural
                 Root.COLUMN_TITLE,
                 Root.COLUMN_SUMMARY,
                 Root.COLUMN_DOCUMENT_ID,
@@ -55,7 +55,7 @@ public class HKStorageProvider extends DocumentsProvider {
         MatrixCursor cursor = new MatrixCursor(projection != null ? projection : new String[]{
                 Document.COLUMN_DOCUMENT_ID,
                 Document.COLUMN_DISPLAY_NAME,
-                Document.COLUMN_MIME_TYPES,
+                Document.COLUMN_MIME_TYPE, // [!] FIX: Singular
                 Document.COLUMN_SIZE,
                 Document.COLUMN_LAST_MODIFIED,
                 Document.COLUMN_FLAGS
@@ -73,7 +73,7 @@ public class HKStorageProvider extends DocumentsProvider {
         MatrixCursor cursor = new MatrixCursor(projection != null ? projection : new String[]{
                 Document.COLUMN_DOCUMENT_ID,
                 Document.COLUMN_DISPLAY_NAME,
-                Document.COLUMN_MIME_TYPES,
+                Document.COLUMN_MIME_TYPE, // [!] FIX: Singular
                 Document.COLUMN_SIZE,
                 Document.COLUMN_LAST_MODIFIED,
                 Document.COLUMN_FLAGS
@@ -119,7 +119,7 @@ public class HKStorageProvider extends DocumentsProvider {
         cursor.newRow()
                 .add(Document.COLUMN_DOCUMENT_ID, file.getAbsolutePath())
                 .add(Document.COLUMN_DISPLAY_NAME, file.getName())
-                .add(Document.COLUMN_MIME_TYPES, mimeType)
+                .add(Document.COLUMN_MIME_TYPE, mimeType) // [!] FIX: Singular
                 .add(Document.COLUMN_SIZE, file.length())
                 .add(Document.COLUMN_LAST_MODIFIED, file.lastModified())
                 .add(Document.COLUMN_FLAGS, flags);
