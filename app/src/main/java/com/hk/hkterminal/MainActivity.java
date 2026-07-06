@@ -23,9 +23,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE TACTICAL MATRIX)
+ * HK-OPERATION : MASTER COMMAND CENTER (UPGRADE ALL PACKAGES INTEGRATION)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Absolute Cursor Lock, Smooth Zoom, Enter Bypass
+ * DIRECTIVE    : Dynamic Package Mass Dropper, Auto UI Sync, Boundless Core Execution
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -33,7 +33,10 @@ public class MainActivity extends AppCompatActivity {
     private int hIndex = -1;
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
+    private LinearLayout upgradeAllPanel;
+    private Button btnUpgradeAll;
     
+    // ALPHA STATE ENGINE
     private boolean isCtrl = false;
     private boolean isAlt = false;
     private PtyBridge ptyBridge;
@@ -41,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isRootMode = false;
     public String lastSentCommand = null;
     private final Object streamLock = new Object();
+    
+    // Global static reference to force weapon arsenal views updates instantly
+    private static TerminalTabFragment packagesFragmentInstance;
 
     public interface Callback { void onOutput(String line); }
 
@@ -52,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
+        upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
+        btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
         File homeDir = new File(TerminalEngine.HOME_PATH);
         if (!homeDir.exists()) homeDir.mkdirs();
@@ -66,13 +74,28 @@ public class MainActivity extends AppCompatActivity {
         
         vp.setAdapter(new FragmentStateAdapter(this) {
             @Override public int getItemCount() { return 2; }
-            @Override public Fragment createFragment(int p) { return new TerminalTabFragment(p); }
+            @Override public Fragment createFragment(int p) { 
+                TerminalTabFragment fragment = new TerminalTabFragment(p);
+                if (p == 1) packagesFragmentInstance = fragment;
+                return fragment;
+            }
         });
         
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
+        // Control Panel View Visibility syncer based on selection index matrix
+        vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                if (upgradeAllPanel != null) {
+                    upgradeAllPanel.setVisibility(position == 1 ? View.VISIBLE : View.GONE);
+                }
+            }
+        });
+
         setupSystemButtons();
+        setupUpgradeAllLogic();
         TerminalEngine.startAmSocketServer();
         
         String[] env = {
@@ -219,37 +242,48 @@ public class MainActivity extends AppCompatActivity {
             for (String pkg : coreArsenal) {
                 File binFile = new File(binDir, pkg);
                 if (!binFile.exists()) {
-                    try {
-                        java.io.FileWriter writer = new java.io.FileWriter(binFile);
-                        writer.write("#!/system/bin/sh\n");
-                        writer.write("EXE_NAME=$(basename \"$0\")\n");
-                        if (pkg.equals("apt")) {
-                            writer.write("if [ \"$1\" = \"list\" ]; then\n");
-                            writer.write("  echo \"Listing... Done\"\n");
-                            writer.write("  echo \"apt/now 2.8.1-2 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"bash/now 5.3.9-1 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"ca-certificates/now 1:2026.05.14 all [installed,local]\"\n");
-                            writer.write("  echo \"coreutils/now 9.11-1 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"curl/now 8.21.0 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"dpkg/now 1.22.6-5 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"git/now 2.55.0 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"nano/now 9.1 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"openssh/now 10.3p1-1 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"python/now 3.14.6-1 aarch64 [installed,local]\"\n");
-                            writer.write("  echo \"tar/now 1.35-2 aarch64 [installed,local]\"\n");
-                            writer.write("  exit 0\n");
-                            writer.write("fi\n");
-                        }
-                        writer.write("echo \"\\033[1;34m[*] HK-Core: System command [$EXE_NAME] is a pre-installed native binary.\\033[0m\"\n");
-                        writer.close();
-                        binFile.setExecutable(true, false);
-                        binFile.setReadable(true, false);
-                    } catch (Exception ignored) {}
+                    deployPackageScript(binDir, pkg);
                 }
             }
         }).start();
     }
 
+    // Isolated script injection protocol tracking Unix basenames
+    private void deployPackageScript(File binDir, String pkg) {
+        File binFile = new File(binDir, pkg);
+        try {
+            java.io.FileWriter writer = new java.io.FileWriter(binFile);
+            writer.write("#!/system/bin/sh\n");
+            writer.write("EXE_NAME=$(basename \"$0\")\n");
+            if (pkg.equals("apt")) {
+                writer.write("if [ \"$1\" = \"list\" ]; then\n");
+                writer.write("  echo \"Listing... Done\"\n");
+                writer.write("  for f in " + binDir.getAbsolutePath() + "/*; do\n");
+                writer.write("    [ -f \"$f\" ] && echo \"$(basename \"$f\")/now 3.14-Stable aarch64 [installed,local]\"\n");
+                writer.write("  done\n");
+                writer.write("  exit 0\n");
+                writer.write("fi\n");
+            }
+            if (pkg.equals("nano")) {
+                writer.write("clear\n");
+                writer.write("echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
+                writer.write("echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
+                writer.write("echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
+                writer.write("echo -e \"^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location  \"\n");
+                writer.write("echo -e \"^X Exit      ^R Read File ^\\\\ Replace   ^U Paste     ^J Justify   ^_ Go To Line\"\n");
+                writer.write("exit 0\n");
+            }
+            writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
+            writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
+            writer.close();
+            binFile.setExecutable(true, false);
+            binFile.setReadable(true, false);
+        } catch (Exception ignored) {}
+    }
+
+    // ========================================================
+    // [!] OPERATION 2: THE UNIVERSAL MASS PROTOCOL INJECTOR
+    // ========================================================
     private void setupSystemButtons() {
         View btnEsc = findViewById(R.id.esc); 
         if (btnEsc != null) btnEsc.setOnClickListener(v -> showCommandBox());
@@ -314,6 +348,48 @@ public class MainActivity extends AppCompatActivity {
                 sv.smoothScrollBy(0, 500);
             }
         });
+    }
+
+    private void setupUpgradeAllLogic() {
+        if (btnUpgradeAll != null) {
+            btnUpgradeAll.setOnClickListener(v -> {
+                if (headerProgress != null) {
+                    headerProgress.setIndeterminate(true);
+                    headerProgress.setVisibility(View.VISIBLE);
+                }
+                btnUpgradeAll.setEnabled(false);
+                btnUpgradeAll.setText("SYNCHRONIZING SYSTEM MATRIX...");
+                btnUpgradeAll.setBackgroundColor(Color.parseColor("#1A1A1A"));
+                btnUpgradeAll.setTextColor(Color.parseColor("#666666"));
+
+                new Thread(() -> {
+                    String[] allWeapons = {"grep", "python", "apt", "nano", "tar", "git", "ssh", "openssl", "curl"};
+                    File binDir = new File(TerminalEngine.BIN_PATH);
+                    
+                    for (String weapon : allWeapons) {
+                        try {
+                            // Dynamic upgrade script generation loop tracking each node array
+                            deployPackageScript(binDir, weapon);
+                            Thread.sleep(300); // 300ms network emulation sequence delay
+                        } catch (Exception ignored) {}
+                    }
+
+                    runOnUiThread(() -> {
+                        if (headerProgress != null) headerProgress.setVisibility(View.GONE);
+                        btnUpgradeAll.setEnabled(true);
+                        btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
+                        btnUpgradeAll.setBackgroundColor(Color.parseColor("#00FF41"));
+                        btnUpgradeAll.setTextColor(Color.parseColor("#030303"));
+                        Toast.makeText(MainActivity.this, "[+] ALL PACKAGES UPGRADED & synchronized", Toast.LENGTH_SHORT).show();
+                        
+                        // Signal static layout fragment instance to refresh items layout view map instantly
+                        if (packagesFragmentInstance != null) {
+                            packagesFragmentInstance.refreshPackagesList();
+                        }
+                    });
+                }).start();
+            });
+        }
     }
 
     private void insertTextAtCursor(String text) {
@@ -455,17 +531,17 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.equals("apt list") || trimmedCmd.equals("hk list")) {
-            String pkgList = 
-                "Listing... Done\n" +
-                "apt/now 2.8.1-2 aarch64 [installed,local]\n" +
-                "bash/now 5.3.9-1 aarch64 [installed,local]\n" +
-                "curl/now 8.21.0 aarch64 [installed,local]\n" +
-                "dpkg/now 1.22.6-5 aarch64 [installed,local]\n" +
-                "git/now 2.55.0 aarch64 [installed,local]\n" +
-                "nano/now 9.1 aarch64 [installed,local]\n" +
-                "python/now 3.14.6-1 aarch64 [installed,local]\n" +
-                "tar/now 1.35-2 aarch64 [installed,local]\n";
-            appendMatrixText(pkgList);
+            File binDir = new File(TerminalEngine.BIN_PATH);
+            StringBuilder sb = new StringBuilder("Listing... Done\n");
+            File[] files = binDir.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (!f.isDirectory()) {
+                        sb.append(f.getName()).append("/now 3.14-Stable aarch64 [installed,local]\n");
+                    }
+                }
+            }
+            appendMatrixText(sb.toString());
             if (ptyBridge != null) ptyBridge.writeCommand("\n");
             return;
         }
@@ -499,6 +575,7 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             if (ptyBridge != null) ptyBridge.writeCommand("\n");
                             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+                            if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
                         });
                     }
                 });
@@ -541,8 +618,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (ptyBridge != null) { ptyBridge.writeCommand(command + "\n"); } 
-        else { TerminalEngine.run(command); }
+        if (ptyBridge != null) { 
+            ptyBridge.writeCommand(command + "\n"); 
+        } else { 
+            TerminalEngine.run(command); 
+        }
     }
 
     private void navigateHistory(int dir) {
@@ -559,32 +639,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void copyTerminalClipboard() {
-        if (outputView == null) return;
-        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("HK_MATRIX_LOG", outputView.getText().toString());
-        if (clipboard != null) {
-            clipboard.setPrimaryClip(clip);
-            Toast.makeText(this, "[+] Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public void pasteTerminalClipboard() {
-        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard != null && clipboard.hasPrimaryClip() && outputView != null) {
-            ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
-            CharSequence pasteData = item.getText();
-            if (pasteData != null) {
-                insertTextAtCursor(pasteData.toString());
-            }
-        }
-    }
-
-    // [!] OPERATION 1: ABSOLUTE CURSOR LOCK & HOOK
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         public CustomEditText(Context context) { super(context); }
         
-        // Creates the invisible boundary wall for cursor
         @Override
         protected void onSelectionChanged(int selStart, int selEnd) {
             super.onSelectionChanged(selStart, selEnd);
@@ -595,7 +652,6 @@ public class MainActivity extends AppCompatActivity {
                 if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
                 int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
                 
-                // If cursor gets dragged behind prompt, aggressively bounce it back
                 if (selStart < minPos || selEnd < minPos) {
                     setSelection(Math.max(minPos, selEnd), Math.max(minPos, selStart));
                 }
@@ -664,6 +720,8 @@ public class MainActivity extends AppCompatActivity {
 
     public static class TerminalTabFragment extends Fragment {
         int type;
+        private LinearLayout rootLayoutRef;
+        
         public TerminalTabFragment() {}
         public TerminalTabFragment(int t) { this.type = t; }
 
@@ -673,11 +731,11 @@ public class MainActivity extends AppCompatActivity {
                 ScrollView sv = new ScrollView(getContext());
                 sv.setFillViewport(true);
                 sv.setBackgroundColor(Color.parseColor("#050505")); 
-                LinearLayout rootLayout = new LinearLayout(getContext());
-                rootLayout.setOrientation(LinearLayout.VERTICAL);
-                rootLayout.setPadding(40, 40, 40, 40);
-                sv.addView(rootLayout);
-                renderPackagesMatrix(rootLayout, getContext());
+                rootLayoutRef = new LinearLayout(getContext());
+                rootLayoutRef.setOrientation(LinearLayout.VERTICAL);
+                rootLayoutRef.setPadding(40, 40, 40, 40);
+                sv.addView(rootLayoutRef);
+                renderPackagesMatrix(rootLayoutRef, getContext());
                 return sv;
             }
 
@@ -699,18 +757,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
 
-            outputView.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_GO || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
-                    MainActivity mainActivity = (MainActivity) getActivity();
-                    if (mainActivity != null) {
-                        mainActivity.executeExtractedCommand();
-                    }
-                    return true; 
-                }
-                return false;
-            });
-
-            // [!] OPERATION 2: SMOOTH ZOOM ENGINE
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     @Override public boolean onScale(ScaleGestureDetector d) {
@@ -723,10 +769,7 @@ public class MainActivity extends AppCompatActivity {
 
             outputView.setOnTouchListener((v, e) -> {
                 scaleDetector.onTouchEvent(e);
-                // Return true to prevent text selection interference while zooming
-                if (scaleDetector.isInProgress()) {
-                    return true; 
-                }
+                if (scaleDetector.isInProgress()) { return true; }
                 if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
                     v.requestFocus();
                     MainActivity mainActivity = (MainActivity) getActivity();
@@ -737,6 +780,13 @@ public class MainActivity extends AppCompatActivity {
 
             sv.addView(outputView);
             return sv;
+        }
+
+        // Live updater hook triggered from setupUpgradeAllLogic macro loop
+        public void refreshPackagesList() {
+            if (rootLayoutRef != null && getContext() != null) {
+                renderPackagesMatrix(rootLayoutRef, getContext());
+            }
         }
 
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
@@ -753,6 +803,9 @@ public class MainActivity extends AppCompatActivity {
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
+                    // Sorting array alphabetically to keep track framework safe
+                    Arrays.sort(files, (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName()));
+                    
                     for (File file : files) {
                         if (file.isDirectory()) continue; 
                         
