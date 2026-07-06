@@ -2,15 +2,16 @@ package com.hk.hkterminal;
 
 import android.os.Handler;
 import android.os.Looper;
+import java.io.File;
+import java.io.FileWriter;
 
 /**
- * HK-OPERATION : ELITE PACKAGE MANAGER (FULL MATRIX CORE)
+ * HK-OPERATION : ELITE PACKAGE MANAGER (BINARY DROPPER MATRIX)
  * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Live Terminal Streaming, Extraction & Arsenal Integration
+ * DIRECTIVE    : Live Terminal Streaming, Extraction & Real Binary Execution
  */
 public class HKPackageManager {
 
-    // Alpha interface for live stream sync with UI
     public interface InstallListener {
         void onUpdate(String msg);
         void onComplete();
@@ -23,7 +24,7 @@ public class HKPackageManager {
                 update(listener, "[*] HK-PKG: Locating target '" + pkgName + "' in secure matrix...");
                 Thread.sleep(800);
 
-                // Step 2: Live Fetching Stream (Custom HK Server Logic)
+                // Step 2: Live Fetching Stream
                 update(listener, "Get:1 https://mirror.hk-operation.net/main stable/main aarch64 libcrypt [8880 B]");
                 Thread.sleep(300);
                 update(listener, "Get:2 https://mirror.hk-operation.net/main stable/main aarch64 libexpat [95.5 kB]");
@@ -59,28 +60,50 @@ public class HKPackageManager {
                     bar.append("]");
                     
                     update(listener, bar.toString());
-                    Thread.sleep(150); // Dynamic extraction speed
+                    Thread.sleep(150);
                 }
 
-                // Force 100% completion bar display
                 update(listener, "Progress: [100%] [####################]");
                 Thread.sleep(500);
 
-                // Step 5: Final Setup & Arsenal Lock
+                // ==========================================
+                // [!] ALPHA UPGRADE: REAL BINARY DROPPER
+                // ==========================================
                 update(listener, "Setting up " + pkgName + " (Alpha-Release) ...");
+                
+                File binDir = new File(TerminalEngine.BIN_PATH);
+                if (!binDir.exists()) binDir.mkdirs();
+                
+                File executableFile = new File(binDir, pkgName);
+                FileWriter writer = new FileWriter(executableFile);
+                
+                // Write a shell script that acts as the installed package
+                writer.write("#!/system/bin/sh\n");
+                if (pkgName.toLowerCase().equals("python")) {
+                    writer.write("echo 'Python 3.14.6 (HK-Matrix, Jul 06 2026) [Clang 14.0.6] on linux'\n");
+                    writer.write("echo 'Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.'\n");
+                    writer.write("echo '>>> (Tech Wizard Virtual Environment Active)'\n");
+                } else {
+                    writer.write("echo '>> HK-Matrix: [" + pkgName + "] executed successfully.'\n");
+                }
+                writer.close();
+                
+                // Grant Execution Permissions (chmod 755)
+                executableFile.setExecutable(true, false);
+                executableFile.setReadable(true, false);
                 Thread.sleep(500);
+
+                // Step 5: Final Arsenal Lock
                 update(listener, "[+] Target Locked: '" + pkgName + "' is now active in Tech Wizard Arsenal.");
 
             } catch (Exception e) {
                 update(listener, "[-] HK-PKG Error: Connection to matrix severed.");
             } finally {
-                // Signal completion to restore the main shell prompt seamlessly
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
     }
 
-    // Surgical method to push text instantly to the UI thread
     private static void update(InstallListener listener, String msg) {
         new Handler(Looper.getMainLooper()).post(() -> listener.onUpdate(msg));
     }
