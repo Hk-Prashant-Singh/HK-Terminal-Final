@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (TOTAL LOGIC MATRIX)
+ * HK-OPERATION : MASTER COMMAND CENTER (BUG FIX MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Absolute Ambiguity Fix, Blinking Cursor, Thread-Safe Pipeline, Zero Missing Code
+ * DIRECTIVE    : Keyboard Focus Unlock, DEL Button Restore, Animated Progress Bar
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -30,14 +30,12 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
-    // ALPHA STATE ENGINE
     private boolean isCtrl = false;
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
     private final Object streamLock = new Object();
 
-    // DYNAMIC CURSOR MATRIX
     private Handler cursorHandler = new Handler(Looper.getMainLooper());
     private boolean isCursorVisible = true;
 
@@ -52,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
-        // Core Environment Director
         File homeDir = new File(TerminalEngine.HOME_PATH);
         if (!homeDir.exists()) homeDir.mkdirs();
         
@@ -84,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
         ptyBridge.writeCommand("cd $HOME\n"); 
         ptyBridge.writeCommand("clear\n"); 
 
-        // Native Shell Input Pipeline
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
@@ -98,13 +94,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
-        // Active Blinking Cursor Loop Activation
         cursorHandler.postDelayed(cursorRunnable, 500);
     }
 
-    // ==========================================
-    // [!] ALPHA BLINKING CURSOR ENGINE
-    // ==========================================
     private Runnable cursorRunnable = new Runnable() {
         @Override
         public void run() {
@@ -217,9 +209,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ==========================================
-    // [!] EXPLICIT CLIPBOARD ARSENAL (FIXED)
-    // ==========================================
     public void copyTerminalClipboard() {
         if (outputView == null) return;
         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -319,6 +308,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        // FORCE KEYBOARD UNLOCK
         if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
 
@@ -371,7 +361,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // The Polymorphic Universal Wrapper Interceptor
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
@@ -387,7 +376,13 @@ public class MainActivity extends AppCompatActivity {
         if (trimmedCmd.startsWith("hk install ")) {
             removeCursorBeforeAppend();
             appendMatrixText(command + "\n"); 
-            if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
+            
+            // [!] FIX: PROGRESS BAR ANIMATION TRIGGER
+            if(headerProgress != null) {
+                headerProgress.setIndeterminate(true); // Forces infinite animation
+                headerProgress.setVisibility(View.VISIBLE);
+            }
+            
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
                 HKPackageManager.installPackage(pkg, new HKPackageManager.InstallListener() {
@@ -413,7 +408,10 @@ public class MainActivity extends AppCompatActivity {
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
             removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
-            if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
+            if(headerProgress != null) {
+                headerProgress.setIndeterminate(true);
+                headerProgress.setVisibility(View.VISIBLE);
+            }
             MainActivity.Callback cb = msg -> runOnUiThread(() -> {
                 appendMatrixText(msg + "\n" + currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
@@ -496,10 +494,12 @@ public class MainActivity extends AppCompatActivity {
             outputView.setBackgroundColor(Color.parseColor("#050505"));
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             outputView.setPadding(10, 10, 10, 10);
+            
+            // [!] FIX: KEYBOARD BLOCK BYPASS
+            // Removed setTextIsSelectable(true) which was freezing the soft keyboard
             outputView.setFocusableInTouchMode(true);
-            outputView.setTextIsSelectable(true); 
+            outputView.setFocusable(true);
 
-            // Copy-Paste Interactive Custom Context Menu
             outputView.setOnLongClickListener(v -> {
                 final PopupMenu popup = new PopupMenu(getContext(), outputView);
                 popup.getMenu().add("COPY ALL LOGS");
@@ -525,14 +525,21 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            sv.setOnTouchListener((v, e) -> {
+            // [!] FIX: AGGRESSIVE KEYBOARD FORCER ON TOUCH
+            outputView.setOnTouchListener((v, e) -> {
                 scaleDetector.onTouchEvent(e);
                 if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
-                    outputView.requestFocus();
-                    ((MainActivity)getActivity()).forceKeyboard(outputView);
+                    v.requestFocus();
+                    MainActivity mainActivity = (MainActivity) getActivity();
+                    if (mainActivity != null) {
+                        mainActivity.forceKeyboard(v);
+                    }
                 }
                 return false; 
             });
+
+            String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
+            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
 
             outputView.setOnKeyListener((v, code, ev) -> {
                 MainActivity mainActivity = (MainActivity) getActivity();
@@ -582,6 +589,7 @@ public class MainActivity extends AppCompatActivity {
             return sv;
         }
 
+        // [!] FIX: RESTORED THE 'DEL' BUTTON MATRIX
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
@@ -598,6 +606,7 @@ public class MainActivity extends AppCompatActivity {
                 if (files != null && files.length > 0) {
                     for (File file : files) {
                         if (file.isDirectory()) continue; 
+                        
                         LinearLayout row = new LinearLayout(context);
                         row.setOrientation(LinearLayout.HORIZONTAL);
                         row.setPadding(0, 20, 0, 20);
@@ -608,7 +617,30 @@ public class MainActivity extends AppCompatActivity {
                         pkgName.setTextColor(Color.parseColor("#FFFFFF"));
                         pkgName.setTypeface(Typeface.MONOSPACE);
                         pkgName.setTextSize(16f);
+                        // Using weight 1f pushes the DEL button to the extreme right
+                        pkgName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                        Button delBtn = new Button(context);
+                        delBtn.setText("DEL");
+                        delBtn.setTextColor(Color.parseColor("#FF003C")); 
+                        delBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
+                        delBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+                        
+                        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        btnLp.setMargins(20, 0, 0, 0);
+                        delBtn.setLayoutParams(btnLp);
+                        
+                        delBtn.setOnClickListener(v -> {
+                            if (file.delete()) {
+                                Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
+                                renderPackagesMatrix(rootLayout, context); // Auto-refresh the layout
+                            } else {
+                                Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
                         row.addView(pkgName);
+                        row.addView(delBtn);
                         rootLayout.addView(row);
                     }
                 }
