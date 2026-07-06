@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (ULTIMATE ARSENAL & SYNC MATRIX)
+ * HK-OPERATION : ELITE COMMAND CENTER (GHOST WIPER EDITION)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Zero Echo, Live Package Manager UI & Alpha Sync Terminal
+ * DIRECTIVE    : Pure Shell Sanitization, Zero Garbage, Double-Echo Fix
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -61,18 +61,17 @@ public class MainActivity extends AppCompatActivity {
         TerminalEngine.startAmSocketServer();
         
         // ==========================================
-        // [!] FULL-STACK SHELL SANITIZATION MATRIX
+        // [!] NATIVE SHELL INITIATION
         // ==========================================
         String[] env = {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
-            "TERM=vt100", // VT100 prevents advanced ANSI cursor jumping errors
-            "HOME=" + TerminalEngine.HOME_PATH,
-            "PS1= " // Hard reset prompt to bypass Android shell garbage
+            "TERM=vt100", 
+            "HOME=" + TerminalEngine.HOME_PATH
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Turn off shell echo natively (Replaced stty to fix binary not found error)
-        ptyBridge.writeCommand("set +o echo\n"); 
+        // Attempt to mute the shell internally
+        ptyBridge.writeCommand("export PS1=\"\"\n"); 
 
         new Thread(() -> {
             try {
@@ -95,11 +94,19 @@ public class MainActivity extends AppCompatActivity {
     private void appendMatrixText(String rawText) {
         if (outputView == null || rawText == null) return;
 
+        // Clean basic escape characters
         String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
         cleanText = cleanText.replace("\r", "").replaceAll(".\\x08", "");
 
-        // Filter out silent configuration commands from UI
-        if (cleanText.contains("set +o echo")) return;
+        // ==========================================
+        // [!] THE GHOST WIPER (Regex Matrix)
+        // System ke default garbage paths (e.g., 127|:/data/data/...) ko hawa mein destroy karo
+        // ==========================================
+        cleanText = cleanText.replaceAll("(\\d+\\|)?\\:?/data/data/com\\.hk\\.hkterminal[^\\$]*\\$ ?", "");
+        
+        // Hide our silent sync and export commands from the user UI
+        cleanText = cleanText.replace("export PS1=\"\"", "");
+        cleanText = cleanText.replace("echo 'HK-SYNC-DONE'", "");
 
         if (cleanText.contains("HK-SYNC-DONE")) {
             cleanText = cleanText.replace("HK-SYNC-DONE", currentPrompt);
@@ -216,11 +223,15 @@ public class MainActivity extends AppCompatActivity {
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
-        // Outputting manual command input exactly once
-        appendMatrixText(command + "\n");
+        // [!] ALPHA FIX: Removed manual appendMatrixText(command) here
+        // Isse double command typing wala bug permanently fix ho jayega.
+        // Shell ab naturally command echo karega bina kisi overlap ke.
+        
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk install ")) {
+            // Humne manual echo hata diya hai, isliye custom command manual dikhani hogi
+            appendMatrixText(command + "\n");
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
                 HKPackageManager.installPackage(pkg, msg -> runOnUiThread(() -> {
@@ -235,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
+            appendMatrixText(command + "\n");
             MainActivity.Callback cb = msg -> runOnUiThread(() -> {
                 appendMatrixText(msg + "\n" + currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
@@ -245,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("su")) {
+            appendMatrixText(command + "\n");
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
                 currentPrompt = "root@pshacker:~# ";
@@ -255,6 +268,7 @@ public class MainActivity extends AppCompatActivity {
             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
+            appendMatrixText(command + "\n");
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
             appendMatrixText(currentPrompt);
@@ -263,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ptyBridge != null) {
-            ptyBridge.writeCommand(trimmedCmd + "\n");
+            ptyBridge.writeCommand(command + "\n");
             ptyBridge.writeCommand("echo 'HK-SYNC-DONE'\n");
         } else {
             TerminalEngine.run(command);
@@ -278,7 +292,9 @@ public class MainActivity extends AppCompatActivity {
         if (last != -1) {
             String cmd = (hIndex == -1) ? "" : history.get(history.size() - 1 - hIndex);
             outputView.setText(txt.substring(0, last + currentPrompt.length()));
-            appendMatrixText(cmd);
+            
+            // Re-simulate typing the command visually
+            // (We don't need to appendMatrixText here, setText is enough for history)
         }
     }
 
