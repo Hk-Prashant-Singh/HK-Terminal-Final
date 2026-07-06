@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Smart Native Unlocker, Perfect Copy/Paste Guard, Ghost Clear, Memory Persistence, 100% Keyboard Lock
+ * DIRECTIVE    : 100% Bug-Free, Native Execution Unlocker, Smart Copy Guard, History Engine
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -577,7 +577,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE SMART NATIVE UNLOCKER (Fixes BOTH Binaries & Scripts Permission Denied)
+        // [!] THE SMART NATIVE UNLOCKER (Fixes Permission Denied)
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         
@@ -588,7 +588,6 @@ public class MainActivity extends AppCompatActivity {
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
                 
-                // ALPHA MATRIX: Detect if it's a shell script or raw binary
                 boolean isShellScript = false;
                 try {
                     BufferedReader br = new BufferedReader(new FileReader(targetBin));
@@ -600,10 +599,8 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
 
                 if (isShellScript) {
-                    // Force wrap inside 'sh' so the Kernel won't block execution
                     ptyBridge.writeCommand("sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
                 } else {
-                    // Execute direct ELF Native Payload
                     ptyBridge.writeCommand(targetBin.getAbsolutePath() + " " + passArgs + "\n");
                 }
             }
@@ -671,7 +668,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Smart Edit Guard & Free Selection)
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Compile Error Fixed & Edit Guard Added)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -718,14 +715,13 @@ public class MainActivity extends AppCompatActivity {
             
             return new InputConnectionWrapper(ic, true) {
                 
-                // [!] Guard against deleting terminal output with software keyboard backspace
                 @Override public boolean deleteSurroundingText(int beforeLength, int afterLength) {
-                    String s = getText().toString();
+                    String s = CustomEditText.this.getText().toString();
                     int promptIdx = s.lastIndexOf("$ ");
                     if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
                     int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
                     
-                    if (getSelectionStart() <= minPos) return false;
+                    if (CustomEditText.this.getSelectionStart() <= minPos) return false;
                     return super.deleteSurroundingText(beforeLength, afterLength);
                 }
 
@@ -733,13 +729,14 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity main = (MainActivity) getContext();
                     if (main == null) return super.commitText(text, newCursorPosition);
                     
-                    // [!] SMART EDIT GUARD: Jumps cursor to the bottom if typing in history
-                    String s = getText().toString();
+                    String s = CustomEditText.this.getText().toString();
                     int promptIdx = s.lastIndexOf("$ ");
                     if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
                     int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
-                    if (getSelectionStart() < minPos) {
-                        setSelection(getText().length());
+                    
+                    // [!] THE FIXED CURSOR JUMP
+                    if (CustomEditText.this.getSelectionStart() < minPos) {
+                        CustomEditText.this.setSelection(CustomEditText.this.getText().length());
                     }
 
                     if (text.toString().equals("\n")) {
@@ -771,17 +768,16 @@ public class MainActivity extends AppCompatActivity {
             if (main == null) return super.onKeyDown(keyCode, event);
             
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
-                // Ensure execution happens from the prompt line
-                setSelection(getText().length());
+                CustomEditText.this.setSelection(CustomEditText.this.getText().length());
                 main.executeExtractedCommand();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> main.forceKeyboard(this), 50);
                 return true;
             }
 
             if (keyCode == KeyEvent.KEYCODE_DEL) {
-                int selStart = getSelectionStart();
-                int selEnd = getSelectionEnd();
-                String s = getText().toString();
+                int selStart = CustomEditText.this.getSelectionStart();
+                int selEnd = CustomEditText.this.getSelectionEnd();
+                String s = CustomEditText.this.getText().toString();
                 int promptIdx = s.lastIndexOf("$ ");
                 if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
                 int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
