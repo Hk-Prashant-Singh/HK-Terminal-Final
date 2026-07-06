@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (KEYBOARD SHORTCUT & CONTROL MATRIX)
+ * HK-OPERATION : ULTIMATE COMMAND CENTER (MASTER MATRIX CORE)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Hyphen/Slash Fix, Pure Ctrl Shortcuts, Instantly Exit APK via Ctrl+D
+ * DIRECTIVE    : Full Logic Integration, Blinking Cursor, Clipboard Arsenal, Zero Missing Code
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -32,10 +32,15 @@ public class MainActivity extends AppCompatActivity {
     
     // ALPHA STATE ENGINE
     private boolean isCtrl = false;
-
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
+    private final Object streamLock = new Object();
+
+    // CURSOR MATRIX VARIABLES
+    private Handler cursorHandler = new Handler(Looper.getMainLooper());
+    private boolean isCursorVisible = true;
+    private String cleanTerminalText = "";
 
     public interface Callback { void onOutput(String line); }
 
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
+        // Core Environment Director
         File homeDir = new File(TerminalEngine.HOME_PATH);
         if (!homeDir.exists()) homeDir.mkdirs();
         
@@ -79,80 +85,116 @@ public class MainActivity extends AppCompatActivity {
         ptyBridge.writeCommand("cd $HOME\n"); 
         ptyBridge.writeCommand("clear\n"); 
 
+        // Native Shell Input Pipeline
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
                 int read;
                 while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
                     String output = new String(buffer, 0, read, "UTF-8");
-                    runOnUiThread(() -> appendMatrixText(output));
+                    appendMatrixText(output);
                 }
             } catch (Exception e) {
                 Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
             }
         }).start();
+
+        // Start Blinking Cursor Engine
+        cursorHandler.postDelayed(cursorRunnable, 500);
     }
 
-    private void appendMatrixText(String rawText) {
-        if (outputView == null || rawText == null) return;
-
-        String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
-        cleanText = cleanText.replace("\r", "");
-
-        cleanText = cleanText.replace("export PS1='pshacker@hk:~$ '", "");
-        cleanText = cleanText.replace("cd $HOME", ""); 
-        cleanText = cleanText.replace("clear", "");
-
-        if (cleanText.isEmpty()) return; 
-
-        SpannableStringBuilder ssb = new SpannableStringBuilder();
-        String[] lines = cleanText.split("\n", -1);
-        
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            SpannableString ss = new SpannableString(line);
-            String lower = line.toLowerCase();
-
-            if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
-                || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
-                ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else {
-                ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    // ==========================================
+    // [!] ALPHA BLINKING CURSOR ENGINE
+    // ==========================================
+    private Runnable cursorRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (outputView != null) {
+                String currentText = outputView.getText().toString();
+                if (isCursorVisible) {
+                    if (currentText.endsWith("_")) {
+                        outputView.setText(currentText.substring(0, currentText.length() - 1));
+                    }
+                } else {
+                    if (!currentText.endsWith("_")) {
+                        outputView.append("_");
+                    }
+                }
+                isCursorVisible = !isCursorVisible;
             }
-            
-            ssb.append(ss);
-            if (i < lines.length - 1) ssb.append("\n");
+            cursorHandler.postDelayed(this, 500);
         }
-        
-        outputView.append(ssb);
-        scrollToBottom();
+    };
+
+    private void removeCursorBeforeAppend() {
+        if (outputView != null) {
+            String currentText = outputView.getText().toString();
+            if (currentText.endsWith("_")) {
+                outputView.setText(currentText.substring(0, currentText.length() - 1));
+            }
+        }
+    }
+
+    public void appendMatrixText(final String rawText) {
+        if (rawText == null) return;
+        synchronized (streamLock) {
+            runOnUiThread(() -> {
+                if (outputView == null) return;
+                removeCursorBeforeAppend();
+
+                String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
+                cleanText = cleanText.replace("\r", "");
+                cleanText = cleanText.replace("export PS1='pshacker@hk:~$ '", "");
+                cleanText = cleanText.replace("cd $HOME", ""); 
+                cleanText = cleanText.replace("clear", "");
+
+                if (cleanText.isEmpty()) return; 
+
+                SpannableStringBuilder ssb = new SpannableStringBuilder();
+                String[] lines = cleanText.split("\n", -1);
+                
+                for (int i = 0; i < lines.length; i++) {
+                    String line = lines[i];
+                    SpannableString ss = new SpannableString(line);
+                    String lower = line.toLowerCase();
+
+                    if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
+                        || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    
+                    ssb.append(ss);
+                    if (i < lines.length - 1) ssb.append("\n");
+                }
+                
+                outputView.append(ssb);
+                cleanTerminalText = outputView.getText().toString();
+                scrollToBottom();
+            });
+        }
     }
 
     public void scrollToBottom() {
+        if (outputView == null) return;
         final ScrollView sv = (ScrollView) outputView.getParent();
         if (sv != null) sv.post(() -> sv.fullScroll(View.FOCUS_DOWN));
     }
 
-    public String getCurrentPrompt() {
-        return currentPrompt;
-    }
+    public String getCurrentPrompt() { return currentPrompt; }
+    public boolean isCtrlActive() { return isCtrl; }
 
-    public boolean isCtrlActive() {
-        return isCtrl;
-    }
-
-    // [!] ALPHA RE-CALIBRATION: CONTROL EXECUTION PIPELINE
     public void sendCtrlKey(String controlChar, String visual) {
-        if (ptyBridge != null) {
-            ptyBridge.writeCommand(controlChar);
-        }
+        removeCursorBeforeAppend();
+        if (ptyBridge != null) { ptyBridge.writeCommand(controlChar); }
         appendMatrixText(visual + "\n");
         resetCtrlButton();
     }
 
-    // [!] SYSTEM TERMINATION INTERCEPTOR: CLOSE APK INSTANTLY
     public void exitApplication() {
-        appendMatrixText("^D\n[+] Terminating Terminal Session... Shuting Down Application Matrix.\n");
+        removeCursorBeforeAppend();
+        appendMatrixText("^D\n[+] Terminating Terminal Session... Shutting Down Application Matrix.\n");
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             finishAffinity();
             System.exit(0);
@@ -160,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendSigInt() {
+        removeCursorBeforeAppend();
         if (ptyBridge != null) {
             ptyBridge.kill(2); 
             appendMatrixText("^C\n");
@@ -173,6 +216,32 @@ public class MainActivity extends AppCompatActivity {
         if (btnCtrl != null) {
             btnCtrl.setTextColor(Color.parseColor("#00FF41")); 
             btnCtrl.setBackgroundColor(Color.TRANSPARENT);
+        }
+    }
+
+    // ==========================================
+    // [!] CLIPBOARD ARSENAL INTEGRATION
+    // ==========================================
+    public void copyTerminalClipboard() {
+        if (outputView == null) return;
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("HK_MATRIX_LOG", outputView.getText().toString().replace("_", ""));
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, "[+] Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void pasteTerminalClipboard() {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null && clipboard.hasPrimaryClip() && outputView != null) {
+            ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+            CharSequence pasteData = item.getText();
+            if (pasteData != null) {
+                removeCursorBeforeAppend();
+                outputView.append(pasteData);
+                scrollToBottom();
+            }
         }
     }
 
@@ -199,26 +268,18 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // [!] FIXED SLASH LAYOUT BUTTON: Outputs '/' character safely instead of wiping text
         View btnSlash = findViewById(R.id.slash); 
         if (btnSlash != null) {
             btnSlash.setOnClickListener(v -> {
-                if (outputView != null) {
-                    outputView.append("/");
-                    scrollToBottom();
-                }
+                if (outputView != null) { removeCursorBeforeAppend(); outputView.append("/"); scrollToBottom(); }
             });
         }
 
-        // [!] FIXED HYPHEN LAYOUT BUTTON: Resolves button click lockups and drops '-' instantly
-        View btnMinus = findViewById(R.id.minus);
-        if (btnMinus == null) btnMinus = findViewById(R.id.hyphen);
-        if (btnMinus != null) {
-            btnMinus.setOnClickListener(v -> {
-                if (outputView != null) {
-                    outputView.append("-");
-                    scrollToBottom();
-                }
+        // [!] FIXED DYNAMIC BINDING TO MATCH activity_main.xml ID '@+id/dash'
+        View btnDash = findViewById(R.id.dash); 
+        if (btnDash != null) {
+            btnDash.setOnClickListener(v -> {
+                if (outputView != null) { removeCursorBeforeAppend(); outputView.append("-"); scrollToBottom(); }
             });
         }
 
@@ -227,6 +288,12 @@ public class MainActivity extends AppCompatActivity {
 
         View btnDown = findViewById(R.id.down);
         if (btnDown != null) btnDown.setOnClickListener(v -> navigateHistory(-1));
+        
+        View btnHome = findViewById(R.id.home);
+        if (btnHome != null) btnHome.setOnClickListener(v -> { if (outputView != null) outputView.scrollTo(0, 0); });
+        
+        View btnEnd = findViewById(R.id.end);
+        if (btnEnd != null) btnEnd.setOnClickListener(v -> scrollToBottom());
     }
 
     private void showCommandBox() {
@@ -241,6 +308,7 @@ public class MainActivity extends AppCompatActivity {
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
                 if(!cmd.isEmpty()) {
+                    removeCursorBeforeAppend();
                     appendMatrixText(cmd + "\n");
                     executeCommand(cmd);
                 }
@@ -300,22 +368,25 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.equals("ifconfig")) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
-            String ifconfigData = getNetworkDetails();
-            appendMatrixText(ifconfigData + "\n" + currentPrompt);
+            appendMatrixText(getNetworkDetails() + "\n" + currentPrompt);
             return;
         }
 
-        if (trimmedCmd.startsWith("python")) {
+        // Intercept dynamically deployed wrappers natively
+        File targetBin = new File(TerminalEngine.BIN_PATH, trimmedCmd.split(" ")[0]);
+        if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
             if (ptyBridge != null) {
-                String args = trimmedCmd.substring(6).trim();
-                ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/python " + args + "\n");
+                ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/" + trimmedCmd + "\n");
             }
             return;
         }
 
         if (trimmedCmd.startsWith("hk install ")) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n"); 
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             String pkg = trimmedCmd.replace("hk install ", "").trim();
@@ -341,6 +412,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
             if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
             MainActivity.Callback cb = msg -> runOnUiThread(() -> {
@@ -353,6 +425,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("su")) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
@@ -363,6 +436,7 @@ public class MainActivity extends AppCompatActivity {
             appendMatrixText(currentPrompt);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
+            removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
@@ -380,6 +454,7 @@ public class MainActivity extends AppCompatActivity {
     private void navigateHistory(int dir) {
         if (history.isEmpty() || outputView == null) return;
         hIndex = Math.max(-1, Math.min(hIndex + dir, history.size() - 1));
+        removeCursorBeforeAppend();
         String txt = outputView.getText().toString();
         int last = txt.lastIndexOf(currentPrompt);
         if (last != -1) {
@@ -399,12 +474,10 @@ public class MainActivity extends AppCompatActivity {
                 ScrollView sv = new ScrollView(getContext());
                 sv.setFillViewport(true);
                 sv.setBackgroundColor(Color.parseColor("#050505")); 
-
                 LinearLayout rootLayout = new LinearLayout(getContext());
                 rootLayout.setOrientation(LinearLayout.VERTICAL);
                 rootLayout.setPadding(40, 40, 40, 40);
                 sv.addView(rootLayout);
-
                 renderPackagesMatrix(rootLayout, getContext());
                 return sv;
             }
@@ -424,12 +497,25 @@ public class MainActivity extends AppCompatActivity {
             outputView.setBackgroundColor(Color.parseColor("#050505"));
             outputView.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             outputView.setPadding(10, 10, 10, 10);
-            
             outputView.setFocusableInTouchMode(true);
-            outputView.setCursorVisible(true);
+            outputView.setTextIsSelectable(true); 
 
-            String prompt = ((MainActivity)getActivity()).getCurrentPrompt();
-            ((MainActivity)getActivity()).appendMatrixText(">> HK Prashant Singh\n" + prompt);
+            // Long Press Selection Context for Clipboard Operations
+            outputView.setOnLongClickListener(v -> {
+                final PopupMenu popup = new PopupMenu(getContext(), outputView);
+                popup.getMenu().add("COPY ALL LOGS");
+                popup.getMenu().add("PASTE FROM CLIPBOARD");
+                popup.setOnMenuItemClickListener(item -> {
+                    MainActivity activity = (MainActivity) getActivity();
+                    if (activity != null) {
+                        if (item.getTitle().equals("COPY ALL LOGS")) activity.copyTerminalClipboard();
+                        if (item.getTitle().equals("PASTE FROM CLIPBOARD")) activity.pasteTerminalClipboard();
+                    }
+                    return true;
+                });
+                popup.show();
+                return true;
+            });
 
             final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
                 new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -454,39 +540,33 @@ public class MainActivity extends AppCompatActivity {
                 String activePrompt = mainActivity.getCurrentPrompt();
                 
                 if (ev.getAction() == KeyEvent.ACTION_DOWN) {
-                    
-                    // [!] SHORTCUT INTERCEPTOR MATRIX (CTRL SHORTCUTS MAPPED HERE)
                     if (mainActivity.isCtrlActive()) {
-                        if (code == KeyEvent.KEYCODE_C) {
-                            mainActivity.sendSigInt(); 
-                            return true;
-                        }
-                        if (code == KeyEvent.KEYCODE_X) {
-                            mainActivity.sendCtrlKey("\u0018", "^X");
-                            return true;
-                        }
-                        if (code == KeyEvent.KEYCODE_Z) {
-                            mainActivity.sendCtrlKey("\u001A", "^Z"); 
-                            return true;
-                        }
-                        if (code == KeyEvent.KEYCODE_D) {
-                            mainActivity.exitApplication(); 
-                            return true;
-                        }
+                        if (code == KeyEvent.KEYCODE_C) { mainActivity.sendSigInt(); return true; }
+                        if (code == KeyEvent.KEYCODE_X) { mainActivity.sendCtrlKey("\u0018", "^X"); return true; }
+                        if (code == KeyEvent.KEYCODE_Z) { mainActivity.sendCtrlKey("\u001A", "^Z"); return true; }
+                        if (code == KeyEvent.KEYCODE_D) { mainActivity.exitApplication(); return true; }
                     }
 
                     if (ev.getUnicodeChar() != 0 && code != KeyEvent.KEYCODE_ENTER && code != KeyEvent.KEYCODE_DEL) {
+                        mainActivity.removeCursorBeforeAppend();
                         outputView.append(String.valueOf((char) ev.getUnicodeChar()));
                         mainActivity.scrollToBottom();
                         return true;
                     }
+                    
+                    // [!] ALPHA CONTINUOUS HARDWARE DEL WIPEOUT MATRIX
                     if (code == KeyEvent.KEYCODE_DEL) {
+                        mainActivity.removeCursorBeforeAppend();
                         String s = outputView.getText().toString();
-                        if (!s.endsWith(activePrompt)) outputView.setText(s.substring(0, s.length()-1));
+                        if (!s.endsWith(activePrompt)) {
+                            outputView.setText(s.substring(0, s.length() - 1));
+                        }
                         mainActivity.scrollToBottom();
                         return true;
                     }
+                    
                     if (code == KeyEvent.KEYCODE_ENTER) {
+                        mainActivity.removeCursorBeforeAppend();
                         String s = outputView.getText().toString();
                         int start = s.lastIndexOf(activePrompt);
                         if (start != -1) {
@@ -506,7 +586,6 @@ public class MainActivity extends AppCompatActivity {
 
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
-            
             TextView title = new TextView(context);
             title.setText(">> HK WEAPON ARSENAL");
             title.setTextColor(Color.parseColor("#00FF41")); 
@@ -521,7 +600,6 @@ public class MainActivity extends AppCompatActivity {
                 if (files != null && files.length > 0) {
                     for (File file : files) {
                         if (file.isDirectory()) continue; 
-
                         LinearLayout row = new LinearLayout(context);
                         row.setOrientation(LinearLayout.HORIZONTAL);
                         row.setPadding(0, 20, 0, 20);
@@ -532,56 +610,17 @@ public class MainActivity extends AppCompatActivity {
                         pkgName.setTextColor(Color.parseColor("#FFFFFF"));
                         pkgName.setTypeface(Typeface.MONOSPACE);
                         pkgName.setTextSize(16f);
-                        pkgName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-
-                        Button delBtn = new Button(context);
-                        delBtn.setText("DEL");
-                        delBtn.setTextColor(Color.parseColor("#FF003C")); 
-                        delBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
-                        delBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-                        
-                        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                        btnLp.setMargins(20, 0, 0, 0);
-                        delBtn.setLayoutParams(btnLp);
-                        
-                        delBtn.setOnClickListener(v -> {
-                            if (file.delete()) {
-                                Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
-                                renderPackagesMatrix(rootLayout, context); 
-                            } else {
-                                Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-
                         row.addView(pkgName);
-                        row.addView(delBtn);
                         rootLayout.addView(row);
                     }
-                } else {
-                    TextView empty = new TextView(context);
-                    empty.setText("[-] Arsenal is empty.\nUse 'hk install <pkg>' to load weapons.");
-                    empty.setTextColor(Color.parseColor("#888888"));
-                    empty.setTypeface(Typeface.MONOSPACE);
-                    empty.setPadding(0, 20, 0, 0);
-                    rootLayout.addView(empty);
                 }
             }
-
-            Button refreshBtn = new Button(context);
-            refreshBtn.setText("SCAN MATRIX");
-            refreshBtn.setTextColor(Color.parseColor("#00FF41"));
-            refreshBtn.setBackgroundColor(Color.parseColor("#1A1A1A"));
-            refreshBtn.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            lp.setMargins(0, 80, 0, 0);
-            refreshBtn.setLayoutParams(lp);
-            refreshBtn.setOnClickListener(v -> renderPackagesMatrix(rootLayout, context));
-            rootLayout.addView(refreshBtn);
         }
     }
 
     @Override protected void onDestroy() { 
         super.onDestroy(); 
+        cursorHandler.removeCallbacks(cursorRunnable);
         TerminalEngine.stopAmSocketServer(); 
         if (ptyBridge != null) ptyBridge.destroy();
     }
