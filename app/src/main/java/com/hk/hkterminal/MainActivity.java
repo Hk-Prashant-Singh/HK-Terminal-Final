@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Native Unlocker, Perfect Copy/Paste, Ghost Clear, Memory Persistence, Keyboard Lock
+ * DIRECTIVE    : Smart Native Unlocker, Perfect Copy/Paste, Ghost Clear, Memory Persistence, 100% Keyboard Lock
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
         initHKEnvironment();
-        loadHistory(); // [!] THE HISTORY MATRIX INITIALIZED
+        loadHistory(); 
 
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setUserInputEnabled(false); 
@@ -193,12 +193,11 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BLOCK 2: THE GHOST WIPE (Zero Gap Artifact Fix)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
                 outputView.setText(""); 
-                outputView.append(currentPrompt); // Absolute Lock to Line 0
+                outputView.append(currentPrompt); 
                 resetCtrlState();
             }
         });
@@ -520,7 +519,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
-        // [!] THE HISTORY ENGINE SAVER
         history.add(command);
         saveToHistory(command);
         hIndex = -1;
@@ -579,17 +577,35 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE NATIVE UNLOCKER (Fixes 'Permission Denied' permanently)
+        // [!] THE SMART NATIVE UNLOCKER (Fixes BOTH Binaries & Scripts Permission Denied)
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         
         if (targetBin.exists()) {
             targetBin.setExecutable(true, false); 
             targetBin.setReadable(true, false);
+            
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                // [!] Sending absolute path to bypass 'sh' restriction
-                ptyBridge.writeCommand(targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                
+                // ALPHA MATRIX: Detect if it's a shell script or raw binary
+                boolean isShellScript = false;
+                try {
+                    BufferedReader br = new BufferedReader(new FileReader(targetBin));
+                    String firstLine = br.readLine();
+                    if (firstLine != null && firstLine.startsWith("#!")) {
+                        isShellScript = true;
+                    }
+                    br.close();
+                } catch (Exception ignored) {}
+
+                if (isShellScript) {
+                    // Force wrap inside 'sh' so the Kernel won't block execution
+                    ptyBridge.writeCommand("sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                } else {
+                    // Execute direct ELF Native Payload
+                    ptyBridge.writeCommand(targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                }
             }
             return;
         }
@@ -631,7 +647,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] HISTORY STORAGE PROTOCOL
     private void loadHistory() {
         try {
             File historyFile = new File(TerminalEngine.HOME_PATH, ".hk_history");
@@ -656,7 +671,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE 
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (With Absolute Keyboard Lock)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -714,7 +729,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
             InputConnection ic = super.onCreateInputConnection(outAttrs);
-            outAttrs.imeOptions = EditorInfo.IME_ACTION_GO;
+            // [!] THE ALPHA FIX: Stops OS from auto-closing keyboard
+            outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_ENTER_ACTION; 
             outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE;
             
             return new InputConnectionWrapper(ic, true) {
@@ -724,7 +740,8 @@ public class MainActivity extends AppCompatActivity {
                     
                     if (text.toString().equals("\n")) {
                         main.executeExtractedCommand();
-                        main.forceKeyboard(CustomEditText.this); // [!] KEYBOARD LOCK INJECTED HERE
+                        // Delay keeps the keyboard locked on screen
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> main.forceKeyboard(CustomEditText.this), 50);
                         return true; 
                     }
                     
@@ -752,7 +769,7 @@ public class MainActivity extends AppCompatActivity {
             
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                 main.executeExtractedCommand();
-                main.forceKeyboard(this); // [!] KEYBOARD LOCK INJECTED HERE
+                new Handler(Looper.getMainLooper()).postDelayed(() -> main.forceKeyboard(this), 50);
                 return true;
             }
 
@@ -808,6 +825,20 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
+
+            // [!] Secondary Keyboard UI Interceptor
+            outputView.setOnEditorActionListener((v, actionId, event) -> {
+                boolean isEnter = (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
+                if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_UNSPECIFIED || isEnter) {
+                    MainActivity mainActivity = (MainActivity) getActivity();
+                    if (mainActivity != null) {
+                        mainActivity.executeExtractedCommand();
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> mainActivity.forceKeyboard(v), 50);
+                    }
+                    return true; 
+                }
+                return false;
+            });
 
             outputView.setOnTouchListener((v, e) -> {
                 if (e.getAction() == MotionEvent.ACTION_UP) {
