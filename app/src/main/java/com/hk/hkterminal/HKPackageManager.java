@@ -29,7 +29,7 @@ public class HKPackageManager {
                 update(listener, "Get:2 https://mirror.hk-operation.net/main stable/main aarch64 libexpat [95.5 kB]");
                 Thread.sleep(300);
                 update(listener, "Get:3 https://mirror.hk-operation.net/main stable/main aarch64 " + pkgName + " [4817 kB]");
-                Thread.sleep(900);
+                Thread.sleep(800);
                 update(listener, "Get:4 https://mirror.hk-operation.net/main stable/main aarch64 pkg-config [32.8 kB]");
                 Thread.sleep(400);
 
@@ -46,7 +46,7 @@ public class HKPackageManager {
                 Thread.sleep(600);
 
                 // Step 4: The Elite Progress Bar Matrix
-                for (int i = 1; i <= 100; i += 8) {
+                for (int i = 1; i <= 100; i += 6) {
                     int progress = Math.min(i, 100);
                     StringBuilder bar = new StringBuilder("Progress: [");
                     bar.append(String.format("%3d%%", progress)).append("] [");
@@ -59,7 +59,7 @@ public class HKPackageManager {
                     bar.append("]");
                     
                     update(listener, bar.toString());
-                    Thread.sleep(200); // Dynamic extraction speed
+                    Thread.sleep(150); // Dynamic extraction speed
                 }
 
                 // Force 100% completion bar display
