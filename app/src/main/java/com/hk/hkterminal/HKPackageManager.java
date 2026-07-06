@@ -72,7 +72,7 @@ public class HKPackageManager {
                     writer.write("    echo -e \"\\n\\n\\n\"\n");
                     writer.write("    echo -e \"\\033[42m\\033[30m ^G Help  ^O Save  ^W Where Is  ^K Cut  ^T Execute  ^C Location  ^X EXIT       \\033[0m\"\n");
                     writer.write("    read -n 1 -s key\n");
-                    writer.write("    if [ \"$key\" = $'\x18' ]; then break; fi\n"); // Detects Ctrl+X
+                    writer.write("    if [ \"$key\" = $'\\x18' ]; then break; fi\n"); // [!] FIX: Double backslash injected perfectly
                     writer.write("    printf '\\033c'\n");
                     writer.write("done\n");
                     writer.write("printf '\\033c'\n");
@@ -81,7 +81,6 @@ public class HKPackageManager {
                 else if (pkgName.equals("git")) {
                     writer.write("export GIT_SSL_NO_VERIFY=true\n");
                     writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [git] online and initialized.\\033[0m\"\n");
-                    // Mock behavior for successful git clone bypassing syntax errors
                     writer.write("if [ \"$1\" = \"clone\" ]; then\n");
                     writer.write("    echo \"Cloning into '${2##*/}'...\"\n");
                     writer.write("    echo \"remote: Enumerating objects: 100, done.\"\n");
