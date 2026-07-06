@@ -19,13 +19,16 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayoutMediator;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.*;
 
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Native Unlocker, Perfect Copy/Paste Enforcement, Ghost Clear
+ * DIRECTIVE    : Native Unlocker, Perfect Copy/Paste, Ghost Clear, Memory Persistence, Keyboard Lock
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -61,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
         initHKEnvironment();
+        loadHistory(); // [!] THE HISTORY MATRIX INITIALIZED
 
         ViewPager2 vp = findViewById(R.id.viewPager);
         vp.setUserInputEnabled(false); 
@@ -189,14 +193,12 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
-    // [!] BLOCK 2: THE GHOST WIPE
+    // [!] BLOCK 2: THE GHOST WIPE (Zero Gap Artifact Fix)
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
-                outputView.setText(""); // Pure visual wipe
-                if (ptyBridge != null) { 
-                    ptyBridge.writeCommand("\n"); // Silent fresh prompt
-                }
+                outputView.setText(""); 
+                outputView.append(currentPrompt); // Absolute Lock to Line 0
                 resetCtrlState();
             }
         });
@@ -260,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
     private void deployPackageScript(File binDir, String pkg) {
         File binFile = new File(binDir, pkg);
         try {
-            java.io.FileWriter writer = new java.io.FileWriter(binFile);
+            FileWriter writer = new FileWriter(binFile);
             writer.write("#!/system/bin/sh\n");
             writer.write("EXE_NAME=$(basename \"$0\")\n");
             if (pkg.equals("apt")) {
@@ -386,9 +388,7 @@ public class MainActivity extends AppCompatActivity {
                         btnUpgradeAll.setTextColor(Color.parseColor("#030303"));
                         Toast.makeText(MainActivity.this, "[+] ALL PACKAGES UPGRADED", Toast.LENGTH_SHORT).show();
                         
-                        if (packagesFragmentInstance != null) {
-                            packagesFragmentInstance.refreshPackagesList();
-                        }
+                        if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
                     });
                 }).start();
             });
@@ -442,9 +442,7 @@ public class MainActivity extends AppCompatActivity {
             .setView(input)
             .setPositiveButton("EXECUTE", (d, w) -> {
                 String cmd = input.getText().toString().trim();
-                if(!cmd.isEmpty()) {
-                    executeCommand(cmd);
-                }
+                if(!cmd.isEmpty()) executeCommand(cmd);
             }).setNegativeButton("CANCEL", null).show();
         
         input.requestFocus();
@@ -453,7 +451,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+        if (imm != null) imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
     }
 
     private String getNetworkDetails() {
@@ -483,9 +481,7 @@ public class MainActivity extends AppCompatActivity {
             }
             if (sb.length() == 0) return "lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\n        inet 127.0.0.1  netmask 255.0.0.0";
             return sb.toString().trim();
-        } catch (Exception ex) {
-            return "[-] Network Matrix Offline";
-        }
+        } catch (Exception ex) { return "[-] Network Matrix Offline"; }
     }
 
     public void executeExtractedCommand() {
@@ -500,11 +496,8 @@ public class MainActivity extends AppCompatActivity {
             if (pIdx == -1) pIdx = lastLine.lastIndexOf(currentPrompt); 
             
             String cmd = "";
-            if (pIdx != -1) {
-                cmd = lastLine.substring(pIdx + 2).trim();
-            } else {
-                cmd = lastLine.trim();
-            }
+            if (pIdx != -1) cmd = lastLine.substring(pIdx + 2).trim();
+            else cmd = lastLine.trim();
             
             outputView.append("\n");
 
@@ -526,7 +519,10 @@ public class MainActivity extends AppCompatActivity {
             if (ptyBridge != null) ptyBridge.writeCommand("\n");
             return;
         }
+        
+        // [!] THE HISTORY ENGINE SAVER
         history.add(command);
+        saveToHistory(command);
         hIndex = -1;
 
         String trimmedCmd = command.trim();
@@ -558,18 +554,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE NATIVE UNLOCKER (Fixes 'sl' Permission Error)
-        String baseCmd = trimmedCmd.split(" ")[0];
-        File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
-        if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
-            targetBin.setExecutable(true, false); 
-            if (ptyBridge != null) {
-                String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                ptyBridge.writeCommand(TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
-            }
-            return;
-        }
-
         if (trimmedCmd.startsWith("hk install ")) {
             if(headerProgress != null) {
                 headerProgress.setIndeterminate(true);
@@ -591,6 +575,21 @@ public class MainActivity extends AppCompatActivity {
                 appendMatrixText("[-] HK-PKG Error: Specify package name.\n");
                 if (ptyBridge != null) ptyBridge.writeCommand("\n");
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        // [!] THE NATIVE UNLOCKER (Fixes 'Permission Denied' permanently)
+        String baseCmd = trimmedCmd.split(" ")[0];
+        File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
+        
+        if (targetBin.exists()) {
+            targetBin.setExecutable(true, false); 
+            targetBin.setReadable(true, false);
+            if (ptyBridge != null) {
+                String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
+                // [!] Sending absolute path to bypass 'sh' restriction
+                ptyBridge.writeCommand(targetBin.getAbsolutePath() + " " + passArgs + "\n");
             }
             return;
         }
@@ -632,25 +631,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Copy/Paste Master Control)
+    // [!] HISTORY STORAGE PROTOCOL
+    private void loadHistory() {
+        try {
+            File historyFile = new File(TerminalEngine.HOME_PATH, ".hk_history");
+            if (historyFile.exists()) {
+                BufferedReader reader = new BufferedReader(new FileReader(historyFile));
+                String line;
+                history.clear();
+                while ((line = reader.readLine()) != null) {
+                    if (!line.trim().isEmpty()) history.add(line);
+                }
+                reader.close();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void saveToHistory(String command) {
+        try {
+            File historyFile = new File(TerminalEngine.HOME_PATH, ".hk_history");
+            FileWriter writer = new FileWriter(historyFile, true); 
+            writer.write(command + "\n");
+            writer.close();
+        } catch (Exception ignored) {}
+    }
+
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE 
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
 
-        public CustomEditText(Context context) { 
-            super(context); 
-            initEngine(context);
-        }
-
-        public CustomEditText(Context context, android.util.AttributeSet attrs) {
-            super(context, attrs);
-            initEngine(context);
-        }
+        public CustomEditText(Context context) { super(context); initEngine(context); }
+        public CustomEditText(Context context, android.util.AttributeSet attrs) { super(context, attrs); initEngine(context); }
 
         private void initEngine(Context context) {
             scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                @Override
-                public boolean onScale(ScaleGestureDetector detector) {
+                @Override public boolean onScale(ScaleGestureDetector detector) {
                     currentTextSize *= detector.getScaleFactor();
                     currentTextSize = Math.max(10f, Math.min(currentTextSize, 40f));
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, currentTextSize);
@@ -659,18 +675,14 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
+        @Override public boolean onTouchEvent(MotionEvent event) {
             scaleDetector.onTouchEvent(event);
             if (scaleDetector.isInProgress()) return true; 
             return super.onTouchEvent(event); 
         }
 
-        // [!] THE COPY-PASTE INTERCEPTOR (Fully Qualified Path Fix)
-        @Override
-        public boolean onTextContextMenuItem(int id) {
+        @Override public boolean onTextContextMenuItem(int id) {
             if (id == android.R.id.paste) {
-                // FIXED AMBIGUITY: explicitly calling android.content.ClipboardManager
                 android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 if (clipboard != null && clipboard.hasPrimaryClip()) {
                     ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
@@ -684,8 +696,7 @@ public class MainActivity extends AppCompatActivity {
             return super.onTextContextMenuItem(id);
         }
 
-        @Override
-        protected void onSelectionChanged(int selStart, int selEnd) {
+        @Override protected void onSelectionChanged(int selStart, int selEnd) {
             MainActivity main = (MainActivity) getContext();
             if (main != null) {
                 String s = getText() != null ? getText().toString() : "";
@@ -701,20 +712,19 @@ public class MainActivity extends AppCompatActivity {
             super.onSelectionChanged(selStart, selEnd);
         }
 
-        @Override
-        public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        @Override public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
             InputConnection ic = super.onCreateInputConnection(outAttrs);
             outAttrs.imeOptions = EditorInfo.IME_ACTION_GO;
             outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE;
             
             return new InputConnectionWrapper(ic, true) {
-                @Override
-                public boolean commitText(CharSequence text, int newCursorPosition) {
+                @Override public boolean commitText(CharSequence text, int newCursorPosition) {
                     MainActivity main = (MainActivity) getContext();
                     if (main == null) return super.commitText(text, newCursorPosition);
                     
                     if (text.toString().equals("\n")) {
                         main.executeExtractedCommand();
+                        main.forceKeyboard(CustomEditText.this); // [!] KEYBOARD LOCK INJECTED HERE
                         return true; 
                     }
                     
@@ -736,13 +746,13 @@ public class MainActivity extends AppCompatActivity {
             };
         }
 
-        @Override
-        public boolean onKeyDown(int keyCode, KeyEvent event) {
+        @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
             MainActivity main = (MainActivity) getContext();
             if (main == null) return super.onKeyDown(keyCode, event);
             
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                 main.executeExtractedCommand();
+                main.forceKeyboard(this); // [!] KEYBOARD LOCK INJECTED HERE
                 return true;
             }
 
@@ -768,8 +778,7 @@ public class MainActivity extends AppCompatActivity {
         public TerminalTabFragment() {}
         public TerminalTabFragment(int t) { this.type = t; }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
+        @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             if (type == 1) { 
                 ScrollView sv = new ScrollView(getContext());
                 sv.setFillViewport(true);
@@ -814,9 +823,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void refreshPackagesList() {
-            if (rootLayoutRef != null && getContext() != null) {
-                renderPackagesMatrix(rootLayoutRef, getContext());
-            }
+            if (rootLayoutRef != null && getContext() != null) renderPackagesMatrix(rootLayoutRef, getContext());
         }
 
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
@@ -834,7 +841,6 @@ public class MainActivity extends AppCompatActivity {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
                     Arrays.sort(files, (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName()));
-                    
                     for (File file : files) {
                         if (file.isDirectory()) continue; 
                         
@@ -864,9 +870,7 @@ public class MainActivity extends AppCompatActivity {
                             if (file.delete()) {
                                 Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
                                 renderPackagesMatrix(rootLayout, context);
-                            } else {
-                                Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
-                            }
+                            } else Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
                         });
 
                         row.addView(pkgName);
@@ -878,10 +882,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static void logError(String m, String t, Throwable e) { 
-        Log.e(m, t, e); 
-    }
-
+    public static void logError(String m, String t, Throwable e) { Log.e(m, t, e); }
     @Override protected void onDestroy() { 
         super.onDestroy(); 
         TerminalEngine.stopAmSocketServer(); 
