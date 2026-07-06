@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ULTIMATE COMMAND CENTER (MASTER MATRIX CORE)
+ * HK-OPERATION : MASTER COMMAND CENTER (INTEGRATED RUNTIME MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Full Logic Integration, Blinking Cursor, Clipboard Arsenal, Zero Missing Code
+ * DIRECTIVE    : Safe Interceptors, Thread-Safe Sync, Continuous Deletion, Precise ID Layouts
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -30,17 +30,15 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar headerProgress;
     public LinearLayout extraKeysLayout;
     
-    // ALPHA STATE ENGINE
     private boolean isCtrl = false;
     private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
     private final Object streamLock = new Object();
 
-    // CURSOR MATRIX VARIABLES
+    // Blinking Cursor Setup
     private Handler cursorHandler = new Handler(Looper.getMainLooper());
     private boolean isCursorVisible = true;
-    private String cleanTerminalText = "";
 
     public interface Callback { void onOutput(String line); }
 
@@ -53,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
 
-        // Core Environment Director
         File homeDir = new File(TerminalEngine.HOME_PATH);
         if (!homeDir.exists()) homeDir.mkdirs();
         
@@ -85,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
         ptyBridge.writeCommand("cd $HOME\n"); 
         ptyBridge.writeCommand("clear\n"); 
 
-        // Native Shell Input Pipeline
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
@@ -99,13 +95,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
-        // Start Blinking Cursor Engine
         cursorHandler.postDelayed(cursorRunnable, 500);
     }
 
-    // ==========================================
-    // [!] ALPHA BLINKING CURSOR ENGINE
-    // ==========================================
     private Runnable cursorRunnable = new Runnable() {
         @Override
         public void run() {
@@ -126,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void removeCursorBeforeAppend() {
+    public void removeCursorBeforeAppend() {
         if (outputView != null) {
             String currentText = outputView.getText().toString();
             if (currentText.endsWith("_")) {
@@ -170,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 outputView.append(ssb);
-                cleanTerminalText = outputView.getText().toString();
                 scrollToBottom();
             });
         }
@@ -219,9 +210,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ==========================================
-    // [!] CLIPBOARD ARSENAL INTEGRATION
-    // ==========================================
     public void copyTerminalClipboard() {
         if (outputView == null) return;
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -275,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // [!] FIXED DYNAMIC BINDING TO MATCH activity_main.xml ID '@+id/dash'
+        // Exact match confirmation with activity_main.xml layout notation framework ID '@+id/dash'
         View btnDash = findViewById(R.id.dash); 
         if (btnDash != null) {
             btnDash.setOnClickListener(v -> {
@@ -318,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
         forceKeyboard(input);
     }
 
-    public static void logError(String t, String m, Throwable e) { Log.e(t, m, e); }
+    public static void logError(String m, String t, Throwable e) { Log.e(m, t, e); }
 
     public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -374,13 +362,17 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Intercept dynamically deployed wrappers natively
-        File targetBin = new File(TerminalEngine.BIN_PATH, trimmedCmd.split(" ")[0]);
+        // ====================================================================
+        // [!] THE UNIVERSAL INTERCEPTOR: Catch any dynamically dropped wrapper
+        // ====================================================================
+        String baseCmd = trimmedCmd.split(" ")[0];
+        File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
         if (targetBin.exists() && !trimmedCmd.startsWith("hk install")) {
             removeCursorBeforeAppend();
             appendMatrixText(command + "\n");
             if (ptyBridge != null) {
-                ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/" + trimmedCmd + "\n");
+                String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
+                ptyBridge.writeCommand("sh " + TerminalEngine.BIN_PATH + "/" + baseCmd + " " + passArgs + "\n");
             }
             return;
         }
@@ -500,7 +492,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setTextIsSelectable(true); 
 
-            // Long Press Selection Context for Clipboard Operations
             outputView.setOnLongClickListener(v -> {
                 final PopupMenu popup = new PopupMenu(getContext(), outputView);
                 popup.getMenu().add("COPY ALL LOGS");
@@ -554,7 +545,6 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     }
                     
-                    // [!] ALPHA CONTINUOUS HARDWARE DEL WIPEOUT MATRIX
                     if (code == KeyEvent.KEYCODE_DEL) {
                         mainActivity.removeCursorBeforeAppend();
                         String s = outputView.getText().toString();
