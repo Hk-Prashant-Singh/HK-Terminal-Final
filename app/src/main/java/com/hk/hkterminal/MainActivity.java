@@ -23,9 +23,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (UPGRADE ALL PACKAGES INTEGRATION)
+ * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Dynamic Package Mass Dropper, Auto UI Sync, Boundless Core Execution
+ * DIRECTIVE    : Ghost-Mode, Snap Cursor, Guardian Color Matrix, Vault Generation
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -45,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
     public String lastSentCommand = null;
     private final Object streamLock = new Object();
     
-    // Global static reference to force weapon arsenal views updates instantly
     private static TerminalTabFragment packagesFragmentInstance;
 
     public interface Callback { void onOutput(String line); }
@@ -61,12 +60,7 @@ public class MainActivity extends AppCompatActivity {
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
-        File homeDir = new File(TerminalEngine.HOME_PATH);
-        if (!homeDir.exists()) homeDir.mkdirs();
-        
-        File binDir = new File(TerminalEngine.BIN_PATH);
-        if (!binDir.exists()) binDir.mkdirs();
-
+        // [!] BLOCK 1: THE ENVIRONMENT & FOLDER CREATOR
         initHKEnvironment();
 
         ViewPager2 vp = findViewById(R.id.viewPager);
@@ -84,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
             tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
 
-        // Control Panel View Visibility syncer based on selection index matrix
         vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -102,6 +95,9 @@ public class MainActivity extends AppCompatActivity {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
             "TERM=xterm-256color", 
             "HOME=" + TerminalEngine.HOME_PATH,
+            "GIT_CONFIG_NOSYSTEM=1", // Git patch support
+            "GIT_AUTHOR_NAME=pshacker",
+            "GIT_COMMITTER_NAME=pshacker",
             "PS1=" + currentPrompt
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
@@ -126,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    // [!] BLOCK 3: THE GUARDIAN COLOR MATRIX
     public void appendMatrixText(final String rawText) {
         if (rawText == null) return;
         synchronized (streamLock) {
@@ -157,9 +154,14 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
+                    // Dynamic Permission-Based Colors
+                    if (line.contains("drwx")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Folders Green
+                    } else if (line.contains("-rwx")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Binaries Gold
+                    } else if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
                         || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF6600")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Blood Red
                     } else {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
@@ -190,12 +192,14 @@ public class MainActivity extends AppCompatActivity {
         resetCtrlState();
     }
 
+    // [!] BLOCK 2: GHOST-MODE CLEAR OVERRIDE
     public void clearTerminal() {
         runOnUiThread(() -> {
             if (outputView != null) {
-                outputView.setText("");
-                appendMatrixText(">> HK Prashant Singh\n");
-                if (ptyBridge != null) { ptyBridge.writeCommand("clear\n"); }
+                outputView.setText(""); // Pure Visual Wipe
+                if (ptyBridge != null) { 
+                    ptyBridge.writeCommand("printf '\\033c'\n"); // Hardware-level silent reset 
+                }
                 resetCtrlState();
             }
         });
@@ -229,11 +233,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initHKEnvironment() {
+        // Architecture Folders Auto-Generation
+        File baseHome = new File(TerminalEngine.HOME_PATH);
+        if (!baseHome.exists()) baseHome.mkdirs();
+        
+        String[] dirs = {"bin", "workspace", "storage"};
+        for (String dirName : dirs) {
+            File subDir = new File(baseHome, dirName);
+            if (!subDir.exists()) subDir.mkdirs();
+        }
+
         new Thread(() -> {
             File usrDir = new File(TerminalEngine.PREFIX_PATH);
             File binDir = new File(TerminalEngine.BIN_PATH);
             if (!usrDir.exists()) usrDir.mkdirs();
-            if (!binDir.exists()) binDir.mkdirs();
 
             try { Runtime.getRuntime().exec("chmod -R 755 " + TerminalEngine.PREFIX_PATH).waitFor(); } 
             catch (Exception e) { Log.e("HK_INIT", "Permission Grant Failed", e); }
@@ -248,7 +261,6 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    // Isolated script injection protocol tracking Unix basenames
     private void deployPackageScript(File binDir, String pkg) {
         File binFile = new File(binDir, pkg);
         try {
@@ -265,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
                 writer.write("fi\n");
             }
             if (pkg.equals("nano")) {
-                writer.write("clear\n");
+                writer.write("printf '\\033c'\n");
                 writer.write("echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
                 writer.write("echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
                 writer.write("echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
@@ -281,9 +293,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // ========================================================
-    // [!] OPERATION 2: THE UNIVERSAL MASS PROTOCOL INJECTOR
-    // ========================================================
     private void setupSystemButtons() {
         View btnEsc = findViewById(R.id.esc); 
         if (btnEsc != null) btnEsc.setOnClickListener(v -> showCommandBox());
@@ -368,9 +377,8 @@ public class MainActivity extends AppCompatActivity {
                     
                     for (String weapon : allWeapons) {
                         try {
-                            // Dynamic upgrade script generation loop tracking each node array
                             deployPackageScript(binDir, weapon);
-                            Thread.sleep(300); // 300ms network emulation sequence delay
+                            Thread.sleep(300);
                         } catch (Exception ignored) {}
                     }
 
@@ -380,9 +388,8 @@ public class MainActivity extends AppCompatActivity {
                         btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
                         btnUpgradeAll.setBackgroundColor(Color.parseColor("#00FF41"));
                         btnUpgradeAll.setTextColor(Color.parseColor("#030303"));
-                        Toast.makeText(MainActivity.this, "[+] ALL PACKAGES UPGRADED & synchronized", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "[+] ALL PACKAGES UPGRADED", Toast.LENGTH_SHORT).show();
                         
-                        // Signal static layout fragment instance to refresh items layout view map instantly
                         if (packagesFragmentInstance != null) {
                             packagesFragmentInstance.refreshPackagesList();
                         }
@@ -447,8 +454,6 @@ public class MainActivity extends AppCompatActivity {
         input.requestFocus();
         forceKeyboard(input);
     }
-
-    public static void logError(String m, String t, Throwable e) { Log.e(m, t, e); }
 
     public void forceKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -530,6 +535,11 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
+        if (trimmedCmd.equals("clear")) {
+            clearTerminal();
+            return;
+        }
+
         if (trimmedCmd.equals("apt list") || trimmedCmd.equals("hk list")) {
             File binDir = new File(TerminalEngine.BIN_PATH);
             StringBuilder sb = new StringBuilder("Listing... Done\n");
@@ -587,21 +597,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (trimmedCmd.equals("hk-guardian") || trimmedCmd.equals("hk-setup-storage")) {
-            if(headerProgress != null) {
-                headerProgress.setIndeterminate(true);
-                headerProgress.setVisibility(View.VISIBLE);
-            }
-            MainActivity.Callback cb = msg -> runOnUiThread(() -> {
-                appendMatrixText(msg + "\n");
-                if (ptyBridge != null) ptyBridge.writeCommand("\n");
-                if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-            });
-            if (trimmedCmd.equals("hk-guardian")) HKGuardian.activateShield(cb);
-            else HKGuardian.setupStorage(cb);
-            return;
-        }
-
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
@@ -639,12 +634,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (LOCKED & SCALABLE)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
-        public CustomEditText(Context context) { super(context); }
-        
+        private ScaleGestureDetector scaleDetector;
+        private float currentTextSize = 14f;
+
+        public CustomEditText(Context context) { 
+            super(context); 
+            initEngine(context);
+        }
+
+        public CustomEditText(Context context, android.util.AttributeSet attrs) {
+            super(context, attrs);
+            initEngine(context);
+        }
+
+        private void initEngine(Context context) {
+            scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                @Override
+                public boolean onScale(ScaleGestureDetector detector) {
+                    currentTextSize *= detector.getScaleFactor();
+                    currentTextSize = Math.max(10f, Math.min(currentTextSize, 40f));
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, currentTextSize);
+                    return true;
+                }
+            });
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            scaleDetector.onTouchEvent(event);
+            if (scaleDetector.isInProgress()) return true; // Zoom interlock
+            return super.onTouchEvent(event);
+        }
+
         @Override
         protected void onSelectionChanged(int selStart, int selEnd) {
-            super.onSelectionChanged(selStart, selEnd);
             MainActivity main = (MainActivity) getContext();
             if (main != null) {
                 String s = getText() != null ? getText().toString() : "";
@@ -654,8 +679,10 @@ public class MainActivity extends AppCompatActivity {
                 
                 if (selStart < minPos || selEnd < minPos) {
                     setSelection(Math.max(minPos, selEnd), Math.max(minPos, selStart));
+                    return; 
                 }
             }
+            super.onSelectionChanged(selStart, selEnd);
         }
 
         @Override
@@ -757,20 +784,9 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusable(true);
             outputView.setTextIsSelectable(true); 
 
-            final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(getContext(), 
-                new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                    @Override public boolean onScale(ScaleGestureDetector d) {
-                        float size = outputView.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
-                        float newSize = Math.max(10f, Math.min(size * d.getScaleFactor(), 40f));
-                        outputView.setTextSize(TypedValue.COMPLEX_UNIT_SP, newSize);
-                        return true;
-                    }
-                });
-
+            // Zoom touch pass-through check
             outputView.setOnTouchListener((v, e) -> {
-                scaleDetector.onTouchEvent(e);
-                if (scaleDetector.isInProgress()) { return true; }
-                if (e.getAction() == MotionEvent.ACTION_UP && !scaleDetector.isInProgress()) {
+                if (e.getAction() == MotionEvent.ACTION_UP) {
                     v.requestFocus();
                     MainActivity mainActivity = (MainActivity) getActivity();
                     if (mainActivity != null) mainActivity.forceKeyboard(v);
@@ -782,7 +798,6 @@ public class MainActivity extends AppCompatActivity {
             return sv;
         }
 
-        // Live updater hook triggered from setupUpgradeAllLogic macro loop
         public void refreshPackagesList() {
             if (rootLayoutRef != null && getContext() != null) {
                 renderPackagesMatrix(rootLayoutRef, getContext());
@@ -803,7 +818,6 @@ public class MainActivity extends AppCompatActivity {
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
-                    // Sorting array alphabetically to keep track framework safe
                     Arrays.sort(files, (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName()));
                     
                     for (File file : files) {
