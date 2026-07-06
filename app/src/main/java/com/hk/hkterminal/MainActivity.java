@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (PERFECT EXECUTION MATRIX)
- * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure PTY Bridge, Hardware CTRL Support, Arsenal Ready
+ * HK-OPERATION : ELITE COMMAND CENTER (ULTIMATE MIX MATRIX)
+ * IDENTITY     : HK Prashant Bhai (Tech Wizard)
+ * DIRECTIVE    : Pure PTY Bridge, Active Hardware CTRL, Weapon Arsenal Live
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        // Force Android Shell to use our Elite Prompt natively (No Java Hacks)
+        // Force OS Shell to use our Elite Prompt natively (No Java Hacks, fixes double typing)
         ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
         ptyBridge.writeCommand("clear\n"); // Clean the screen immediately after export
 
@@ -141,16 +141,16 @@ public class MainActivity extends AppCompatActivity {
         return isCtrl;
     }
 
+    // [!] ALPHA RESET PROTOCOL: Auto-reset CTRL button back to Original Green after SIGINT
     public void sendSigInt() {
         if (ptyBridge != null) {
             ptyBridge.kill(2); // SIGINT Triggered
             appendMatrixText("^C\n");
         }
-        // Reset CTRL state
         isCtrl = false;
         TextView btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) {
-            btnCtrl.setTextColor(Color.parseColor("#00FF41")); // Back to green
+            btnCtrl.setTextColor(Color.parseColor("#00FF41")); 
             btnCtrl.setBackgroundColor(Color.TRANSPARENT);
         }
     }
@@ -169,13 +169,13 @@ public class MainActivity extends AppCompatActivity {
         View btnCb = findViewById(R.id.esc); 
         if (btnCb != null) btnCb.setOnClickListener(v -> showCommandBox());
 
-        // [!] FIXED CTRL BUTTON: No purple background, only white text, wait for 'C'
+        // [!] FIXED CTRL BUTTON: Active = Red Flash, Off = Hacker Green. No Purple Background.
         TextView btnCtrl = findViewById(R.id.ctrl);
         if (btnCtrl != null) {
             btnCtrl.setOnClickListener(v -> {
                 isCtrl = !isCtrl;
-                btnCtrl.setTextColor(isCtrl ? Color.parseColor("#FFFFFF") : Color.parseColor("#00FF41")); 
-                btnCtrl.setBackgroundColor(Color.TRANSPARENT); // Purple Bleach Destroyed
+                btnCtrl.setTextColor(isCtrl ? Color.parseColor("#FF003C") : Color.parseColor("#00FF41")); 
+                btnCtrl.setBackgroundColor(Color.TRANSPARENT); 
             });
         }
 
@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
         if (btnCLR != null) btnCLR.setOnClickListener(v -> {
             if (outputView != null) {
                 outputView.setText("");
-                appendMatrixText(">> HK Prashant Singh\n" + currentPrompt);
+                appendMatrixText(">> HK Prashant Bhai\n" + currentPrompt);
             }
         });
 
@@ -278,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ptyBridge != null) {
-            // Send pure raw command to OS. No extra sync texts.
+            // Send pure raw command to OS.
             ptyBridge.writeCommand(command + "\n");
         } else {
             TerminalEngine.run(command);
@@ -357,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
                     // [!] CTRL+C HARDWARE LOGIC
                     if (mainActivity.isCtrlActive()) {
                         if (code == KeyEvent.KEYCODE_C) {
-                            mainActivity.sendSigInt(); // Sends kill to PTY
+                            mainActivity.sendSigInt(); // Sends kill to PTY and resets color
                             return true;
                         }
                     }
