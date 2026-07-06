@@ -32,7 +32,7 @@
                 android:layout_toEndOf="@id/shieldLogo"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="12dp"
-                android:text="PS HACKER"
+                android:text="Ps Indian Hacker "
                 android:textColor="#00FF41"
                 android:textSize="20sp"
                 android:textStyle="bold"
