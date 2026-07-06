@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.*;
 
 /**
- * HK-OPERATION : ELITE COMMAND CENTER (ARSENAL MATRIX EDITION - PATCHED)
+ * HK-OPERATION : ELITE COMMAND CENTER (ULTIMATE ARSENAL & SYNC MATRIX)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Live Package Manager UI & Alpha Sync Terminal
+ * DIRECTIVE    : Zero Echo, Live Package Manager UI & Alpha Sync Terminal
  */
 public class MainActivity extends AppCompatActivity {
     public static TextView outputView;
@@ -60,16 +60,19 @@ public class MainActivity extends AppCompatActivity {
         setupSystemButtons();
         TerminalEngine.startAmSocketServer();
         
-        // ALPHA SYNC: Shell Environment Locked
+        // ==========================================
+        // [!] FULL-STACK SHELL SANITIZATION MATRIX
+        // ==========================================
         String[] env = {
             "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
-            "TERM=dumb", 
+            "TERM=vt100", // VT100 prevents advanced ANSI cursor jumping errors
             "HOME=" + TerminalEngine.HOME_PATH,
-            "PS1=" 
+            "PS1= " // Hard reset prompt to bypass Android shell garbage
         };
         ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
 
-        ptyBridge.writeCommand("stty -echo\n"); 
+        // Turn off shell echo natively (Replaced stty to fix binary not found error)
+        ptyBridge.writeCommand("set +o echo\n"); 
 
         new Thread(() -> {
             try {
@@ -95,7 +98,8 @@ public class MainActivity extends AppCompatActivity {
         String cleanText = rawText.replaceAll("\u001B\\[[;\\d]*[a-zA-Z]", ""); 
         cleanText = cleanText.replace("\r", "").replaceAll(".\\x08", "");
 
-        if (cleanText.contains("stty -echo")) return;
+        // Filter out silent configuration commands from UI
+        if (cleanText.contains("set +o echo")) return;
 
         if (cleanText.contains("HK-SYNC-DONE")) {
             cleanText = cleanText.replace("HK-SYNC-DONE", currentPrompt);
@@ -197,7 +201,6 @@ public class MainActivity extends AppCompatActivity {
         forceKeyboard(input);
     }
 
-    // [!] RESTORED ALPHA HELPERS: Required for System execution
     public static void logError(String t, String m, Throwable e) { 
         Log.e(t, m, e); 
     }
@@ -213,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
         hIndex = -1;
         if(headerProgress != null) headerProgress.setVisibility(View.VISIBLE);
         
+        // Outputting manual command input exactly once
         appendMatrixText(command + "\n");
         String trimmedCmd = command.trim();
 
@@ -259,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ptyBridge != null) {
-            ptyBridge.writeCommand(command + "\n");
+            ptyBridge.writeCommand(trimmedCmd + "\n");
             ptyBridge.writeCommand("echo 'HK-SYNC-DONE'\n");
         } else {
             TerminalEngine.run(command);
@@ -286,7 +290,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             // ==================================================
-            // [!] ALPHA UPGRADE: PACKAGES TAB MATRIX (TAB 2)
+            // PACKAGES TAB MATRIX (TAB 2)
             // ==================================================
             if (type == 1) { 
                 ScrollView sv = new ScrollView(getContext());
