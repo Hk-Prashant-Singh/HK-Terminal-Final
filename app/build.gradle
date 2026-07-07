@@ -4,48 +4,54 @@ plugins {
 
 android {
     namespace 'com.hk.hkterminal'
-    compileSdk 34 // Tera jo bhi current SDK version ho, wahi rakhna
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.hk.hkterminal"
-        minSdk 24
+        minSdk 21
         targetSdk 34
         versionCode 1
-        versionName "1.0-Alpha"
-        
-        // C++ / Native support ke liye
-        externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
+        versionName "1.0"
+    }
+
+    // [!] TERA ORIGINAL SIGNING MATRIX (GitHub Actions ke liye zaroori)
+    signingConfigs {
+        release {
+            storeFile file("hk_key.jks") 
+            storePassword System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
 
     // =======================================================
-    // [!] PHASE 3: THE ALPHA COMPRESSION LOCK BYPASS
+    // [!] THE ALPHA COMPRESSION LOCK BYPASS (Native Execution Fix)
     // =======================================================
     aaptOptions {
-        // Android OS ko strictly bata rahe hain ki in extensions ko touch na kare
         noCompress "so", "bin", "tar", "gz", "elf"
     }
     // =======================================================
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release 
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        // [!] TERA ORIGINAL JAVA 17 CONFIG
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+repositories {
+    google()
+    mavenCentral()
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    // Teri baaki jitni bhi dependencies hain, unko yahan rehne dena
+    implementation 'com.google.android.material:material:1.9.0'
 }
