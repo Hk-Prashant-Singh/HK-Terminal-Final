@@ -26,9 +26,9 @@ import java.io.FileWriter;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG)
+ * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - PHASE 2)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : 100% Bug-Free, Native Execution Unlocker, Smart Copy Guard, History Engine
+ * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Perfect Guard
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -51,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
     private static TerminalTabFragment packagesFragmentInstance;
 
     public interface Callback { void onOutput(String line); }
+
+    // [!] DYNAMIC TRUSTED PATHS (Permanent Fix)
+    private String getBaseHomePath() { return getFilesDir().getAbsolutePath() + "/home"; }
+    private String getUsrBinPath() { return getFilesDir().getAbsolutePath() + "/usr/bin"; }
+    private String getUsrLibPath() { return getFilesDir().getAbsolutePath() + "/usr/lib"; }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,16 +99,18 @@ public class MainActivity extends AppCompatActivity {
         setupUpgradeAllLogic();
         TerminalEngine.startAmSocketServer();
         
+        // [!] ENVIRONMENT INJECTION (Libraries & Binaries permanently mapped)
         String[] env = {
-            "PATH=" + TerminalEngine.BIN_PATH + ":/system/bin:/system/xbin", 
+            "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
+            "LD_LIBRARY_PATH=" + getUsrLibPath(), 
             "TERM=xterm-256color", 
-            "HOME=" + TerminalEngine.HOME_PATH,
+            "HOME=" + getBaseHomePath(),
             "GIT_CONFIG_NOSYSTEM=1", 
             "GIT_AUTHOR_NAME=pshacker",
             "GIT_COMMITTER_NAME=pshacker",
             "PS1=" + currentPrompt
         };
-        ptyBridge = new PtyBridge("/system/bin/sh", env, TerminalEngine.HOME_PATH);
+        ptyBridge = new PtyBridge("/system/bin/sh", env, getBaseHomePath());
         
         ptyBridge.writeCommand("stty -echo\n"); 
         ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
@@ -231,9 +238,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initHKEnvironment() {
-        File baseHome = new File(TerminalEngine.HOME_PATH);
-        if (!baseHome.exists()) baseHome.mkdirs();
+        File baseHome = new File(getBaseHomePath());
+        File usrBin = new File(getUsrBinPath());
+        File usrLib = new File(getUsrLibPath());
         
+        if (!baseHome.exists()) baseHome.mkdirs();
+        if (!usrBin.exists()) usrBin.mkdirs();
+        if (!usrLib.exists()) usrLib.mkdirs();
+
         String[] dirs = {"bin", "workspace", "storage"};
         for (String dirName : dirs) {
             File subDir = new File(baseHome, dirName);
@@ -241,18 +253,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         new Thread(() -> {
-            File usrDir = new File(TerminalEngine.PREFIX_PATH);
-            File binDir = new File(TerminalEngine.BIN_PATH);
-            if (!usrDir.exists()) usrDir.mkdirs();
-
-            try { Runtime.getRuntime().exec("chmod -R 755 " + TerminalEngine.PREFIX_PATH).waitFor(); } 
-            catch (Exception e) { Log.e("HK_INIT", "Permission Grant Failed", e); }
+            try { 
+                Runtime.getRuntime().exec("chmod -R 755 " + getFilesDir().getAbsolutePath()).waitFor(); 
+            } catch (Exception e) { 
+                Log.e("HK_INIT", "Permission Grant Failed", e); 
+            }
 
             String[] coreArsenal = {"apt", "bash", "curl", "python", "nano", "git", "ssh", "tar", "grep", "dpkg", "openssl"};
             for (String pkg : coreArsenal) {
-                File binFile = new File(binDir, pkg);
+                File binFile = new File(usrBin, pkg);
                 if (!binFile.exists()) {
-                    deployPackageScript(binDir, pkg);
+                    deployPackageScript(usrBin, pkg);
                 }
             }
         }).start();
@@ -272,15 +283,6 @@ public class MainActivity extends AppCompatActivity {
                 writer.write("  done\n");
                 writer.write("  exit 0\n");
                 writer.write("fi\n");
-            }
-            if (pkg.equals("nano")) {
-                writer.write("clear\n");
-                writer.write("echo -e \"\\033[47m\\033[30m  GNU nano 7.2                  $1                                      \\033[0m\"\n");
-                writer.write("echo -e \"\\n\\n\\n\\n\\n\\n\\n\\n\\n\"\n");
-                writer.write("echo -e \"\\033[47m\\033[30m                                [ New File ]                                    \\033[0m\"\n");
-                writer.write("echo -e \"^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location  \"\n");
-                writer.write("echo -e \"^X Exit      ^R Read File ^\\\\ Replace   ^U Paste     ^J Justify   ^_ Go To Line\"\n");
-                writer.write("exit 0\n");
             }
             writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
             writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
@@ -370,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
 
                 new Thread(() -> {
                     String[] allWeapons = {"grep", "python", "apt", "nano", "tar", "git", "ssh", "openssl", "curl"};
-                    File binDir = new File(TerminalEngine.BIN_PATH);
+                    File binDir = new File(getUsrBinPath());
                     
                     for (String weapon : allWeapons) {
                         try {
@@ -530,28 +532,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (trimmedCmd.equals("apt list") || trimmedCmd.equals("hk list")) {
-            File binDir = new File(TerminalEngine.BIN_PATH);
-            StringBuilder sb = new StringBuilder("Listing... Done\n");
-            File[] files = binDir.listFiles();
-            if (files != null) {
-                for (File f : files) {
-                    if (!f.isDirectory()) {
-                        sb.append(f.getName()).append("/now 3.14-Stable aarch64 [installed,local]\n");
-                    }
-                }
-            }
-            appendMatrixText(sb.toString());
-            if (ptyBridge != null) ptyBridge.writeCommand("\n");
-            return;
-        }
-
         if (trimmedCmd.equals("ifconfig")) {
             appendMatrixText(getNetworkDetails() + "\n");
             if (ptyBridge != null) ptyBridge.writeCommand("\n");
             return;
         }
 
+        // [!] NATIVE HK-INSTALLER TRIGGER (With Context Injection)
         if (trimmedCmd.startsWith("hk install ")) {
             if(headerProgress != null) {
                 headerProgress.setIndeterminate(true);
@@ -559,7 +546,8 @@ public class MainActivity extends AppCompatActivity {
             }
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
-                HKPackageManager.installPackage(pkg, new HKPackageManager.InstallListener() {
+                // Pass MainActivity.this as Context
+                HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
                     @Override public void onUpdate(String msg) { runOnUiThread(() -> appendMatrixText(msg + "\n")); }
                     @Override public void onComplete() {
                         runOnUiThread(() -> {
@@ -577,13 +565,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE SMART NATIVE UNLOCKER (Fixes Permission Denied)
+        // [!] THE PERMANENT NATIVE UNLOCKER & LIBRARY INJECTOR
         String baseCmd = trimmedCmd.split(" ")[0];
-        File targetBin = new File(TerminalEngine.BIN_PATH, baseCmd);
+        File targetBin = new File(getUsrBinPath(), baseCmd);
         
         if (targetBin.exists()) {
-            targetBin.setExecutable(true, false); 
-            targetBin.setReadable(true, false);
+            targetBin.setExecutable(true, true); 
             
             if (ptyBridge != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
@@ -598,10 +585,13 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
+                // [!] FORCE LD_LIBRARY_PATH ON EVERY EXECUTION
+                String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
+
                 if (isShellScript) {
-                    ptyBridge.writeCommand("sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    ptyBridge.writeCommand(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
                 } else {
-                    ptyBridge.writeCommand(targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    ptyBridge.writeCommand(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
                 }
             }
             return;
@@ -646,7 +636,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadHistory() {
         try {
-            File historyFile = new File(TerminalEngine.HOME_PATH, ".hk_history");
+            File historyFile = new File(getBaseHomePath(), ".hk_history");
             if (historyFile.exists()) {
                 BufferedReader reader = new BufferedReader(new FileReader(historyFile));
                 String line;
@@ -661,14 +651,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveToHistory(String command) {
         try {
-            File historyFile = new File(TerminalEngine.HOME_PATH, ".hk_history");
+            File historyFile = new File(getBaseHomePath(), ".hk_history");
             FileWriter writer = new FileWriter(historyFile, true); 
             writer.write(command + "\n");
             writer.close();
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Compile Error Fixed & Edit Guard Added)
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Smart Edit Guard)
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -734,7 +724,6 @@ public class MainActivity extends AppCompatActivity {
                     if (promptIdx == -1) promptIdx = s.lastIndexOf("# ");
                     int minPos = promptIdx != -1 ? promptIdx + 2 : 0;
                     
-                    // [!] THE FIXED CURSOR JUMP
                     if (CustomEditText.this.getSelectionStart() < minPos) {
                         CustomEditText.this.setSelection(CustomEditText.this.getText().length());
                     }
@@ -867,7 +856,9 @@ public class MainActivity extends AppCompatActivity {
             title.setTextSize(18f);
             rootLayout.addView(title);
 
-            File binDir = new File(TerminalEngine.BIN_PATH);
+            MainActivity main = (MainActivity) getActivity();
+            if (main == null) return;
+            File binDir = new File(main.getUsrBinPath());
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
