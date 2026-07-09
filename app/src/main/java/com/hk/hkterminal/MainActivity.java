@@ -31,8 +31,8 @@ import java.util.*;
 
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - GOD LEVEL)
- * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure Java Shell, Advanced HK Help Matrix, Zero Banner
+ * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : 100% Uncut Shell, Advanced HK Matrix, Native Shield Bypasser
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout upgradeAllPanel;
     private Button btnUpgradeAll;
     
-    // ALPHA STATE ENGINE (JNI-FREE STATEFUL SHELL)
+    // ALPHA STATE ENGINE
     private java.lang.Process shellProcess;
     private DataOutputStream shellInput;
     private boolean isCtrl = false;
@@ -113,10 +113,24 @@ public class MainActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
             initStatefulShell();
+            runSystemDiagnostic(); // New Added Core Logic
         }, 400);
     }
 
-    // [!] THE PURE JAVA STATEFUL SHELL (CRASH-PROOF LOGIC)
+    // [!] NEW ADDED: BACKGROUND SYSTEM MATRIX DIAGNOSTIC
+    private void runSystemDiagnostic() {
+        appendMatrixText("[*] Running HK-Operation Diagnostic Protocol...\n");
+        File binDir = new File(getUsrBinPath());
+        File libDir = new File(getUsrLibPath());
+        
+        int weaponCount = (binDir.exists() && binDir.listFiles() != null) ? binDir.listFiles().length : 0;
+        int libCount = (libDir.exists() && libDir.listFiles() != null) ? libDir.listFiles().length : 0;
+        
+        appendMatrixText("[+] Arsenal Status: " + weaponCount + " Weapons, " + libCount + " Libs loaded.\n");
+        appendMatrixText("[+] Native Bypass Shield: ACTIVE.\n");
+        if (outputView != null) outputView.append(currentPrompt);
+    }
+
     private void initStatefulShell() {
         try {
             String[] env = {
@@ -132,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
             shellProcess = Runtime.getRuntime().exec("sh", env, new File(getBaseHomePath()));
             shellInput = new DataOutputStream(shellProcess.getOutputStream());
             
-            // Output Stream Reader (Real-time Matrix Injection)
             new Thread(() -> {
                 try {
                     InputStream is = shellProcess.getInputStream();
@@ -152,7 +165,6 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception e) { Log.e("HK_SHELL", "Output Stream Dead", e); }
             }).start();
 
-            // Error Stream Reader
             new Thread(() -> {
                 try {
                     InputStream es = shellProcess.getErrorStream();
@@ -165,10 +177,9 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception e) { Log.e("HK_SHELL", "Error Stream Dead", e); }
             }).start();
 
-            // Setup Base Config & Auto-Shield
             if (shellInput != null) {
                 shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
-                shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n"); // The Permission Shield
+                shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n");
                 shellInput.writeBytes("alias ls='ls --color=never'\n");
                 shellInput.writeBytes("alias ll='ls -la'\n");
                 shellInput.writeBytes("echo '---HK_DONE---'\n");
@@ -212,13 +223,17 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    if (line.contains("drwx") || line.contains("[+]")) {
+                    // ADVANCED COLOR LOGIC
+                    if (line.contains("[+]") || line.contains("successfully") || line.contains("Integrated")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Matrix Green
+                    } else if (line.contains("[-]") || lower.contains("error") || lower.contains("failed") || lower.contains("denied") || lower.contains("unidentifiable")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Threat Red
+                    } else if (line.contains("[*]") || line.contains("Progress") || line.contains("Fetching")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // White status
+                    } else if (line.contains("drwx")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
-                    } else if (line.contains("-rwx") || line.contains("[*]")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
-                    } else if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
-                        || lower.contains("not found") || lower.contains("inaccessible") || line.contains("[-]")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
+                    } else if (line.contains("-rwx")) {
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Yellow for binaries
                     } else {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
@@ -477,27 +492,24 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        // [!] ADVANCED HK-OPERATION COMMAND MATRIX GUIDE
         if (trimmedCmd.equals("hk help") || trimmedCmd.equals("help")) {
             appendMatrixText("[*] ================================================\n");
             appendMatrixText("[*]    [⚡] HK-OPERATION ADVANCED COMMAND CENTER [⚡]\n");
             appendMatrixText("[*] ================================================\n");
             appendMatrixText("[+] --- [ WEAPON DEPLOYMENT & ARSENAL ] ---\n");
-            appendMatrixText(" -> hk install <pkg>  : Auto-Spider & Unpack weapon (e.g., nano, python).\n");
-            appendMatrixText(" -> hk destroy <pkg>  : Wipe weapon permanently from Matrix.\n");
-            appendMatrixText(" -> hk list           : Display all active weapons in Arsenal.\n");
+            appendMatrixText(" -> hk install <pkg>  : Auto-Spider & Unpack weapon.\n");
+            appendMatrixText(" -> hk destroy <pkg>  : Wipe weapon permanently.\n");
+            appendMatrixText(" -> hk list           : Display all active weapons.\n");
             appendMatrixText("[+] --- [ MATRIX MANIPULATION (FILE SYSTEM) ] ---\n");
-            appendMatrixText(" -> cp <src> <dest>   : Copy files/directories (Clone).\n");
-            appendMatrixText(" -> mv <src> <dest>   : Move or rename files (Relocate).\n");
-            appendMatrixText(" -> rm -rf <target>   : Delete file/folder forcefully (Eradicate).\n");
+            appendMatrixText(" -> cp <src> <dest>   : Copy files/directories.\n");
+            appendMatrixText(" -> mv <src> <dest>   : Move or rename files.\n");
+            appendMatrixText(" -> rm -rf <target>   : Delete file/folder forcefully.\n");
             appendMatrixText(" -> mkdir <dir_name>  : Create a new directory.\n");
-            appendMatrixText(" -> ls / ll           : View contents (ll shows detailed permissions).\n");
-            appendMatrixText(" -> pwd               : Display current target directory path.\n");
+            appendMatrixText(" -> ls / ll           : View contents (ll for details).\n");
             appendMatrixText("[+] --- [ SYSTEM OVERRIDES & NETWORK ] ---\n");
-            appendMatrixText(" -> ifconfig          : Scan Network Interfaces & Active Uplinks.\n");
+            appendMatrixText(" -> ifconfig          : Scan Network Interfaces.\n");
             appendMatrixText(" -> clear             : Purge screen visual history.\n");
-            appendMatrixText(" -> su                : Elevate to Root Engine (If rooted).\n");
-            appendMatrixText(" -> exit              : Terminate current HK session.\n");
+            appendMatrixText(" -> su                : Elevate to Root Engine.\n");
             appendMatrixText("[*] ================================================\n");
             if (outputView != null) outputView.append(currentPrompt);
             return;
@@ -558,7 +570,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] THE PERMANENT NATIVE UNLOCKER & LIBRARY INJECTOR
+        // [!] EXTENDED ALPHA SHIELD LOGIC FOR NATIVE EXECUTION
         String baseCmd = trimmedCmd.split(" ")[0];
         File targetBin = new File(getUsrBinPath(), baseCmd);
         
@@ -567,8 +579,8 @@ public class MainActivity extends AppCompatActivity {
             
             if (shellInput != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                
                 boolean isShellScript = false;
+                
                 try {
                     BufferedReader br = new BufferedReader(new FileReader(targetBin));
                     String firstLine = br.readLine();
@@ -578,14 +590,25 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
-                String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
+                // Advanced Linker Bypass Block (No files minus)
+                String envInject = "export HOME=" + getBaseHomePath() + "; " +
+                                   "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
+                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; ";
+
+                String finalCmd;
+                if (isShellScript) {
+                    finalCmd = envInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                } else {
+                    File linker64 = new File("/system/bin/linker64");
+                    if (linker64.exists()) {
+                        finalCmd = envInject + "/system/bin/linker64 " + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                    } else {
+                        finalCmd = envInject + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                    }
+                }
 
                 try {
-                    if (isShellScript) {
-                        shellInput.writeBytes(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
-                    } else {
-                        shellInput.writeBytes(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
-                    }
+                    shellInput.writeBytes(finalCmd);
                     shellInput.writeBytes("echo '---HK_DONE---'\n");
                     shellInput.flush();
                 } catch (Exception e) {
@@ -613,7 +636,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // STANDARD SHELL COMMAND EXECUTION (WITH GHOST MARKER)
+        // STANDARD SHELL COMMAND EXECUTION
         if (shellInput != null) { 
             try {
                 shellInput.writeBytes(command + "\n");
@@ -666,7 +689,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE (Smart Edit Guard)
+    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -747,7 +770,7 @@ public class MainActivity extends AppCompatActivity {
                         if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (c == 'c') main.sendSigInt();
-                                else if (c == 'l') { main.clearTerminal(); }
+                                else if (c == 'l') main.clearTerminal(); // Native UI Clear Bypass
                                 else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
                                 else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
                                 else if (c == 'd') main.exitApplication();
