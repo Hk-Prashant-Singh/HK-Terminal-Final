@@ -11,9 +11,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (DYNAMIC SPIDER EDITION)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (ALPHA SPIDER EDITION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Live Web Scraper, Auto-Redirect Bypass, 60s Timeout, Safe Process
+ * DIRECTIVE    : Live Web Scraper, Universal Force-Unpack Matrix, 100% Crash-Proof
  */
 public class HKPackageManager {
 
@@ -34,17 +34,18 @@ public class HKPackageManager {
                 if (!binDir.exists()) binDir.mkdirs();
                 if (!cacheDir.exists()) cacheDir.mkdirs();
 
-                // Save dynamic payload as .tar.gz (Linux architecture trick)
-                File payloadFile = new File(cacheDir, pkgName + ".tar.gz");
-                
                 update(listener, "[*] HK-PKG: Initiating Tactical Deployment for '" + pkgName + "'...");
 
-                // 2. THE ALPHA LOGIC: DYNAMIC WEB SPIDER (NO JSON)
+                // 2. THE ALPHA LOGIC: DYNAMIC WEB SPIDER
                 String targetUrl = huntTargetOnGlobalWeb(pkgName, listener);
                 if (targetUrl == null) {
                     update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable on Global Open Matrix.");
                     return;
                 }
+
+                // Dynamic Payload Naming based on Target Extension
+                String ext = targetUrl.endsWith(".apk") ? ".apk" : ".tar.gz";
+                File payloadFile = new File(cacheDir, pkgName + ext);
 
                 update(listener, "[*] Establishing secure uplink to Direct Payload...");
 
@@ -54,13 +55,12 @@ public class HKPackageManager {
                 boolean redirect;
                 int redirectCount = 0;
 
-                // 🔄 Redirect Bypass Loop
                 do {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(30000); // 30 seconds wait time
-                    conn.setReadTimeout(60000);    // 60 seconds heavy download time
-                    conn.setInstanceFollowRedirects(false); // Manual Redirect Handle
+                    conn.setConnectTimeout(30000); 
+                    conn.setReadTimeout(60000);    
+                    conn.setInstanceFollowRedirects(false); 
                     
                     // Firewall Bypasser (Ghost Browser Headers)
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 HK-Spider/1.0");
@@ -82,7 +82,6 @@ public class HKPackageManager {
                     }
                 } while (redirect && redirectCount < 5); 
                 
-                // Server Response Final Check
                 int responseCode = conn.getResponseCode();
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     update(listener, "[-] FATAL: Server rejected connection (HTTP Code: " + responseCode + "). Target unreachable.");
@@ -114,26 +113,42 @@ public class HKPackageManager {
                 output.close();
                 input.close();
 
-                update(listener, "[+] Download complete. Preparing to unpack matrix...");
+                update(listener, "[+] Payload Secured. Initiating Universal Force-Unpack...");
 
-                // 5. PERMANENT EXTRACTION & PERMISSION LOCK
-                String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath();
-                java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
+                // 5. UNIVERSAL FORCE-UNPACK MATRIX (ANY FILE, ANY LOGIC)
+                // Yeh command tar aur unzip dono ko ek sath fire karega aur errors ko silently ignore karega
+                String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath() + " 2>/dev/null || " +
+                                   "unzip -o " + payloadFile.getAbsolutePath() + " -d " + filesDir.getAbsolutePath() + " 2>/dev/null";
                 
-                if (p.waitFor() == 0) {
-                    // Forcefully unlock all permissions permanently
-                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 755 " + usrDir.getAbsolutePath()}).waitFor();
-                    
-                    File extractedBin = new File(binDir, pkgName);
-                    if (extractedBin.exists()) {
-                        extractedBin.setExecutable(true, true);
-                        extractedBin.setReadable(true, true);
-                    }
-                    
-                    payloadFile.delete(); // Ghost Cleanup
-                    update(listener, "[+] Target Locked: Module '" + pkgName + "' synchronized in HK Arsenal.");
+                java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
+                p.waitFor(); // Wait for whatever process finishes, ignore the exit code
+
+                // Forcefully unlock all permissions permanently
+                Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 755 " + filesDir.getAbsolutePath() + "/usr"}).waitFor();
+                
+                // Ultimate Verification: Check if binary exists regardless of unpacker errors
+                File extractedBin1 = new File(binDir, pkgName);
+                File extractedBin2 = new File(filesDir.getAbsolutePath() + "/usr/local/bin", pkgName); // Fallback check
+                
+                boolean isExtracted = false;
+
+                if (extractedBin1.exists()) {
+                    extractedBin1.setExecutable(true, true);
+                    extractedBin1.setReadable(true, true);
+                    isExtracted = true;
+                } else if (extractedBin2.exists()) {
+                    extractedBin2.setExecutable(true, true);
+                    extractedBin2.setReadable(true, true);
+                    isExtracted = true;
+                }
+                
+                payloadFile.delete(); // Ghost Cleanup
+                
+                if (isExtracted) {
+                    update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
                 } else {
-                    update(listener, "[-] Unpack Matrix Failed. Ensure system compatibility.");
+                    update(listener, "[-] Extraction Complete but Binary '" + pkgName + "' not found in standard paths.");
+                    update(listener, "[!] Note: Some packages may require manual path setup.");
                 }
 
             } catch (java.net.SocketTimeoutException e) {
@@ -150,7 +165,6 @@ public class HKPackageManager {
 
     // [!] THE ALPHA SPIDER: DYNAMIC WEB SCRAPER
     private static String huntTargetOnGlobalWeb(String pkgName, InstallListener listener) {
-        // Global ARM64 Open-Source Repositories (Alpine Architecture Base)
         String[] mirrors = {
             "https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/",
             "https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/"
@@ -171,8 +185,8 @@ public class HKPackageManager {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
                     
-                    // Regex: Match exact package name format (e.g., nano-7.2-r0.apk)
-                    String regexPattern = "href=\"(" + pkgName + "-[0-9][a-zA-Z0-9.\\-]*\\.apk)\"";
+                    // Regex: Match exact package name format (e.g., nano-7.2-r0.apk or python3-3.11...apk)
+                    String regexPattern = "href=\"(" + pkgName + "-[0-9][a-zA-Z0-9.\\-]*\\.(apk|tar\\.gz))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
 
                     while ((line = reader.readLine()) != null) {
@@ -190,7 +204,7 @@ public class HKPackageManager {
                 update(listener, "[-] Mirror failed, switching channels...");
             }
         }
-        return null; // Package not found on global web
+        return null; // Package not found
     }
 
     private static void update(InstallListener listener, String msg) {
