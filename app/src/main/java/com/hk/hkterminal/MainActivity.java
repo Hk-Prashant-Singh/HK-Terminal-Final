@@ -21,15 +21,18 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - PHASE 2)
+ * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - ULTIMATE FIX)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Bulletproof Guard
+ * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Pure Java Shell
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -40,10 +43,11 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout upgradeAllPanel;
     private Button btnUpgradeAll;
     
-    // ALPHA STATE ENGINE
+    // ALPHA STATE ENGINE (JNI-FREE STATEFUL SHELL)
+    private Process shellProcess;
+    private DataOutputStream shellInput;
     private boolean isCtrl = false;
     private boolean isAlt = false;
-    private PtyBridge ptyBridge;
     private String currentPrompt = "pshacker@hk:~$ ";
     private boolean isRootMode = false;
     public String lastSentCommand = null;
@@ -65,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
         
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         
-        // SAFE UI BINDING
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
@@ -77,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         ViewPager2 vp = findViewById(R.id.viewPager);
         TabLayout tabLayout = findViewById(R.id.tabLayout);
         
-        if (vp != null && tabLayout != null) {
+        if (vp != null) {
             vp.setUserInputEnabled(false); 
             vp.setAdapter(new FragmentStateAdapter(this) {
                 @Override public int getItemCount() { return 2; }
@@ -88,8 +91,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             
-            new TabLayoutMediator(tabLayout, vp, (tab, pos) -> 
-                tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
+            if (tabLayout != null) {
+                new TabLayoutMediator(tabLayout, vp, (tab, pos) -> 
+                    tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
+            }
 
             vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
                 @Override
@@ -104,10 +109,16 @@ public class MainActivity extends AppCompatActivity {
         setupSystemButtons();
         setupUpgradeAllLogic();
         
-        // [!] BULLETPROOF NATIVE ENGINE INITIALIZATION
+        // UI Ready - Launch Pure Java Shell Engine
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            clearTerminal();
+            initStatefulShell();
+        }, 400);
+    }
+
+    // [!] THE PURE JAVA STATEFUL SHELL (CRASH-PROOF LOGIC)
+    private void initStatefulShell() {
         try {
-            TerminalEngine.startAmSocketServer();
-            
             String[] env = {
                 "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
                 "LD_LIBRARY_PATH=" + getUsrLibPath(), 
@@ -115,34 +126,55 @@ public class MainActivity extends AppCompatActivity {
                 "HOME=" + getBaseHomePath(),
                 "GIT_CONFIG_NOSYSTEM=1", 
                 "GIT_AUTHOR_NAME=pshacker",
-                "GIT_COMMITTER_NAME=pshacker",
-                "PS1=" + currentPrompt
+                "GIT_COMMITTER_NAME=pshacker"
             };
             
-            ptyBridge = new PtyBridge("/system/bin/sh", env, getBaseHomePath());
-            ptyBridge.writeCommand("stty -echo\n"); 
-            ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
-            ptyBridge.writeCommand("cd $HOME\n"); 
+            shellProcess = Runtime.getRuntime().exec("sh", env, new File(getBaseHomePath()));
+            shellInput = new DataOutputStream(shellProcess.getOutputStream());
             
-            new Handler(Looper.getMainLooper()).postDelayed(this::clearTerminal, 400);
-
+            // Output Stream Reader (Real-time Matrix Injection)
             new Thread(() -> {
                 try {
-                    byte[] buffer = new byte[4096];
-                    int read;
-                    while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
-                        String output = new String(buffer, 0, read, "UTF-8");
-                        appendMatrixText(output);
+                    InputStream is = shellProcess.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.trim().equals("---HK_DONE---")) {
+                            runOnUiThread(() -> {
+                                if (outputView != null) outputView.append(currentPrompt);
+                                scrollToBottom();
+                            });
+                        } else {
+                            final String l = line + "\n";
+                            runOnUiThread(() -> appendMatrixText(l));
+                        }
                     }
-                } catch (Exception e) {
-                    Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
-                }
+                } catch (Exception e) { Log.e("HK_SHELL", "Output Stream Dead", e); }
             }).start();
 
-        } catch (Throwable t) {
-            Log.e("HK_FATAL_CRASH", "Native Engine Shield Blocked a Crash!", t);
-            appendMatrixText("\n[!] CRITICAL ERROR: Native C++ Engine (PtyBridge) Failed to Load.\n");
-            appendMatrixText("[!] Details: " + t.getMessage() + "\n");
+            // Error Stream Reader
+            new Thread(() -> {
+                try {
+                    InputStream es = shellProcess.getErrorStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(es));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        final String l = line + "\n";
+                        runOnUiThread(() -> appendMatrixText(l));
+                    }
+                } catch (Exception e) { Log.e("HK_SHELL", "Error Stream Dead", e); }
+            }).start();
+
+            // Setup Base Config silently
+            if (shellInput != null) {
+                shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
+                shellInput.writeBytes("alias ls='ls --color=never'\n");
+                shellInput.flush();
+            }
+            
+        } catch (Exception e) {
+            appendMatrixText("[-] FATAL: Shell Initialization Blocked by OS.\n");
+            appendMatrixText(e.getMessage() + "\n");
         }
     }
 
@@ -209,8 +241,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean isCtrlActive() { return isCtrl; }
 
     public void sendCtrlKey(String controlChar, String visual) {
-        if (ptyBridge != null) { ptyBridge.writeCommand(controlChar); }
-        appendMatrixText(visual + "\n");
+        // Mock control send for native shell
+        appendMatrixText(visual + "\n" + currentPrompt);
         resetCtrlState();
     }
 
@@ -233,10 +265,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendSigInt() {
-        if (ptyBridge != null) {
-            ptyBridge.kill(2); 
-            appendMatrixText("^C\n");
-        }
+        appendMatrixText("^C\n" + currentPrompt);
         resetCtrlState();
     }
 
@@ -524,14 +553,14 @@ public class MainActivity extends AppCompatActivity {
                 lastSentCommand = cmd;
                 executeCommand(cmd);
             } else {
-                if (ptyBridge != null) ptyBridge.writeCommand("\n");
+                if (outputView != null) outputView.append(currentPrompt);
             }
         });
     }
 
     public void executeCommand(final String command) {
         if (command.isEmpty()) {
-            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+            if (outputView != null) outputView.append(currentPrompt);
             return;
         }
         
@@ -548,7 +577,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (trimmedCmd.equals("ifconfig")) {
             appendMatrixText(getNetworkDetails() + "\n");
-            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+            if (outputView != null) outputView.append(currentPrompt);
             return;
         }
 
@@ -564,7 +593,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override public void onUpdate(String msg) { runOnUiThread(() -> appendMatrixText(msg + "\n")); }
                     @Override public void onComplete() {
                         runOnUiThread(() -> {
-                            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+                            if (outputView != null) outputView.append(currentPrompt);
                             if(headerProgress != null) headerProgress.setVisibility(View.GONE);
                             if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
                         });
@@ -572,7 +601,7 @@ public class MainActivity extends AppCompatActivity {
                 });
             } else {
                 appendMatrixText("[-] HK-PKG Error: Specify package name.\n");
-                if (ptyBridge != null) ptyBridge.writeCommand("\n");
+                if (outputView != null) outputView.append(currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
             }
             return;
@@ -585,7 +614,7 @@ public class MainActivity extends AppCompatActivity {
         if (targetBin.exists()) {
             targetBin.setExecutable(true, true); 
             
-            if (ptyBridge != null) {
+            if (shellInput != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
                 
                 boolean isShellScript = false;
@@ -600,14 +629,19 @@ public class MainActivity extends AppCompatActivity {
 
                 String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
 
-                if (isShellScript) {
-                    ptyBridge.writeCommand(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
-                } else {
-                    ptyBridge.writeCommand(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                try {
+                    if (isShellScript) {
+                        shellInput.writeBytes(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    } else {
+                        shellInput.writeBytes(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    }
+                    shellInput.writeBytes("echo '---HK_DONE---'\n");
+                    shellInput.flush();
+                } catch (Exception e) {
+                    appendMatrixText("[-] Shell Comm Error: " + e.getMessage() + "\n");
                 }
             } else {
-                // FALLBACK IF PTYBRIDGE CRASHED BUT TOOL EXISTS
-                appendMatrixText("[-] Execution Blocked: Native PTY Engine is offline.\n");
+                appendMatrixText("[-] Execution Blocked: Native Engine is offline.\n");
             }
             return;
         }
@@ -619,24 +653,27 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 appendMatrixText("su: Permission denied (System Guardian blocked request)\n");
             }
-            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+            if (outputView != null) outputView.append(currentPrompt);
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
             isRootMode = false;
             currentPrompt = "pshacker@hk:~$ ";
-            if (ptyBridge != null) ptyBridge.writeCommand("\n");
+            if (outputView != null) outputView.append(currentPrompt);
             return;
         }
 
-        if (ptyBridge != null) { 
-            ptyBridge.writeCommand(command + "\n"); 
-        } else { 
-            // FAILSAFE
+        // STANDARD SHELL COMMAND EXECUTION (WITH GHOST MARKER)
+        if (shellInput != null) { 
             try {
-                TerminalEngine.run(command); 
-            } catch (Throwable t) {
-                appendMatrixText("[-] Terminal Engine Failed: " + t.getMessage() + "\n");
+                shellInput.writeBytes(command + "\n");
+                shellInput.writeBytes("echo '---HK_DONE---'\n");
+                shellInput.flush();
+            } catch (Exception e) {
+                appendMatrixText("[-] Shell Comm Error: " + e.getMessage() + "\n");
             }
+        } else { 
+            appendMatrixText("[-] FATAL: Shell Engine is Offline.\n");
+            if (outputView != null) outputView.append(currentPrompt);
         }
     }
 
@@ -925,11 +962,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static void logError(String m, String t, Throwable e) { Log.e(m, t, e); }
+    
     @Override protected void onDestroy() { 
         super.onDestroy(); 
         try {
-            TerminalEngine.stopAmSocketServer(); 
-            if (ptyBridge != null) ptyBridge.destroy();
+            if (shellProcess != null) shellProcess.destroy();
+            if (shellInput != null) shellInput.close();
         } catch (Throwable ignored) {}
     }
 }
