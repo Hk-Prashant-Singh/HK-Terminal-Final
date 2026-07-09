@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - GOD LEVEL)
  * IDENTITY     : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure Java Shell, HK Arsenal Commands, Auto-Chmod Shield
+ * DIRECTIVE    : Pure Java Shell, Advanced HK Help Matrix, Zero Banner
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -109,29 +109,11 @@ public class MainActivity extends AppCompatActivity {
         setupSystemButtons();
         setupUpgradeAllLogic();
         
-        // UI Ready - Launch Pure Java Shell Engine
+        // UI Ready - Launch Pure Java Shell Engine Without Banner
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
-            printBootBanner();
             initStatefulShell();
         }, 400);
-    }
-
-    private void printBootBanner() {
-        String banner = 
-            "================================================\n" +
-            "  ██╗  ██╗██╗  ██╗    ███╗   ██╗███████╗████████╗\n" +
-            "  ██║  ██║██║ ██╔╝    ████╗  ██║██╔════╝╚══██╔══╝\n" +
-            "  ███████║█████╔╝     ██╔██╗ ██║█████╗     ██║   \n" +
-            "  ██╔══██║██╔═██╗     ██║╚██╗██║██╔══╝     ██║   \n" +
-            "  ██║  ██║██║  ██╗    ██║ ╚████║███████╗   ██║   \n" +
-            "  ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═══╝╚══════╝   ╚═╝   \n" +
-            "================================================\n" +
-            "[+] ARCHITECT : HK Prashant Singh (Tech Wizard)\n" +
-            "[+] DIRECTIVE : HK-Operation Digital Guardian\n" +
-            "[+] STATUS    : Matrix Uplink Established.\n" +
-            "Type 'hk help' to see Arsenal commands.\n\n";
-        appendMatrixText(banner);
     }
 
     // [!] THE PURE JAVA STATEFUL SHELL (CRASH-PROOF LOGIC)
@@ -472,7 +454,6 @@ public class MainActivity extends AppCompatActivity {
             if (!cmd.isEmpty()) {
                 if (cmd.equals("clear")) {
                     clearTerminal();
-                    printBootBanner();
                     outputView.append(currentPrompt);
                     return;
                 }
@@ -496,14 +477,28 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        // [!] THE HK-OPERATION COMMAND MATRIX
-        if (trimmedCmd.equals("hk help")) {
-            appendMatrixText("[*] HK-OPERATION ARSENAL COMMANDS:\n");
-            appendMatrixText(" - hk install <pkg>  : Spider deploy and force-unpack weapon.\n");
-            appendMatrixText(" - hk list           : Display all active weapons in Arsenal.\n");
-            appendMatrixText(" - hk destroy <pkg>  : Wipe weapon from system.\n");
-            appendMatrixText(" - clear             : Clear Matrix screen.\n");
-            appendMatrixText(" - su                : Attempt Root Engine override.\n");
+        // [!] ADVANCED HK-OPERATION COMMAND MATRIX GUIDE
+        if (trimmedCmd.equals("hk help") || trimmedCmd.equals("help")) {
+            appendMatrixText("[*] ================================================\n");
+            appendMatrixText("[*]    [⚡] HK-OPERATION ADVANCED COMMAND CENTER [⚡]\n");
+            appendMatrixText("[*] ================================================\n");
+            appendMatrixText("[+] --- [ WEAPON DEPLOYMENT & ARSENAL ] ---\n");
+            appendMatrixText(" -> hk install <pkg>  : Auto-Spider & Unpack weapon (e.g., nano, python).\n");
+            appendMatrixText(" -> hk destroy <pkg>  : Wipe weapon permanently from Matrix.\n");
+            appendMatrixText(" -> hk list           : Display all active weapons in Arsenal.\n");
+            appendMatrixText("[+] --- [ MATRIX MANIPULATION (FILE SYSTEM) ] ---\n");
+            appendMatrixText(" -> cp <src> <dest>   : Copy files/directories (Clone).\n");
+            appendMatrixText(" -> mv <src> <dest>   : Move or rename files (Relocate).\n");
+            appendMatrixText(" -> rm -rf <target>   : Delete file/folder forcefully (Eradicate).\n");
+            appendMatrixText(" -> mkdir <dir_name>  : Create a new directory.\n");
+            appendMatrixText(" -> ls / ll           : View contents (ll shows detailed permissions).\n");
+            appendMatrixText(" -> pwd               : Display current target directory path.\n");
+            appendMatrixText("[+] --- [ SYSTEM OVERRIDES & NETWORK ] ---\n");
+            appendMatrixText(" -> ifconfig          : Scan Network Interfaces & Active Uplinks.\n");
+            appendMatrixText(" -> clear             : Purge screen visual history.\n");
+            appendMatrixText(" -> su                : Elevate to Root Engine (If rooted).\n");
+            appendMatrixText(" -> exit              : Terminate current HK session.\n");
+            appendMatrixText("[*] ================================================\n");
             if (outputView != null) outputView.append(currentPrompt);
             return;
         }
@@ -525,8 +520,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (trimmedCmd.startsWith("hk destroy ")) {
-            String pkg = trimmedCmd.replace("hk destroy ", "").trim();
+        if (trimmedCmd.startsWith("hk destroy ") || trimmedCmd.startsWith("hk delete ")) {
+            String pkg = trimmedCmd.replace("hk destroy ", "").replace("hk delete ", "").trim();
             File target = new File(getUsrBinPath(), pkg);
             if (target.exists() && target.delete()) {
                 appendMatrixText("[+] Weapon '" + pkg + "' wiped from Matrix.\n");
@@ -559,6 +554,45 @@ public class MainActivity extends AppCompatActivity {
                 appendMatrixText("[-] HK-PKG Error: Specify package name.\n");
                 if (outputView != null) outputView.append(currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        // [!] THE PERMANENT NATIVE UNLOCKER & LIBRARY INJECTOR
+        String baseCmd = trimmedCmd.split(" ")[0];
+        File targetBin = new File(getUsrBinPath(), baseCmd);
+        
+        if (targetBin.exists()) {
+            targetBin.setExecutable(true, true); 
+            
+            if (shellInput != null) {
+                String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
+                
+                boolean isShellScript = false;
+                try {
+                    BufferedReader br = new BufferedReader(new FileReader(targetBin));
+                    String firstLine = br.readLine();
+                    if (firstLine != null && firstLine.startsWith("#!")) {
+                        isShellScript = true;
+                    }
+                    br.close();
+                } catch (Exception ignored) {}
+
+                String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
+
+                try {
+                    if (isShellScript) {
+                        shellInput.writeBytes(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    } else {
+                        shellInput.writeBytes(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
+                    }
+                    shellInput.writeBytes("echo '---HK_DONE---'\n");
+                    shellInput.flush();
+                } catch (Exception e) {
+                    appendMatrixText("[-] Shell Comm Error: " + e.getMessage() + "\n");
+                }
+            } else {
+                appendMatrixText("[-] Execution Blocked: Native Engine is offline.\n");
             }
             return;
         }
@@ -713,7 +747,7 @@ public class MainActivity extends AppCompatActivity {
                         if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (c == 'c') main.sendSigInt();
-                                else if (c == 'l') { main.clearTerminal(); main.printBootBanner(); }
+                                else if (c == 'l') { main.clearTerminal(); }
                                 else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
                                 else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
                                 else if (c == 'd') main.exitApplication();
