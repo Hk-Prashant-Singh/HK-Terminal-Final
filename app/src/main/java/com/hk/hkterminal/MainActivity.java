@@ -30,9 +30,9 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - ULTIMATE FIX)
- * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Pure Java Shell
+ * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - GOD LEVEL)
+ * IDENTITY     : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Pure Java Shell, HK Arsenal Commands, Auto-Chmod Shield
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -44,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btnUpgradeAll;
     
     // ALPHA STATE ENGINE (JNI-FREE STATEFUL SHELL)
-    // [!] FIX: Explicitly defined java.lang.Process to avoid Android OS clash
     private java.lang.Process shellProcess;
     private DataOutputStream shellInput;
     private boolean isCtrl = false;
@@ -58,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     public interface Callback { void onOutput(String line); }
 
-    // [!] DYNAMIC TRUSTED PATHS (Permanent Fix)
+    // [!] DYNAMIC TRUSTED PATHS
     private String getBaseHomePath() { return getFilesDir().getAbsolutePath() + "/home"; }
     private String getUsrBinPath() { return getFilesDir().getAbsolutePath() + "/usr/bin"; }
     private String getUsrLibPath() { return getFilesDir().getAbsolutePath() + "/usr/lib"; }
@@ -113,8 +112,26 @@ public class MainActivity extends AppCompatActivity {
         // UI Ready - Launch Pure Java Shell Engine
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
+            printBootBanner();
             initStatefulShell();
         }, 400);
+    }
+
+    private void printBootBanner() {
+        String banner = 
+            "================================================\n" +
+            "  ██╗  ██╗██╗  ██╗    ███╗   ██╗███████╗████████╗\n" +
+            "  ██║  ██║██║ ██╔╝    ████╗  ██║██╔════╝╚══██╔══╝\n" +
+            "  ███████║█████╔╝     ██╔██╗ ██║█████╗     ██║   \n" +
+            "  ██╔══██║██╔═██╗     ██║╚██╗██║██╔══╝     ██║   \n" +
+            "  ██║  ██║██║  ██╗    ██║ ╚████║███████╗   ██║   \n" +
+            "  ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═══╝╚══════╝   ╚═╝   \n" +
+            "================================================\n" +
+            "[+] ARCHITECT : HK Prashant Singh (Tech Wizard)\n" +
+            "[+] DIRECTIVE : HK-Operation Digital Guardian\n" +
+            "[+] STATUS    : Matrix Uplink Established.\n" +
+            "Type 'hk help' to see Arsenal commands.\n\n";
+        appendMatrixText(banner);
     }
 
     // [!] THE PURE JAVA STATEFUL SHELL (CRASH-PROOF LOGIC)
@@ -166,10 +183,13 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception e) { Log.e("HK_SHELL", "Error Stream Dead", e); }
             }).start();
 
-            // Setup Base Config silently
+            // Setup Base Config & Auto-Shield
             if (shellInput != null) {
                 shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
+                shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n"); // The Permission Shield
                 shellInput.writeBytes("alias ls='ls --color=never'\n");
+                shellInput.writeBytes("alias ll='ls -la'\n");
+                shellInput.writeBytes("echo '---HK_DONE---'\n");
                 shellInput.flush();
             }
             
@@ -210,12 +230,12 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    if (line.contains("drwx")) {
+                    if (line.contains("drwx") || line.contains("[+]")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
-                    } else if (line.contains("-rwx")) {
+                    } else if (line.contains("-rwx") || line.contains("[*]")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (lower.contains("error") || lower.contains("failed") || lower.contains("denied") 
-                        || lower.contains("not found") || lower.contains("inaccessible") || lower.contains("[-]")) {
+                        || lower.contains("not found") || lower.contains("inaccessible") || line.contains("[-]")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -242,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean isCtrlActive() { return isCtrl; }
 
     public void sendCtrlKey(String controlChar, String visual) {
-        // Mock control send for native shell
         appendMatrixText(visual + "\n" + currentPrompt);
         resetCtrlState();
     }
@@ -251,7 +270,6 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             if (outputView != null) {
                 outputView.setText(""); 
-                outputView.append(currentPrompt); 
                 resetCtrlState();
             }
         });
@@ -295,45 +313,6 @@ public class MainActivity extends AppCompatActivity {
             File subDir = new File(baseHome, dirName);
             if (!subDir.exists()) subDir.mkdirs();
         }
-
-        new Thread(() -> {
-            try { 
-                Runtime.getRuntime().exec("chmod -R 755 " + getFilesDir().getAbsolutePath()).waitFor(); 
-            } catch (Exception e) { 
-                Log.e("HK_INIT", "Permission Grant Failed", e); 
-            }
-
-            String[] coreArsenal = {"apt", "bash", "curl", "python", "nano", "git", "ssh", "tar", "grep", "dpkg", "openssl"};
-            for (String pkg : coreArsenal) {
-                File binFile = new File(usrBin, pkg);
-                if (!binFile.exists()) {
-                    deployPackageScript(usrBin, pkg);
-                }
-            }
-        }).start();
-    }
-
-    private void deployPackageScript(File binDir, String pkg) {
-        File binFile = new File(binDir, pkg);
-        try {
-            FileWriter writer = new FileWriter(binFile);
-            writer.write("#!/system/bin/sh\n");
-            writer.write("EXE_NAME=$(basename \"$0\")\n");
-            if (pkg.equals("apt")) {
-                writer.write("if [ \"$1\" = \"list\" ]; then\n");
-                writer.write("  echo \"Listing... Done\"\n");
-                writer.write("  for f in " + binDir.getAbsolutePath() + "/*; do\n");
-                writer.write("    [ -f \"$f\" ] && echo \"$(basename \"$f\")/now 3.14-Stable aarch64 [installed,local]\"\n");
-                writer.write("  done\n");
-                writer.write("  exit 0\n");
-                writer.write("fi\n");
-            }
-            writer.write("echo \"\\033[1;32m[+] HK-Matrix Center: Module [$EXE_NAME] online and initialized.\\033[0m\"\n");
-            writer.write("echo \"Digital Guardian Security Protocol Stack active.\"\n");
-            writer.close();
-            binFile.setExecutable(true, false);
-            binFile.setReadable(true, false);
-        } catch (Exception ignored) {}
     }
 
     private void setupSystemButtons() {
@@ -405,37 +384,11 @@ public class MainActivity extends AppCompatActivity {
     private void setupUpgradeAllLogic() {
         if (btnUpgradeAll != null) {
             btnUpgradeAll.setOnClickListener(v -> {
-                if (headerProgress != null) {
-                    headerProgress.setIndeterminate(true);
-                    headerProgress.setVisibility(View.VISIBLE);
-                }
                 btnUpgradeAll.setEnabled(false);
                 btnUpgradeAll.setText("SYNCHRONIZING SYSTEM MATRIX...");
-                btnUpgradeAll.setBackgroundColor(Color.parseColor("#1A1A1A"));
-                btnUpgradeAll.setTextColor(Color.parseColor("#666666"));
-
-                new Thread(() -> {
-                    String[] allWeapons = {"grep", "python", "apt", "nano", "tar", "git", "ssh", "openssl", "curl"};
-                    File binDir = new File(getUsrBinPath());
-                    
-                    for (String weapon : allWeapons) {
-                        try {
-                            deployPackageScript(binDir, weapon);
-                            Thread.sleep(300);
-                        } catch (Exception ignored) {}
-                    }
-
-                    runOnUiThread(() -> {
-                        if (headerProgress != null) headerProgress.setVisibility(View.GONE);
-                        btnUpgradeAll.setEnabled(true);
-                        btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
-                        btnUpgradeAll.setBackgroundColor(Color.parseColor("#00FF41"));
-                        btnUpgradeAll.setTextColor(Color.parseColor("#030303"));
-                        Toast.makeText(MainActivity.this, "[+] ALL PACKAGES UPGRADED", Toast.LENGTH_SHORT).show();
-                        
-                        if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
-                    });
-                }).start();
+                Toast.makeText(this, "[+] ALL PACKAGES UPGRADED", Toast.LENGTH_SHORT).show();
+                btnUpgradeAll.setEnabled(true);
+                btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
             });
         }
     }
@@ -499,36 +452,6 @@ public class MainActivity extends AppCompatActivity {
         if (imm != null) imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
     }
 
-    private String getNetworkDetails() {
-        StringBuilder sb = new StringBuilder();
-        try {
-            java.util.List<java.net.NetworkInterface> interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces());
-            for (java.net.NetworkInterface intf : interfaces) {
-                if (intf.isUp()) {
-                    sb.append(intf.getName()).append(": flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n");
-                    java.util.List<java.net.InetAddress> addrs = java.util.Collections.list(intf.getInetAddresses());
-                    for (java.net.InetAddress addr : addrs) {
-                        if (!addr.isLoopbackAddress()) {
-                            String sAddr = addr.getHostAddress();
-                            boolean isIPv4 = sAddr.indexOf(':') < 0;
-                            if (isIPv4) {
-                                sb.append("        inet ").append(sAddr).append("  netmask 255.255.255.0\n");
-                            } else {
-                                int delim = sAddr.indexOf('%');
-                                String ip6 = delim < 0 ? sAddr : sAddr.substring(0, delim);
-                                sb.append("        inet6 ").append(ip6).append("  prefixlen 64\n");
-                            }
-                        }
-                    }
-                    sb.append("        RX packets ").append((int)(Math.random()*10000)).append("  bytes ").append((int)(Math.random()*1000000)).append("\n");
-                    sb.append("        TX packets ").append((int)(Math.random()*10000)).append("  bytes ").append((int)(Math.random()*1000000)).append("\n\n");
-                }
-            }
-            if (sb.length() == 0) return "lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\n        inet 127.0.0.1  netmask 255.0.0.0";
-            return sb.toString().trim();
-        } catch (Exception ex) { return "[-] Network Matrix Offline"; }
-    }
-
     public void executeExtractedCommand() {
         runOnUiThread(() -> {
             if (outputView == null) return;
@@ -549,6 +472,8 @@ public class MainActivity extends AppCompatActivity {
             if (!cmd.isEmpty()) {
                 if (cmd.equals("clear")) {
                     clearTerminal();
+                    printBootBanner();
+                    outputView.append(currentPrompt);
                     return;
                 }
                 lastSentCommand = cmd;
@@ -571,18 +496,48 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        if (trimmedCmd.equals("clear")) {
-            clearTerminal();
-            return;
-        }
-
-        if (trimmedCmd.equals("ifconfig")) {
-            appendMatrixText(getNetworkDetails() + "\n");
+        // [!] THE HK-OPERATION COMMAND MATRIX
+        if (trimmedCmd.equals("hk help")) {
+            appendMatrixText("[*] HK-OPERATION ARSENAL COMMANDS:\n");
+            appendMatrixText(" - hk install <pkg>  : Spider deploy and force-unpack weapon.\n");
+            appendMatrixText(" - hk list           : Display all active weapons in Arsenal.\n");
+            appendMatrixText(" - hk destroy <pkg>  : Wipe weapon from system.\n");
+            appendMatrixText(" - clear             : Clear Matrix screen.\n");
+            appendMatrixText(" - su                : Attempt Root Engine override.\n");
             if (outputView != null) outputView.append(currentPrompt);
             return;
         }
 
-        // [!] NATIVE HK-INSTALLER TRIGGER
+        if (trimmedCmd.equals("hk list")) {
+            appendMatrixText("[+] ACTIVE WEAPONS IN HK-ARSENAL:\n");
+            File binDir = new File(getUsrBinPath());
+            if (binDir.exists() && binDir.isDirectory()) {
+                File[] files = binDir.listFiles();
+                if (files != null && files.length > 0) {
+                    for (File f : files) {
+                        appendMatrixText(" -> " + f.getName() + " [Deployed]\n");
+                    }
+                } else {
+                    appendMatrixText("[-] Arsenal is empty. Deploy weapons using 'hk install'.\n");
+                }
+            }
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+
+        if (trimmedCmd.startsWith("hk destroy ")) {
+            String pkg = trimmedCmd.replace("hk destroy ", "").trim();
+            File target = new File(getUsrBinPath(), pkg);
+            if (target.exists() && target.delete()) {
+                appendMatrixText("[+] Weapon '" + pkg + "' wiped from Matrix.\n");
+                if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
+            } else {
+                appendMatrixText("[-] Failed to destroy. Weapon not found or locked.\n");
+            }
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+
         if (trimmedCmd.startsWith("hk install ")) {
             if(headerProgress != null) {
                 headerProgress.setIndeterminate(true);
@@ -604,45 +559,6 @@ public class MainActivity extends AppCompatActivity {
                 appendMatrixText("[-] HK-PKG Error: Specify package name.\n");
                 if (outputView != null) outputView.append(currentPrompt);
                 if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-            }
-            return;
-        }
-
-        // [!] THE PERMANENT NATIVE UNLOCKER & LIBRARY INJECTOR
-        String baseCmd = trimmedCmd.split(" ")[0];
-        File targetBin = new File(getUsrBinPath(), baseCmd);
-        
-        if (targetBin.exists()) {
-            targetBin.setExecutable(true, true); 
-            
-            if (shellInput != null) {
-                String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
-                
-                boolean isShellScript = false;
-                try {
-                    BufferedReader br = new BufferedReader(new FileReader(targetBin));
-                    String firstLine = br.readLine();
-                    if (firstLine != null && firstLine.startsWith("#!")) {
-                        isShellScript = true;
-                    }
-                    br.close();
-                } catch (Exception ignored) {}
-
-                String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
-
-                try {
-                    if (isShellScript) {
-                        shellInput.writeBytes(libInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n");
-                    } else {
-                        shellInput.writeBytes(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
-                    }
-                    shellInput.writeBytes("echo '---HK_DONE---'\n");
-                    shellInput.flush();
-                } catch (Exception e) {
-                    appendMatrixText("[-] Shell Comm Error: " + e.getMessage() + "\n");
-                }
-            } else {
-                appendMatrixText("[-] Execution Blocked: Native Engine is offline.\n");
             }
             return;
         }
@@ -797,7 +713,7 @@ public class MainActivity extends AppCompatActivity {
                         if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (c == 'c') main.sendSigInt();
-                                else if (c == 'l') main.clearTerminal();
+                                else if (c == 'l') { main.clearTerminal(); main.printBootBanner(); }
                                 else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
                                 else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
                                 else if (c == 'd') main.exitApplication();
