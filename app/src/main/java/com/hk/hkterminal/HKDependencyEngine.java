@@ -3,47 +3,61 @@ package com.hk.hkterminal;
 import java.util.*;
 
 /**
- * HK-OPERATION : DEPENDENCY RESOLUTION MATRIX
+ * HK-OPERATION : GOD-EYE DEPENDENCY RESOLVER (ALPHA CORE)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Auto-Calculate & Resolve Package Dependencies (APT-Style)
+ * DIRECTIVE    : 100% Auto-fetch missing libraries, Zero Manual Setup.
  */
 public class HKDependencyEngine {
 
-    // 1. Virtual Package Database (In real system, this is parsed from a server's Packages.gz)
     private static final Map<String, PackageNode> MASTER_INDEX = new HashMap<>();
 
     static {
-        // [!] THE MATRIX MAPPING (Who needs what to survive)
+        // [!] THE MATRIX MAPPING (Auto-fetches everything the weapon needs)
         
-        // Python aur uske weapons
-        MASTER_INDEX.put("python", new PackageNode("python", "url_to_python", Arrays.asList("libffi", "libsqlite", "openssl", "zlib")));
+        // 1. Python & Core Backend
+        MASTER_INDEX.put("python", new PackageNode("python3", Arrays.asList("libffi", "sqlite-libs", "openssl", "zlib")));
+        MASTER_INDEX.put("python3", new PackageNode("python3", Arrays.asList("libffi", "sqlite-libs", "openssl", "zlib")));
         
-        // Backend Libraries (Core system components)
-        MASTER_INDEX.put("libffi", new PackageNode("libffi", "url_to_libffi", Collections.emptyList()));
-        MASTER_INDEX.put("libsqlite", new PackageNode("libsqlite", "url_to_libsqlite", Collections.emptyList()));
-        MASTER_INDEX.put("openssl", new PackageNode("openssl", "url_to_openssl", Arrays.asList("ca-certificates")));
-        MASTER_INDEX.put("ca-certificates", new PackageNode("ca-certificates", "url_to_ca-cert", Collections.emptyList()));
-        MASTER_INDEX.put("zlib", new PackageNode("zlib", "url_to_zlib", Collections.emptyList()));
+        // 2. Missing Core Libraries (Alias fixing)
+        MASTER_INDEX.put("libsqlite", new PackageNode("sqlite-libs", Collections.emptyList()));
+        MASTER_INDEX.put("sqlite-libs", new PackageNode("sqlite-libs", Collections.emptyList()));
+        MASTER_INDEX.put("libffi", new PackageNode("libffi", Collections.emptyList()));
+        MASTER_INDEX.put("openssl", new PackageNode("openssl", Arrays.asList("ca-certificates")));
+        MASTER_INDEX.put("ca-certificates", new PackageNode("ca-certificates", Collections.emptyList()));
+        MASTER_INDEX.put("zlib", new PackageNode("zlib", Collections.emptyList()));
         
-        // Nano Editor
-        MASTER_INDEX.put("nano", new PackageNode("nano", "url_to_nano", Arrays.asList("ncurses")));
-        MASTER_INDEX.put("ncurses", new PackageNode("ncurses", "url_to_ncurses", Collections.emptyList()));
+        // 3. Network & Spider Tools
+        MASTER_INDEX.put("curl", new PackageNode("curl", Arrays.asList("openssl", "zlib", "nghttp2-libs")));
+        MASTER_INDEX.put("nghttp2-libs", new PackageNode("nghttp2-libs", Collections.emptyList()));
+        MASTER_INDEX.put("wget", new PackageNode("wget", Arrays.asList("openssl", "zlib", "pcre")));
+        MASTER_INDEX.put("pcre", new PackageNode("pcre", Collections.emptyList()));
+        
+        // 4. Text Editors & System Utilities
+        MASTER_INDEX.put("nano", new PackageNode("nano", Arrays.asList("ncurses", "ncurses-libs")));
+        MASTER_INDEX.put("tar", new PackageNode("tar", Arrays.asList("acl", "libacl")));
+        MASTER_INDEX.put("acl", new PackageNode("acl", Collections.emptyList()));
+        MASTER_INDEX.put("libacl", new PackageNode("libacl", Collections.emptyList()));
+
+        // 5. Visuals & Animations (THE 'sl' TRAIN FIX)
+        MASTER_INDEX.put("sl", new PackageNode("sl", Arrays.asList("ncurses-libs", "ncurses")));
+        MASTER_INDEX.put("ncurses", new PackageNode("ncurses", Arrays.asList("ncurses-libs")));
+        MASTER_INDEX.put("ncurses-libs", new PackageNode("ncurses-libs", Collections.emptyList()));
     }
 
-    // 2. Data Structure for Packages
     static class PackageNode {
-        String name;
-        String downloadUrl;
-        List<String> dependencies; // Kya jarurat hai isko chalne ke liye
+        String realName;
+        List<String> dependencies;
 
-        PackageNode(String name, String downloadUrl, List<String> dependencies) {
-            this.name = name;
-            this.downloadUrl = downloadUrl;
+        PackageNode(String realName, List<String> dependencies) {
+            this.realName = realName;
             this.dependencies = dependencies;
         }
     }
 
-    // 3. THE ALPHA LOGIC: Recursive Dependency Resolver
+    /**
+     * Calculates the full bottom-up installation queue.
+     * Ensures libraries are installed BEFORE the main weapon.
+     */
     public static List<String> calculateInstallQueue(String targetPackage) {
         List<String> installQueue = new ArrayList<>();
         Set<String> alreadyResolved = new HashSet<>();
@@ -53,39 +67,23 @@ public class HKDependencyEngine {
         return installQueue;
     }
 
-    private static void resolveRecursively(String pkgName, List<String> queue, Set<String> resolved) {
-        // Prevent infinite loops (Circular dependencies)
-        if (resolved.contains(pkgName)) return;
+    private static void resolveRecursively(String pkgAlias, List<String> queue, Set<String> resolved) {
+        if (resolved.contains(pkgAlias)) return;
+        resolved.add(pkgAlias);
         
-        PackageNode node = MASTER_INDEX.get(pkgName);
-        if (node == null) {
-            System.out.println("[-] FATAL: '" + pkgName + "' not found in HK Master Index.");
-            return;
-        }
+        PackageNode node = MASTER_INDEX.get(pkgAlias);
+        String actualSearchName = (node != null) ? node.realName : pkgAlias;
 
-        // Check dependencies FIRST (Bottom-Up approach)
-        for (String dependency : node.dependencies) {
-            resolveRecursively(dependency, queue, resolved);
+        if (node != null) {
+            // Deep Matrix Dive: Resolve dependencies first
+            for (String dependency : node.dependencies) {
+                resolveRecursively(dependency, queue, resolved);
+            }
         }
-
-        // Add the current package after its dependencies are satisfied
-        resolved.add(pkgName);
-        queue.add(pkgName);
-    }
-
-    // [!] TEST THE ENGINE
-    public static void testLogic(MainActivity.Callback logger) {
-        String target = "python";
-        logger.onOutput("[*] Building dependency tree for '" + target + "'...\n");
         
-        List<String> finalQueue = calculateInstallQueue(target);
-        
-        logger.onOutput("[+] Calculating required modules: " + finalQueue.size() + " packages.\n");
-        logger.onOutput("The following NEW packages will be installed:\n  ");
-        
-        for (String pkg : finalQueue) {
-            logger.onOutput(pkg + " ");
+        // Add the real targeted name to the queue (Avoids duplicates)
+        if (!queue.contains(actualSearchName)) {
+            queue.add(actualSearchName);
         }
-        logger.onOutput("\n[+] Need to fetch matrices. Ready to unpack.\n");
     }
 }
