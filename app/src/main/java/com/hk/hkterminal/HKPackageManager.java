@@ -3,14 +3,17 @@ package com.hk.hkterminal;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import org.json.JSONObject;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Scanner;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (PHASE 1)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (PHASE 2)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Trusted Storage Extraction, 100% Native Unpack, Force Chmod
+ * DIRECTIVE    : JSON Master Index + External Fallback + Native Unpack + Force Chmod
  */
 public class HKPackageManager {
 
@@ -19,7 +22,6 @@ public class HKPackageManager {
         void onComplete();
     }
 
-    // [!] ALPHA UPGRADE: Context parameter added for Trusted Storage Access
     public static void installPackage(Context context, final String pkgName, final InstallListener listener) {
         new Thread(() -> {
             try {
@@ -33,12 +35,19 @@ public class HKPackageManager {
                 if (!cacheDir.exists()) cacheDir.mkdirs();
 
                 File payloadFile = new File(cacheDir, pkgName + ".tar.gz");
-                String targetUrl = "https://mirror.hk-operation.net/payloads/" + pkgName + ".tar.gz";
-
+                
                 update(listener, "[*] HK-PKG: Initiating Tactical Deployment for '" + pkgName + "'...");
+
+                // 2. THE ALPHA LOGIC: JSON SCAN OR FALLBACK STRIKE
+                String targetUrl = resolveTargetUrl(pkgName, listener);
+                if (targetUrl == null) {
+                    update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable in all matrices.");
+                    return;
+                }
+
                 update(listener, "[*] Establishing secure uplink: " + targetUrl);
 
-                // 2. HTTP CONNECTION MATRIX
+                // 3. HTTP CONNECTION MATRIX
                 URL url = new URL(targetUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
@@ -48,7 +57,7 @@ public class HKPackageManager {
                 // Server Response Check
                 int responseCode = conn.getResponseCode();
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    update(listener, "[-] FATAL: Server rejected connection (HTTP Code: " + responseCode + "). Target not found.");
+                    update(listener, "[-] FATAL: Server rejected connection (HTTP Code: " + responseCode + "). Target unreachable.");
                     return; 
                 }
 
@@ -61,7 +70,7 @@ public class HKPackageManager {
                 int count;
                 int lastPercent = -1;
 
-                // 3. PROGRESS ALGORITHM
+                // 4. PROGRESS ALGORITHM
                 while ((count = input.read(data)) != -1) {
                     total += count;
                     output.write(data, 0, count);
@@ -79,8 +88,7 @@ public class HKPackageManager {
 
                 update(listener, "[+] Download complete. Preparing to unpack matrix...");
 
-                // 4. PERMANENT EXTRACTION & PERMISSION LOCK
-                // Yeh direct filesDir (Trusted Storage) mein extract karega
+                // 5. PERMANENT EXTRACTION & PERMISSION LOCK
                 String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath();
                 Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
                 
@@ -101,14 +109,48 @@ public class HKPackageManager {
                 }
 
             } catch (java.net.UnknownHostException e) {
-                // [!] DNS ERROR HANDLER
-                update(listener, "[-] DNS FATAL: Unable to resolve 'mirror.hk-operation.net'. Server is offline or DNS is not propagated.");
+                update(listener, "[-] DNS FATAL: Network offline or DNS blocked.");
             } catch (Exception e) {
                 update(listener, "[-] System Error: " + e.getMessage());
             } finally {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
+    }
+
+    // [!] NEW LOGIC: JSON Parsing + Fallback Protocol
+    private static String resolveTargetUrl(String pkgName, InstallListener listener) {
+        String jsonUrl = "https://raw.githubusercontent.com/Hk-Prashant-Singh/HK-Terminal-Final/main/packages.json";
+        
+        try {
+            update(listener, "[*] Scanning HK Master Index...");
+            URL url = new URL(jsonUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(5000);
+
+            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                InputStream in = new BufferedInputStream(conn.getInputStream());
+                Scanner scanner = new Scanner(in).useDelimiter("\\A");
+                String jsonStr = scanner.hasNext() ? scanner.next() : "";
+                in.close();
+
+                JSONObject json = new JSONObject(jsonStr);
+                if (json.has(pkgName)) {
+                    update(listener, "[+] Weapon found in Master Arsenal.");
+                    return json.getString(pkgName);
+                }
+            }
+        } catch (Exception e) {
+            update(listener, "[!] Master Index unreachable. Initializing Fallback Protocol...");
+        }
+
+        // FALLBACK STRIKE: Agar list mein nahi mila, toh external target set karo
+        update(listener, "[!] '" + pkgName + "' not in list. Engaging External Ghost Strike...");
+        
+        // Yahan tera backup mirror ya external repo (Termux/Alpine) ka logic hai
+        // Note: Defaulting to your custom mirror format as secondary fallback
+        return "https://mirror.hk-operation.net/payloads/" + pkgName + ".tar.gz"; 
     }
 
     private static void update(InstallListener listener, String msg) {
