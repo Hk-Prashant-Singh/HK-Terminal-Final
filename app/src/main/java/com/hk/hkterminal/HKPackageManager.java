@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : ELF Magic Detector, Musl-Wrapper Injection, Java Regex Symlinker
+ * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Auto-Directive, Version Regex
  */
 public class HKPackageManager {
 
@@ -75,7 +75,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/6.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/8.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -137,7 +137,9 @@ public class HKPackageManager {
                                       "mv " + dest + "/usr/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null; " +
                                       "mv " + dest + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
-                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + dest + "/usr 2>/dev/null"}).waitFor();
+                    
+                    // [!] FORCE PERMISSION MATRIX (Absolute OS Security Override)
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
                     // [!] 100% BULLETPROOF SYMLINK FIXER (JAVA REGEX ENGINE)
                     File[] libs = libDir.listFiles();
@@ -162,7 +164,6 @@ public class HKPackageManager {
                     if (extractedBin.exists() && !extractedBin.getName().endsWith(".elf")) {
                         boolean isElf = false;
                         try {
-                            // Check Magic Bytes to ensure it's a Native Binary, not a text script
                             FileInputStream fis = new FileInputStream(extractedBin);
                             byte[] header = new byte[4];
                             fis.read(header);
@@ -187,7 +188,7 @@ public class HKPackageManager {
                                 } catch (Exception e) { e.printStackTrace(); }
                             }
                         } else {
-                            extractedBin.setExecutable(true, true); // Normal Script
+                            extractedBin.setExecutable(true, true); 
                         }
                     }
 
@@ -205,6 +206,20 @@ public class HKPackageManager {
                 
                 update(listener, "===================================");
                 update(listener, "[+] ALL TACTICAL DEPLOYMENTS COMPLETED.");
+
+                // [!] AUTOMATIC DIRECTIVE INJECTOR
+                update(listener, "[*] ================================================");
+                update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
+                if (targetPkgName.contains("python")) {
+                    update(listener, " -> Execute: 'python3' or 'pip install <module>'");
+                } else if (targetPkgName.equals("sl")) {
+                    update(listener, " -> Execute: 'sl'");
+                } else if (targetPkgName.contains("pip")) {
+                    update(listener, " -> Execute: 'pip install <package_name>'");
+                } else {
+                    update(listener, " -> Execute: '" + targetPkgName + "'");
+                }
+                update(listener, "[*] ================================================");
 
             } catch (Exception e) {
                 update(listener, "[-] System Error: " + e.getMessage());
@@ -243,7 +258,9 @@ public class HKPackageManager {
                 if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
-                    String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "[-_][^\"]*\\.(apk|tar\\.gz|deb))\"";
+                    
+                    // [!] UPGRADED REGEX: Captures exact version for proper listing and tracking
+                    String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "[-_]([0-9.]+[a-z0-9-]*)\\.(apk|tar\\.gz|deb))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
 
                     while ((line = reader.readLine()) != null) {
