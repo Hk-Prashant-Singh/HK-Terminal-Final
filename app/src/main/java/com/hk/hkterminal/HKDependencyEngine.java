@@ -3,7 +3,7 @@ package com.hk.hkterminal;
 import java.util.*;
 
 /**
- * HK-OPERATION : GOD-EYE DEPENDENCY RESOLVER (MEGA MATRIX EDITION)
+ * HK-OPERATION : GOD-EYE DEPENDENCY RESOLVER (FINAL MEGA MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
  * DIRECTIVE    : 100% Auto-fetch missing libraries, Java, Cloud, Node, Python & PIP Injection.
  */
@@ -12,9 +12,9 @@ public class HKDependencyEngine {
     private static final Map<String, PackageNode> MASTER_INDEX = new HashMap<>();
 
     static {
-        // [!] THE EXPANDED MATRIX MAPPING 
+        // [!] THE EXPANDED HK-ARSENAL MAPPING 
         
-        // 0. THE GOD ENGINE
+        // 0. THE GOD ENGINE (Core Linker for all native executions)
         MASTER_INDEX.put("musl", new PackageNode("musl", Collections.emptyList()));
         MASTER_INDEX.put("libc", new PackageNode("musl", Collections.emptyList())); 
 
@@ -70,15 +70,15 @@ public class HKDependencyEngine {
         MASTER_INDEX.put("ncurses", new PackageNode("ncurses", Arrays.asList("ncurses-libs")));
         MASTER_INDEX.put("ncurses-libs", new PackageNode("ncurses-libs", Collections.emptyList()));
         
-        // [!] 7. HEAVY DEVELOPMENT & CLOUD WEAPONS (JAVA, NODE, CLOUD)
-        MASTER_INDEX.put("java", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg", "lcms2")));
-        MASTER_INDEX.put("openjdk17-jre", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg", "lcms2")));
-        MASTER_INDEX.put("libjpeg", new PackageNode("libjpeg-turbo", Collections.emptyList()));
+        // [!] 7. HEAVY DEVELOPMENT & CLOUD WEAPONS (JAVA, NODE, GO, PHP)
+        MASTER_INDEX.put("java", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg-turbo", "lcms2")));
+        MASTER_INDEX.put("openjdk17-jre", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg-turbo", "lcms2")));
+        MASTER_INDEX.put("libjpeg-turbo", new PackageNode("libjpeg-turbo", Collections.emptyList()));
         MASTER_INDEX.put("lcms2", new PackageNode("lcms2", Collections.emptyList()));
         
-        MASTER_INDEX.put("node", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "cares", "libuv")));
-        MASTER_INDEX.put("nodejs", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "cares", "libuv")));
-        MASTER_INDEX.put("cares", new PackageNode("c-ares", Collections.emptyList()));
+        MASTER_INDEX.put("node", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "c-ares", "libuv")));
+        MASTER_INDEX.put("nodejs", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "c-ares", "libuv")));
+        MASTER_INDEX.put("c-ares", new PackageNode("c-ares", Collections.emptyList()));
         MASTER_INDEX.put("libuv", new PackageNode("libuv", Collections.emptyList()));
         
         MASTER_INDEX.put("go", new PackageNode("go", Arrays.asList("musl", "bash")));
@@ -99,6 +99,10 @@ public class HKDependencyEngine {
         }
     }
 
+    /**
+     * HK-MATRIX LOGIC: Calculates the full bottom-up installation queue.
+     * Ensures libraries are integrated BEFORE the main weapon.
+     */
     public static List<String> calculateInstallQueue(String targetPackage) {
         List<String> installQueue = new ArrayList<>();
         Set<String> alreadyResolved = new HashSet<>();
