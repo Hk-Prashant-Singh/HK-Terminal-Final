@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
+import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - PHASE 2)
  * IDENTITY     : Tech Wizard (Elite Alpha Indian Hacker)
- * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Perfect Guard
+ * DIRECTIVE    : Trusted Storage Execution, Native LD_LIBRARY_PATH Injection, Bulletproof Guard
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -63,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        
+        // SAFE UI BINDING
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
@@ -72,64 +75,75 @@ public class MainActivity extends AppCompatActivity {
         loadHistory(); 
 
         ViewPager2 vp = findViewById(R.id.viewPager);
-        vp.setUserInputEnabled(false); 
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
         
-        vp.setAdapter(new FragmentStateAdapter(this) {
-            @Override public int getItemCount() { return 2; }
-            @Override public Fragment createFragment(int p) { 
-                TerminalTabFragment fragment = new TerminalTabFragment(p);
-                if (p == 1) packagesFragmentInstance = fragment;
-                return fragment;
-            }
-        });
-        
-        new TabLayoutMediator(findViewById(R.id.tabLayout), vp, (tab, pos) -> 
-            tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
-
-        vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                if (upgradeAllPanel != null) {
-                    upgradeAllPanel.setVisibility(position == 1 ? View.VISIBLE : View.GONE);
+        if (vp != null && tabLayout != null) {
+            vp.setUserInputEnabled(false); 
+            vp.setAdapter(new FragmentStateAdapter(this) {
+                @Override public int getItemCount() { return 2; }
+                @Override public Fragment createFragment(int p) { 
+                    TerminalTabFragment fragment = new TerminalTabFragment(p);
+                    if (p == 1) packagesFragmentInstance = fragment;
+                    return fragment;
                 }
-            }
-        });
+            });
+            
+            new TabLayoutMediator(tabLayout, vp, (tab, pos) -> 
+                tab.setText(pos == 0 ? "TERMINAL" : "PACKAGES")).attach();
+
+            vp.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+                @Override
+                public void onPageSelected(int position) {
+                    if (upgradeAllPanel != null) {
+                        upgradeAllPanel.setVisibility(position == 1 ? View.VISIBLE : View.GONE);
+                    }
+                }
+            });
+        }
 
         setupSystemButtons();
         setupUpgradeAllLogic();
-        TerminalEngine.startAmSocketServer();
         
-        // [!] ENVIRONMENT INJECTION (Libraries & Binaries permanently mapped)
-        String[] env = {
-            "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
-            "LD_LIBRARY_PATH=" + getUsrLibPath(), 
-            "TERM=xterm-256color", 
-            "HOME=" + getBaseHomePath(),
-            "GIT_CONFIG_NOSYSTEM=1", 
-            "GIT_AUTHOR_NAME=pshacker",
-            "GIT_COMMITTER_NAME=pshacker",
-            "PS1=" + currentPrompt
-        };
-        ptyBridge = new PtyBridge("/system/bin/sh", env, getBaseHomePath());
-        
-        ptyBridge.writeCommand("stty -echo\n"); 
-        ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
-        ptyBridge.writeCommand("cd $HOME\n"); 
-        
-        new Handler(Looper.getMainLooper()).postDelayed(this::clearTerminal, 400);
+        // [!] BULLETPROOF NATIVE ENGINE INITIALIZATION
+        try {
+            TerminalEngine.startAmSocketServer();
+            
+            String[] env = {
+                "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
+                "LD_LIBRARY_PATH=" + getUsrLibPath(), 
+                "TERM=xterm-256color", 
+                "HOME=" + getBaseHomePath(),
+                "GIT_CONFIG_NOSYSTEM=1", 
+                "GIT_AUTHOR_NAME=pshacker",
+                "GIT_COMMITTER_NAME=pshacker",
+                "PS1=" + currentPrompt
+            };
+            
+            ptyBridge = new PtyBridge("/system/bin/sh", env, getBaseHomePath());
+            ptyBridge.writeCommand("stty -echo\n"); 
+            ptyBridge.writeCommand("export PS1='pshacker@hk:~$ '\n");
+            ptyBridge.writeCommand("cd $HOME\n"); 
+            
+            new Handler(Looper.getMainLooper()).postDelayed(this::clearTerminal, 400);
 
-        new Thread(() -> {
-            try {
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
-                    String output = new String(buffer, 0, read, "UTF-8");
-                    appendMatrixText(output);
+            new Thread(() -> {
+                try {
+                    byte[] buffer = new byte[4096];
+                    int read;
+                    while ((read = ptyBridge.getInputStream().read(buffer)) != -1) {
+                        String output = new String(buffer, 0, read, "UTF-8");
+                        appendMatrixText(output);
+                    }
+                } catch (Exception e) {
+                    Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
                 }
-            } catch (Exception e) {
-                Log.e("HK_NATIVE", "PTY Stream Disconnected", e);
-            }
-        }).start();
+            }).start();
+
+        } catch (Throwable t) {
+            Log.e("HK_FATAL_CRASH", "Native Engine Shield Blocked a Crash!", t);
+            appendMatrixText("\n[!] CRITICAL ERROR: Native C++ Engine (PtyBridge) Failed to Load.\n");
+            appendMatrixText("[!] Details: " + t.getMessage() + "\n");
+        }
     }
 
     public void appendMatrixText(final String rawText) {
@@ -538,7 +552,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] NATIVE HK-INSTALLER TRIGGER (With Context Injection)
+        // [!] NATIVE HK-INSTALLER TRIGGER
         if (trimmedCmd.startsWith("hk install ")) {
             if(headerProgress != null) {
                 headerProgress.setIndeterminate(true);
@@ -546,7 +560,6 @@ public class MainActivity extends AppCompatActivity {
             }
             String pkg = trimmedCmd.replace("hk install ", "").trim();
             if (!pkg.isEmpty()) {
-                // Pass MainActivity.this as Context
                 HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
                     @Override public void onUpdate(String msg) { runOnUiThread(() -> appendMatrixText(msg + "\n")); }
                     @Override public void onComplete() {
@@ -585,7 +598,6 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
-                // [!] FORCE LD_LIBRARY_PATH ON EVERY EXECUTION
                 String libInject = "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":$LD_LIBRARY_PATH; ";
 
                 if (isShellScript) {
@@ -593,6 +605,9 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     ptyBridge.writeCommand(libInject + targetBin.getAbsolutePath() + " " + passArgs + "\n");
                 }
+            } else {
+                // FALLBACK IF PTYBRIDGE CRASHED BUT TOOL EXISTS
+                appendMatrixText("[-] Execution Blocked: Native PTY Engine is offline.\n");
             }
             return;
         }
@@ -616,7 +631,12 @@ public class MainActivity extends AppCompatActivity {
         if (ptyBridge != null) { 
             ptyBridge.writeCommand(command + "\n"); 
         } else { 
-            TerminalEngine.run(command); 
+            // FAILSAFE
+            try {
+                TerminalEngine.run(command); 
+            } catch (Throwable t) {
+                appendMatrixText("[-] Terminal Engine Failed: " + t.getMessage() + "\n");
+            }
         }
     }
 
@@ -907,7 +927,9 @@ public class MainActivity extends AppCompatActivity {
     public static void logError(String m, String t, Throwable e) { Log.e(m, t, e); }
     @Override protected void onDestroy() { 
         super.onDestroy(); 
-        TerminalEngine.stopAmSocketServer(); 
-        if (ptyBridge != null) ptyBridge.destroy();
+        try {
+            TerminalEngine.stopAmSocketServer(); 
+            if (ptyBridge != null) ptyBridge.destroy();
+        } catch (Throwable ignored) {}
     }
 }
