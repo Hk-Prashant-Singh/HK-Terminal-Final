@@ -30,9 +30,9 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - GOD LEVEL)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : 100% Uncut Shell, Smart PIP Interceptor, Native Shield Bypasser
+ * DIRECTIVE    : Intelligent Auto-Directive, Pipeline Interceptor, Mass Global Sync Engine
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     public interface Callback { void onOutput(String line); }
 
-    // [!] DYNAMIC TRUSTED PATHS
+    // [!] DYNAMIC TRUSTED CORE PATHS
     private String getBaseHomePath() { return getFilesDir().getAbsolutePath() + "/home"; }
     private String getUsrBinPath() { return getFilesDir().getAbsolutePath() + "/usr/bin"; }
     private String getUsrLibPath() { return getFilesDir().getAbsolutePath() + "/usr/lib"; }
@@ -137,10 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 "TERM=xterm-256color", 
                 "HOME=" + getBaseHomePath(),
                 "PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr",
-                "PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14",
-                "GIT_CONFIG_NOSYSTEM=1", 
-                "GIT_AUTHOR_NAME=pshacker",
-                "GIT_COMMITTER_NAME=pshacker"
+                "PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14"
             };
             
             shellProcess = Runtime.getRuntime().exec("sh", env, new File(getBaseHomePath()));
@@ -222,9 +219,9 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    if (line.contains("[+]") || line.contains("successfully") || line.contains("Integrated")) {
+                    if (line.contains("[+]") || line.contains("successfully") || line.contains("Integrated") || line.contains("[READY]")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
-                    } else if (line.contains("[-]") || lower.contains("error") || lower.contains("failed") || lower.contains("denied") || lower.contains("unidentifiable")) {
+                    } else if (line.contains("[-]") || lower.contains("error") || lower.contains("failed") || lower.contains("denied") || lower.contains("unidentifiable") || line.contains("[!]")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("[*]") || line.contains("Progress") || line.contains("Fetching")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
@@ -380,10 +377,31 @@ public class MainActivity extends AppCompatActivity {
         if (btnUpgradeAll != null) {
             btnUpgradeAll.setOnClickListener(v -> {
                 btnUpgradeAll.setEnabled(false);
-                btnUpgradeAll.setText("SYNCHRONIZING SYSTEM MATRIX...");
-                Toast.makeText(this, "[+] ALL PACKAGES UPGRADED", Toast.LENGTH_SHORT).show();
-                btnUpgradeAll.setEnabled(true);
-                btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
+                btnUpgradeAll.setText("SYNCHRONIZING GLOBAL MATRIX...");
+                appendMatrixText("[*] Initiating Global Arsenal Sync Protocol...\n");
+                
+                new Thread(() -> {
+                    File binDir = new File(getUsrBinPath());
+                    if (binDir.exists() && binDir.listFiles() != null) {
+                        File[] files = binDir.listFiles();
+                        for (File f : files) {
+                            String pkg = f.getName();
+                            runOnUiThread(() -> appendMatrixText("[*] Syncing Weapon: " + pkg + "...\n"));
+                            
+                            HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
+                                @Override public void onUpdate(String msg) {}
+                                @Override public void onComplete() {}
+                            });
+                        }
+                    }
+                    
+                    runOnUiThread(() -> {
+                        btnUpgradeAll.setEnabled(true);
+                        btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
+                        appendMatrixText("[+] GLOBAL ARSENAL SYNCED TO LATEST VERSION.\n");
+                        if (outputView != null) outputView.append(currentPrompt);
+                    });
+                }).start();
             });
         }
     }
@@ -490,11 +508,32 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        // [!] THE GOD-LEVEL PIP INTERCEPTOR
-        // Agar tu "pip install lolcat" likhega, toh system usey automatically Python module mein reroute kar dega.
+        // [!] THE PIP SYSTEM INTERCEPTOR
         if (trimmedCmd.startsWith("pip ")) {
             appendMatrixText("[*] HK-Interceptor: Rerouting PIP via Native Python Matrix...\n");
-            trimmedCmd = "python -m " + trimmedCmd;
+            trimmedCmd = "python3 -m " + trimmedCmd;
+        }
+
+        // [!] IFCONFIG TO IP ADDR AUTO-ALIAS INTERCEPTOR
+        if (trimmedCmd.equals("ifconfig")) {
+            appendMatrixText("[*] HK-Interceptor: Rerouting network interface command...\n");
+            trimmedCmd = "ip addr";
+        }
+
+        // [!] THE INTELLIGENT DIRECTIVE DETECTIVE ENGINE
+        String[] parts = trimmedCmd.split(" ");
+        String baseCmd = parts[0];
+        if (!trimmedCmd.startsWith("hk ") && !trimmedCmd.startsWith("pip ") && 
+            !baseCmd.equals("clear") && !baseCmd.equals("su") && 
+            !baseCmd.equals("cd") && !baseCmd.equals("ls") && !baseCmd.equals("ll") && !baseCmd.equals("ip")) {
+            
+            File weapon = new File(getUsrBinPath(), baseCmd);
+            if (!weapon.exists()) {
+                appendMatrixText("[!] Directive: Weapon '" + baseCmd + "' not found in active repository.\n");
+                appendMatrixText("[+] To deploy, execute full command: 'hk install " + baseCmd + "'\n");
+                if (outputView != null) outputView.append(currentPrompt);
+                return;
+            }
         }
 
         if (trimmedCmd.equals("hk help") || trimmedCmd.equals("help")) {
@@ -512,7 +551,7 @@ public class MainActivity extends AppCompatActivity {
             appendMatrixText(" -> mkdir <dir_name>  : Create a new directory.\n");
             appendMatrixText(" -> ls / ll           : View contents (ll for details).\n");
             appendMatrixText("[+] --- [ SYSTEM OVERRIDES & NETWORK ] ---\n");
-            appendMatrixText(" -> ifconfig          : Scan Network Interfaces.\n");
+            appendMatrixText(" -> ifconfig          : Scan Network Interfaces via alias.\n");
             appendMatrixText(" -> clear             : Purge screen visual history.\n");
             appendMatrixText(" -> su                : Elevate to Root Engine.\n");
             appendMatrixText("[*] ================================================\n");
@@ -521,13 +560,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (trimmedCmd.equals("hk list")) {
-            appendMatrixText("[+] ACTIVE WEAPONS IN HK-ARSENAL:\n");
+            appendMatrixText("[+] ACTIVE WEAPONS & VERSIONS IN HK-ARSENAL:\n");
             File binDir = new File(getUsrBinPath());
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
                 if (files != null && files.length > 0) {
                     for (File f : files) {
-                        appendMatrixText(" -> " + f.getName() + " [Deployed]\n");
+                        String name = f.getName();
+                        String extraTip = (name.contains("python")) ? " | Direct execution | (Use 'pip install <pkg>')" : " | Deployed & Linked [READY]";
+                        appendMatrixText(" -> " + name + extraTip + "\n");
                     }
                 } else {
                     appendMatrixText("[-] Arsenal is empty. Deploy weapons using 'hk install'.\n");
@@ -575,17 +616,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] EXTENDED ALPHA SHIELD LOGIC FOR NATIVE EXECUTION
-        String baseCmd = trimmedCmd.split(" ")[0];
+        // [!] EXTENDED SHIELD LOGIC FOR BINARY LINKING
         File targetBin = new File(getUsrBinPath(), baseCmd);
-        
         if (targetBin.exists()) {
             targetBin.setExecutable(true, true); 
-            
             if (shellInput != null) {
                 String passArgs = trimmedCmd.substring(baseCmd.length()).trim();
                 boolean isShellScript = false;
-                
                 try {
                     BufferedReader br = new BufferedReader(new FileReader(targetBin));
                     String firstLine = br.readLine();
@@ -595,7 +632,6 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
-                // [!] NATIVE BYPASS INJECTION
                 String envInject = "export HOME=" + getBaseHomePath() + "; " +
                                    "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
                                    "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; " +
@@ -643,7 +679,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // STANDARD SHELL COMMAND EXECUTION
+        // STANDARD SHELL EXECUTION BINDING
         if (shellInput != null) { 
             try {
                 shellInput.writeBytes(trimmedCmd + "\n");
@@ -696,7 +732,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] BLOCK 4: ALPHA TERMINAL INPUT ENGINE
+    // [!] INTERACTIVE INPUT MATRIX ENGINE
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -816,6 +852,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // [!] TABS AND VISUAL FACTORY
     public static class TerminalTabFragment extends Fragment {
         int type;
         private LinearLayout rootLayoutRef;
@@ -928,9 +965,9 @@ public class MainActivity extends AppCompatActivity {
                         
                         delBtn.setOnClickListener(v -> {
                             if (file.delete()) {
-                                Toast.makeText(context, "[+] Target Destroyed: " + file.getName(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "[+] Target Wiped: " + file.getName(), Toast.LENGTH_SHORT).show();
                                 renderPackagesMatrix(rootLayout, context);
-                            } else Toast.makeText(context, "[-] Core System Blocked Deletion", Toast.LENGTH_SHORT).show();
+                            } else Toast.makeText(context, "[-] Matrix Deletion Blocked", Toast.LENGTH_SHORT).show();
                         });
 
                         row.addView(pkgName);
