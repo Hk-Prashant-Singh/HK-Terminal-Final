@@ -11,9 +11,9 @@ import java.net.URL;
 import java.util.Scanner;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (PHASE 2)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (ALPHA MATRIX FIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : JSON Master Index + External Fallback + Native Unpack + Force Chmod
+ * DIRECTIVE    : JSON Master Index + Auto-Redirect Bypass + 60s Timeout
  */
 public class HKPackageManager {
 
@@ -26,7 +26,7 @@ public class HKPackageManager {
         new Thread(() -> {
             try {
                 // 1. TRUSTED PATH INITIALIZATION
-                File filesDir = context.getFilesDir(); // /data/user/0/com.hk.hkterminal/files/
+                File filesDir = context.getFilesDir(); 
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
                 File cacheDir = new File(filesDir, ".cache");
@@ -45,16 +45,37 @@ public class HKPackageManager {
                     return;
                 }
 
-                update(listener, "[*] Establishing secure uplink: " + targetUrl);
+                update(listener, "[*] Establishing secure uplink...");
 
-                // 3. HTTP CONNECTION MATRIX
+                // 3. ADVANCED HTTP CONNECTION MATRIX (REDIRECT BYPASS)
+                HttpURLConnection conn = null;
                 URL url = new URL(targetUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(10000);
+                boolean redirect;
+                int redirectCount = 0;
+
+                do {
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(30000); // 30 seconds connection limit
+                    conn.setReadTimeout(60000);    // 60 seconds read limit (Heavy Files)
+                    conn.setInstanceFollowRedirects(false); // Hum khud redirect handle karenge
+
+                    int status = conn.getResponseCode();
+                    if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        status == HttpURLConnection.HTTP_MOVED_PERM ||
+                        status == HttpURLConnection.HTTP_SEE_OTHER) {
+                        
+                        redirect = true;
+                        String newUrl = conn.getHeaderField("Location");
+                        url = new URL(newUrl);
+                        redirectCount++;
+                        update(listener, "[*] Bypassing Server Redirect (" + redirectCount + ")...");
+                    } else {
+                        redirect = false;
+                    }
+                } while (redirect && redirectCount < 5); // Max 5 jumps allowed
                 
-                // Server Response Check
+                // Server Response Final Check
                 int responseCode = conn.getResponseCode();
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     update(listener, "[-] FATAL: Server rejected connection (HTTP Code: " + responseCode + "). Target unreachable.");
@@ -108,6 +129,8 @@ public class HKPackageManager {
                     update(listener, "[-] Unpack Matrix Failed. Kernel blocked the operation.");
                 }
 
+            } catch (java.net.SocketTimeoutException e) {
+                update(listener, "[-] TIME OUT: Connection took too long. Try on faster network.");
             } catch (java.net.UnknownHostException e) {
                 update(listener, "[-] DNS FATAL: Network offline or DNS blocked.");
             } catch (Exception e) {
@@ -118,7 +141,7 @@ public class HKPackageManager {
         }).start();
     }
 
-    // [!] NEW LOGIC: JSON Parsing + Fallback Protocol
+    // [!] JSON PARSING + FALLBACK PROTOCOL
     private static String resolveTargetUrl(String pkgName, InstallListener listener) {
         String jsonUrl = "https://raw.githubusercontent.com/Hk-Prashant-Singh/HK-Terminal-Final/main/packages.json";
         
@@ -127,7 +150,7 @@ public class HKPackageManager {
             URL url = new URL(jsonUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(5000);
+            conn.setConnectTimeout(10000);
 
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 InputStream in = new BufferedInputStream(conn.getInputStream());
@@ -145,11 +168,7 @@ public class HKPackageManager {
             update(listener, "[!] Master Index unreachable. Initializing Fallback Protocol...");
         }
 
-        // FALLBACK STRIKE: Agar list mein nahi mila, toh external target set karo
         update(listener, "[!] '" + pkgName + "' not in list. Engaging External Ghost Strike...");
-        
-        // Yahan tera backup mirror ya external repo (Termux/Alpine) ka logic hai
-        // Note: Defaulting to your custom mirror format as secondary fallback
         return "https://mirror.hk-operation.net/payloads/" + pkgName + ".tar.gz"; 
     }
 
