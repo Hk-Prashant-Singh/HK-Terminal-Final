@@ -44,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnUpgradeAll;
     
     // ALPHA STATE ENGINE (JNI-FREE STATEFUL SHELL)
-    private Process shellProcess;
+    // [!] FIX: Explicitly defined java.lang.Process to avoid Android OS clash
+    private java.lang.Process shellProcess;
     private DataOutputStream shellInput;
     private boolean isCtrl = false;
     private boolean isAlt = false;
