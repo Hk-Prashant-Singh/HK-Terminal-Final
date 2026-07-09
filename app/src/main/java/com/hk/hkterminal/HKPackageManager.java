@@ -3,17 +3,17 @@ package com.hk.hkterminal;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (ALPHA MATRIX FIX)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (DYNAMIC SPIDER EDITION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : JSON Master Index + Auto-Redirect Bypass + 60s Timeout + Safe Process
+ * DIRECTIVE    : Live Web Scraper, Auto-Redirect Bypass, 60s Timeout, Safe Process
  */
 public class HKPackageManager {
 
@@ -34,20 +34,21 @@ public class HKPackageManager {
                 if (!binDir.exists()) binDir.mkdirs();
                 if (!cacheDir.exists()) cacheDir.mkdirs();
 
+                // Save dynamic payload as .tar.gz (Linux architecture trick)
                 File payloadFile = new File(cacheDir, pkgName + ".tar.gz");
                 
                 update(listener, "[*] HK-PKG: Initiating Tactical Deployment for '" + pkgName + "'...");
 
-                // 2. THE ALPHA LOGIC: JSON SCAN OR FALLBACK STRIKE
-                String targetUrl = resolveTargetUrl(pkgName, listener);
+                // 2. THE ALPHA LOGIC: DYNAMIC WEB SPIDER (NO JSON)
+                String targetUrl = huntTargetOnGlobalWeb(pkgName, listener);
                 if (targetUrl == null) {
-                    update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable in all matrices.");
+                    update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable on Global Open Matrix.");
                     return;
                 }
 
-                update(listener, "[*] Establishing secure uplink...");
+                update(listener, "[*] Establishing secure uplink to Direct Payload...");
 
-                // 3. ADVANCED HTTP CONNECTION MATRIX (REDIRECT BYPASS)
+                // 3. ADVANCED HTTP CONNECTION MATRIX (REDIRECT & FIREWALL BYPASS)
                 HttpURLConnection conn = null;
                 URL url = new URL(targetUrl);
                 boolean redirect;
@@ -59,7 +60,12 @@ public class HKPackageManager {
                     conn.setRequestMethod("GET");
                     conn.setConnectTimeout(30000); // 30 seconds wait time
                     conn.setReadTimeout(60000);    // 60 seconds heavy download time
-                    conn.setInstanceFollowRedirects(false); // OS ko block karne se roko
+                    conn.setInstanceFollowRedirects(false); // Manual Redirect Handle
+                    
+                    // Firewall Bypasser (Ghost Browser Headers)
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 HK-Spider/1.0");
+                    conn.setRequestProperty("Accept", "*/*");
+                    conn.setRequestProperty("Connection", "keep-alive");
 
                     int status = conn.getResponseCode();
                     if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
@@ -99,7 +105,7 @@ public class HKPackageManager {
                     if (fileLength > 0) {
                         int percent = (int) (total * 100 / fileLength);
                         if (percent != lastPercent && percent % 5 == 0) {
-                            update(listener, "Progress: [" + percent + "%] Fetching payload...");
+                            update(listener, "Progress: [" + percent + "%] Fetching dynamic payload...");
                             lastPercent = percent;
                         }
                     }
@@ -110,7 +116,7 @@ public class HKPackageManager {
 
                 update(listener, "[+] Download complete. Preparing to unpack matrix...");
 
-                // 5. PERMANENT EXTRACTION & PERMISSION LOCK (Using Explicit java.lang.Process)
+                // 5. PERMANENT EXTRACTION & PERMISSION LOCK
                 String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath();
                 java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
                 
@@ -127,7 +133,7 @@ public class HKPackageManager {
                     payloadFile.delete(); // Ghost Cleanup
                     update(listener, "[+] Target Locked: Module '" + pkgName + "' synchronized in HK Arsenal.");
                 } else {
-                    update(listener, "[-] Unpack Matrix Failed. Kernel blocked the operation.");
+                    update(listener, "[-] Unpack Matrix Failed. Ensure system compatibility.");
                 }
 
             } catch (java.net.SocketTimeoutException e) {
@@ -142,35 +148,49 @@ public class HKPackageManager {
         }).start();
     }
 
-    // [!] JSON PARSING + FALLBACK PROTOCOL
-    private static String resolveTargetUrl(String pkgName, InstallListener listener) {
-        String jsonUrl = "https://raw.githubusercontent.com/Hk-Prashant-Singh/HK-Terminal-Final/main/packages.json";
-        
-        try {
-            update(listener, "[*] Scanning HK Master Index...");
-            URL url = new URL(jsonUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
+    // [!] THE ALPHA SPIDER: DYNAMIC WEB SCRAPER
+    private static String huntTargetOnGlobalWeb(String pkgName, InstallListener listener) {
+        // Global ARM64 Open-Source Repositories (Alpine Architecture Base)
+        String[] mirrors = {
+            "https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/",
+            "https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/"
+        };
 
-            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                InputStream in = new BufferedInputStream(conn.getInputStream());
-                Scanner scanner = new Scanner(in).useDelimiter("\\A");
-                String jsonStr = scanner.hasNext() ? scanner.next() : "";
-                in.close();
+        for (String mirror : mirrors) {
+            try {
+                update(listener, "[*] Scraping Global Matrix: " + mirror.replace("https://dl-cdn.", ""));
+                
+                URL url = new URL(mirror);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (HK-Terminal Scraper Engine)");
 
-                JSONObject json = new JSONObject(jsonStr);
-                if (json.has(pkgName)) {
-                    update(listener, "[+] Weapon found in Master Arsenal.");
-                    return json.getString(pkgName);
+                if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    String line;
+                    
+                    // Regex: Match exact package name format (e.g., nano-7.2-r0.apk)
+                    String regexPattern = "href=\"(" + pkgName + "-[0-9][a-zA-Z0-9.\\-]*\\.apk)\"";
+                    Pattern pattern = Pattern.compile(regexPattern);
+
+                    while ((line = reader.readLine()) != null) {
+                        Matcher matcher = pattern.matcher(line);
+                        if (matcher.find()) {
+                            String exactFileName = matcher.group(1);
+                            reader.close();
+                            update(listener, "[+] Global Target Acquired: " + exactFileName);
+                            return mirror + exactFileName;
+                        }
+                    }
+                    reader.close();
                 }
+            } catch (Exception e) {
+                update(listener, "[-] Mirror failed, switching channels...");
             }
-        } catch (Exception e) {
-            update(listener, "[!] Master Index unreachable. Initializing Fallback Protocol...");
         }
-
-        update(listener, "[!] '" + pkgName + "' not in list. Engaging External Ghost Strike...");
-        return "https://mirror.hk-operation.net/payloads/" + pkgName + ".tar.gz"; 
+        return null; // Package not found on global web
     }
 
     private static void update(InstallListener listener, String msg) {
