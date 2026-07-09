@@ -13,7 +13,7 @@ import java.util.Scanner;
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (ALPHA MATRIX FIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : JSON Master Index + Auto-Redirect Bypass + 60s Timeout
+ * DIRECTIVE    : JSON Master Index + Auto-Redirect Bypass + 60s Timeout + Safe Process
  */
 public class HKPackageManager {
 
@@ -53,12 +53,13 @@ public class HKPackageManager {
                 boolean redirect;
                 int redirectCount = 0;
 
+                // 🔄 Redirect Bypass Loop
                 do {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(30000); // 30 seconds connection limit
-                    conn.setReadTimeout(60000);    // 60 seconds read limit (Heavy Files)
-                    conn.setInstanceFollowRedirects(false); // Hum khud redirect handle karenge
+                    conn.setConnectTimeout(30000); // 30 seconds wait time
+                    conn.setReadTimeout(60000);    // 60 seconds heavy download time
+                    conn.setInstanceFollowRedirects(false); // OS ko block karne se roko
 
                     int status = conn.getResponseCode();
                     if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
@@ -73,7 +74,7 @@ public class HKPackageManager {
                     } else {
                         redirect = false;
                     }
-                } while (redirect && redirectCount < 5); // Max 5 jumps allowed
+                } while (redirect && redirectCount < 5); 
                 
                 // Server Response Final Check
                 int responseCode = conn.getResponseCode();
@@ -109,9 +110,9 @@ public class HKPackageManager {
 
                 update(listener, "[+] Download complete. Preparing to unpack matrix...");
 
-                // 5. PERMANENT EXTRACTION & PERMISSION LOCK
+                // 5. PERMANENT EXTRACTION & PERMISSION LOCK (Using Explicit java.lang.Process)
                 String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath();
-                Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
+                java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
                 
                 if (p.waitFor() == 0) {
                     // Forcefully unlock all permissions permanently
@@ -130,7 +131,7 @@ public class HKPackageManager {
                 }
 
             } catch (java.net.SocketTimeoutException e) {
-                update(listener, "[-] TIME OUT: Connection took too long. Try on faster network.");
+                update(listener, "[-] TIME OUT: Connection blocked by firewall or network is too slow.");
             } catch (java.net.UnknownHostException e) {
                 update(listener, "[-] DNS FATAL: Network offline or DNS blocked.");
             } catch (Exception e) {
