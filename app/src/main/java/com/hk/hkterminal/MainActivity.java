@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * HK-OPERATION : MASTER COMMAND CENTER (ALPHA ENGINE RIG - GOD LEVEL)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : 100% Uncut Shell, Advanced HK Matrix, Native Shield Bypasser
+ * DIRECTIVE    : 100% Uncut Shell, Smart PIP Interceptor, Native Shield Bypasser
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -109,15 +109,13 @@ public class MainActivity extends AppCompatActivity {
         setupSystemButtons();
         setupUpgradeAllLogic();
         
-        // UI Ready - Launch Pure Java Shell Engine Without Banner
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
             initStatefulShell();
-            runSystemDiagnostic(); // New Added Core Logic
+            runSystemDiagnostic(); 
         }, 400);
     }
 
-    // [!] NEW ADDED: BACKGROUND SYSTEM MATRIX DIAGNOSTIC
     private void runSystemDiagnostic() {
         appendMatrixText("[*] Running HK-Operation Diagnostic Protocol...\n");
         File binDir = new File(getUsrBinPath());
@@ -127,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         int libCount = (libDir.exists() && libDir.listFiles() != null) ? libDir.listFiles().length : 0;
         
         appendMatrixText("[+] Arsenal Status: " + weaponCount + " Weapons, " + libCount + " Libs loaded.\n");
-        appendMatrixText("[+] Native Bypass Shield: ACTIVE.\n");
+        appendMatrixText("[+] Native Bypass Shield & PIP Interceptor: ACTIVE.\n");
         if (outputView != null) outputView.append(currentPrompt);
     }
 
@@ -138,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
                 "LD_LIBRARY_PATH=" + getUsrLibPath(), 
                 "TERM=xterm-256color", 
                 "HOME=" + getBaseHomePath(),
+                "PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr",
+                "PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14",
                 "GIT_CONFIG_NOSYSTEM=1", 
                 "GIT_AUTHOR_NAME=pshacker",
                 "GIT_COMMITTER_NAME=pshacker"
@@ -188,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
             
         } catch (Exception e) {
             appendMatrixText("[-] FATAL: Shell Initialization Blocked by OS.\n");
-            appendMatrixText(e.getMessage() + "\n");
         }
     }
 
@@ -223,17 +222,16 @@ public class MainActivity extends AppCompatActivity {
                     SpannableString ss = new SpannableString(line);
                     String lower = line.toLowerCase();
 
-                    // ADVANCED COLOR LOGIC
                     if (line.contains("[+]") || line.contains("successfully") || line.contains("Integrated")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Matrix Green
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("[-]") || lower.contains("error") || lower.contains("failed") || lower.contains("denied") || lower.contains("unidentifiable")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Threat Red
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FF003C")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("[*]") || line.contains("Progress") || line.contains("Fetching")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // White status
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("drwx")) {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#00FF41")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else if (line.contains("-rwx")) {
-                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); // Yellow for binaries
+                        ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFD700")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE); 
                     } else {
                         ss.setSpan(new ForegroundColorSpan(Color.parseColor("#FFFFFF")), 0, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
@@ -492,6 +490,13 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
+        // [!] THE GOD-LEVEL PIP INTERCEPTOR
+        // Agar tu "pip install lolcat" likhega, toh system usey automatically Python module mein reroute kar dega.
+        if (trimmedCmd.startsWith("pip ")) {
+            appendMatrixText("[*] HK-Interceptor: Rerouting PIP via Native Python Matrix...\n");
+            trimmedCmd = "python -m " + trimmedCmd;
+        }
+
         if (trimmedCmd.equals("hk help") || trimmedCmd.equals("help")) {
             appendMatrixText("[*] ================================================\n");
             appendMatrixText("[*]    [⚡] HK-OPERATION ADVANCED COMMAND CENTER [⚡]\n");
@@ -590,10 +595,12 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
-                // Advanced Linker Bypass Block (No files minus)
+                // [!] NATIVE BYPASS INJECTION
                 String envInject = "export HOME=" + getBaseHomePath() + "; " +
                                    "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
-                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; ";
+                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; " +
+                                   "export PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr; " +
+                                   "export PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14; ";
 
                 String finalCmd;
                 if (isShellScript) {
@@ -639,7 +646,7 @@ public class MainActivity extends AppCompatActivity {
         // STANDARD SHELL COMMAND EXECUTION
         if (shellInput != null) { 
             try {
-                shellInput.writeBytes(command + "\n");
+                shellInput.writeBytes(trimmedCmd + "\n");
                 shellInput.writeBytes("echo '---HK_DONE---'\n");
                 shellInput.flush();
             } catch (Exception e) {
@@ -770,7 +777,7 @@ public class MainActivity extends AppCompatActivity {
                         if (c == 'c' || c == 'l' || c == 'x' || c == 'z' || c == 'd') {
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 if (c == 'c') main.sendSigInt();
-                                else if (c == 'l') main.clearTerminal(); // Native UI Clear Bypass
+                                else if (c == 'l') main.clearTerminal(); 
                                 else if (c == 'x') main.sendCtrlKey("\u0018", "^X");
                                 else if (c == 'z') main.sendCtrlKey("\u001A", "^Z");
                                 else if (c == 'd') main.exitApplication();
