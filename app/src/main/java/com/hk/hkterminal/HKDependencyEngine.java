@@ -3,24 +3,27 @@ package com.hk.hkterminal;
 import java.util.*;
 
 /**
- * HK-OPERATION : GOD-EYE DEPENDENCY RESOLVER (ALPHA CORE MATRIX)
+ * HK-OPERATION : GOD-EYE DEPENDENCY RESOLVER (MEGA MATRIX EDITION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : 100% Auto-fetch missing libraries, God-Engine (musl) Injection, Zero Mismatch.
+ * DIRECTIVE    : 100% Auto-fetch missing libraries, Java, Cloud, Node, Python & PIP Injection.
  */
 public class HKDependencyEngine {
 
     private static final Map<String, PackageNode> MASTER_INDEX = new HashMap<>();
 
     static {
-        // [!] THE EXPANDED MATRIX MAPPING (Auto-fetches everything the weapon needs)
+        // [!] THE EXPANDED MATRIX MAPPING 
         
-        // 0. THE GOD ENGINE (Alpine Core C Library - Mandatory for all native executions)
+        // 0. THE GOD ENGINE
         MASTER_INDEX.put("musl", new PackageNode("musl", Collections.emptyList()));
-        MASTER_INDEX.put("libc", new PackageNode("musl", Collections.emptyList())); // Alias for libc
+        MASTER_INDEX.put("libc", new PackageNode("musl", Collections.emptyList())); 
 
-        // 1. Python & Core Backend (Injected 'musl' at the absolute top)
+        // 1. Python, PIP & Core Backend 
         MASTER_INDEX.put("python", new PackageNode("python3", Arrays.asList("musl", "libffi", "sqlite-libs", "openssl", "zlib", "bzip2", "readline", "gdbm")));
         MASTER_INDEX.put("python3", new PackageNode("python3", Arrays.asList("musl", "libffi", "sqlite-libs", "openssl", "zlib", "bzip2", "readline", "gdbm")));
+        MASTER_INDEX.put("pip", new PackageNode("py3-pip", Arrays.asList("python3", "py3-setuptools")));
+        MASTER_INDEX.put("py3-pip", new PackageNode("py3-pip", Arrays.asList("python3", "py3-setuptools")));
+        MASTER_INDEX.put("py3-setuptools", new PackageNode("py3-setuptools", Collections.emptyList()));
         
         // 2. Missing Core Libraries & Aliases
         MASTER_INDEX.put("libsqlite", new PackageNode("sqlite-libs", Collections.emptyList()));
@@ -49,7 +52,7 @@ public class HKDependencyEngine {
         // 4. Version Control & SSH
         MASTER_INDEX.put("git", new PackageNode("git", Arrays.asList("musl", "openssl", "zlib", "pcre2", "curl")));
         MASTER_INDEX.put("openssh", new PackageNode("openssh", Arrays.asList("musl", "openssl", "zlib", "ldns", "krb5-libs")));
-        MASTER_INDEX.put("ssh", new PackageNode("openssh", Arrays.asList("musl", "openssl", "zlib", "ldns", "krb5-libs"))); // Alias
+        MASTER_INDEX.put("ssh", new PackageNode("openssh", Arrays.asList("musl", "openssl", "zlib", "ldns", "krb5-libs"))); 
         MASTER_INDEX.put("ldns", new PackageNode("ldns", Arrays.asList("openssl")));
         MASTER_INDEX.put("krb5-libs", new PackageNode("krb5-libs", Arrays.asList("openssl")));
 
@@ -62,12 +65,25 @@ public class HKDependencyEngine {
         MASTER_INDEX.put("libacl", new PackageNode("libacl", Collections.emptyList()));
         MASTER_INDEX.put("bash", new PackageNode("bash", Arrays.asList("musl", "readline", "ncurses-libs")));
 
-        // 6. Visuals & Animations (THE 'sl' TRAIN FIX)
+        // 6. Visuals & Animations
         MASTER_INDEX.put("sl", new PackageNode("sl", Arrays.asList("musl", "ncurses-libs", "ncurses")));
         MASTER_INDEX.put("ncurses", new PackageNode("ncurses", Arrays.asList("ncurses-libs")));
         MASTER_INDEX.put("ncurses-libs", new PackageNode("ncurses-libs", Collections.emptyList()));
         
-        // 7. Advanced Development (PHP, Ruby, Node - Pre-mapped for future HK expansions)
+        // [!] 7. HEAVY DEVELOPMENT & CLOUD WEAPONS (JAVA, NODE, CLOUD)
+        MASTER_INDEX.put("java", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg", "lcms2")));
+        MASTER_INDEX.put("openjdk17-jre", new PackageNode("openjdk17-jre", Arrays.asList("musl", "zlib", "libjpeg", "lcms2")));
+        MASTER_INDEX.put("libjpeg", new PackageNode("libjpeg-turbo", Collections.emptyList()));
+        MASTER_INDEX.put("lcms2", new PackageNode("lcms2", Collections.emptyList()));
+        
+        MASTER_INDEX.put("node", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "cares", "libuv")));
+        MASTER_INDEX.put("nodejs", new PackageNode("nodejs", Arrays.asList("musl", "openssl", "zlib", "brotli-libs", "cares", "libuv")));
+        MASTER_INDEX.put("cares", new PackageNode("c-ares", Collections.emptyList()));
+        MASTER_INDEX.put("libuv", new PackageNode("libuv", Collections.emptyList()));
+        
+        MASTER_INDEX.put("go", new PackageNode("go", Arrays.asList("musl", "bash")));
+        MASTER_INDEX.put("golang", new PackageNode("go", Arrays.asList("musl", "bash")));
+        
         MASTER_INDEX.put("php", new PackageNode("php", Arrays.asList("musl", "openssl", "zlib", "libxml2", "sqlite-libs", "curl", "readline")));
         MASTER_INDEX.put("ruby", new PackageNode("ruby", Arrays.asList("musl", "openssl", "zlib", "libffi", "readline", "yaml")));
         MASTER_INDEX.put("yaml", new PackageNode("yaml", Collections.emptyList()));
@@ -83,22 +99,14 @@ public class HKDependencyEngine {
         }
     }
 
-    /**
-     * HK-MATRIX LOGIC: Calculates the full bottom-up installation queue.
-     * Ensures libraries (like musl and ncurses-libs) are integrated BEFORE the main weapon.
-     * 100% Safe, zero duplicates.
-     */
     public static List<String> calculateInstallQueue(String targetPackage) {
         List<String> installQueue = new ArrayList<>();
         Set<String> alreadyResolved = new HashSet<>();
-        
         resolveRecursively(targetPackage, installQueue, alreadyResolved);
-        
         return installQueue;
     }
 
     private static void resolveRecursively(String pkgAlias, List<String> queue, Set<String> resolved) {
-        // Break infinite loops in case of circular dependencies in the Matrix
         if (resolved.contains(pkgAlias)) return;
         resolved.add(pkgAlias);
         
@@ -106,13 +114,11 @@ public class HKDependencyEngine {
         String actualSearchName = (node != null) ? node.realName : pkgAlias;
 
         if (node != null) {
-            // Deep Matrix Dive: Resolve dependencies bottom-up
             for (String dependency : node.dependencies) {
                 resolveRecursively(dependency, queue, resolved);
             }
         }
         
-        // Add the real targeted name to the queue (Avoids duplicates, maintains hierarchy)
         if (!queue.contains(actualSearchName)) {
             queue.add(actualSearchName);
         }
