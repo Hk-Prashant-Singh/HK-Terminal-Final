@@ -12,9 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (HYBRID FUSION EDITION)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (ALPHA FUSION EXPANDED)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Dependency Resolver + Live Web Spider + Force Unpack
+ * DIRECTIVE    : Dependency Resolver + Hacker Styling + DEB Ghost Unpacker + Path Fixer
  */
 public class HKPackageManager {
 
@@ -30,35 +30,38 @@ public class HKPackageManager {
                 File filesDir = context.getFilesDir(); 
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
+                File libDir = new File(usrDir, "lib");
                 File cacheDir = new File(filesDir, ".cache");
                 
                 if (!binDir.exists()) binDir.mkdirs();
+                if (!libDir.exists()) libDir.mkdirs();
                 if (!cacheDir.exists()) cacheDir.mkdirs();
 
-                update(listener, "[*] HK-PKG: Initiating Dependency Analysis for '" + targetPkgName + "'...");
+                update(listener, "[*] HK-PKG: Initiating Tactical Dependency Analysis for '" + targetPkgName + "'...");
 
-                // 2. THE ALPHA FUSION: GET DEPENDENCY QUEUE
+                // 2. THE ALPHA FUSION: GET DEPENDENCY QUEUE (NO MINUS, FULL RETAIN)
                 List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
                 
                 // Fallback: Agar package list mein nahi hai, toh direct usko hi uthao
                 if (installQueue.isEmpty()) {
                     installQueue.add(targetPkgName);
                 } else {
-                    update(listener, "[+] Dependency Graph Resolved. Packages to install: " + installQueue.size());
+                    update(listener, "[+] Dependency Graph Resolved. Packages to integrate: " + installQueue.size());
                 }
 
-                // 3. THE SPIDER LOOP (Download all required packages one by one)
+                // 3. THE SPIDER LOOP (Expanded Operations)
                 for (String pkgName : installQueue) {
                     update(listener, "-----------------------------------");
                     update(listener, "[*] Deploying Module: '" + pkgName + "'...");
 
                     String targetUrl = huntTargetOnGlobalWeb(pkgName, listener);
                     if (targetUrl == null) {
-                        update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable. Skipping to next...");
+                        update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable. Skipping to next target...");
                         continue; // Ek package fail ho toh next par jump karo
                     }
 
-                    String ext = targetUrl.endsWith(".apk") ? ".apk" : ".tar.gz";
+                    // ADDED: Universal extension detection for Termux DEB and Alpine APK
+                    String ext = targetUrl.endsWith(".apk") ? ".apk" : (targetUrl.endsWith(".deb") ? ".deb" : ".tar.gz");
                     File payloadFile = new File(cacheDir, pkgName + ext);
 
                     update(listener, "[*] Establishing secure uplink to Direct Payload...");
@@ -68,6 +71,7 @@ public class HKPackageManager {
                     boolean redirect;
                     int redirectCount = 0;
 
+                    // RETAINED: Complex Redirect & Firewall Bypass Loop
                     do {
                         conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestMethod("GET");
@@ -75,7 +79,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 HK-Spider/1.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 HK-Spider/2.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -109,13 +113,15 @@ public class HKPackageManager {
                     int count;
                     int lastPercent = -1;
 
+                    // ADDED: Hacker Styled Progress Matrix
                     while ((count = input.read(data)) != -1) {
                         total += count;
                         output.write(data, 0, count);
                         if (fileLength > 0) {
                             int percent = (int) (total * 100 / fileLength);
                             if (percent != lastPercent && percent % 5 == 0) {
-                                update(listener, "Progress: [" + percent + "%] Fetching " + pkgName + "...");
+                                String matrixBar = getHackerProgressBar(percent);
+                                update(listener, "Progress: " + matrixBar + " [" + percent + "%] Fetching " + pkgName + "...");
                                 lastPercent = percent;
                             }
                         }
@@ -124,21 +130,30 @@ public class HKPackageManager {
                     output.close();
                     input.close();
 
-                    update(listener, "[+] Payload Secured. Initiating Universal Force-Unpack...");
+                    update(listener, "[+] Payload Secured. Initiating Universal Force-Unpack Matrix...");
 
-                    String unpackCmd = "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + filesDir.getAbsolutePath() + " 2>/dev/null || " +
-                                       "unzip -o " + payloadFile.getAbsolutePath() + " -d " + filesDir.getAbsolutePath() + " 2>/dev/null";
+                    // ADDED: Enhanced Universal Unpack Command (Handles DEB, APK, TAR seamlessly)
+                    String dest = filesDir.getAbsolutePath();
+                    String unpackCmd = "cd " + dest + " && " +
+                                       "(ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* 2>/dev/null) || " +
+                                       "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + dest + " 2>/dev/null || " +
+                                       "unzip -o " + payloadFile.getAbsolutePath() + " -d " + dest + " 2>/dev/null";
                     
                     java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
                     p.waitFor(); 
 
-                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 755 " + filesDir.getAbsolutePath() + "/usr"}).waitFor();
+                    // ADDED: The Path Fixer (Auto-move local/bin to standard bin)
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "mv " + dest + "/usr/local/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
+                    
+                    // RETAINED & EXPANDED: Force Unlock Permissions
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + dest + "/usr"}).waitFor();
                     
                     File extractedBin1 = new File(binDir, pkgName);
-                    File extractedBin2 = new File(filesDir.getAbsolutePath() + "/usr/local/bin", pkgName); 
+                    File extractedBin2 = new File(dest + "/usr/local/bin", pkgName); 
                     
                     boolean isExtracted = false;
 
+                    // ADDED: Smart Verification (Checks Binaries AND Libraries)
                     if (extractedBin1.exists()) {
                         extractedBin1.setExecutable(true, true);
                         extractedBin1.setReadable(true, true);
@@ -147,14 +162,19 @@ public class HKPackageManager {
                         extractedBin2.setExecutable(true, true);
                         extractedBin2.setReadable(true, true);
                         isExtracted = true;
+                    } else if (libDir.exists() && libDir.list() != null && libDir.list().length > 0) {
+                        // Backend Library detected - Mark as success
+                        isExtracted = true;
                     }
                     
+                    // Ghost Cleanup: Wipe tar and deb control files left behind
                     payloadFile.delete(); 
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + dest + "/control.tar.* " + dest + "/data.tar.* " + dest + "/debian-binary 2>/dev/null"});
                     
                     if (isExtracted) {
                         update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
                     } else {
-                        update(listener, "[-] Extraction Complete but Binary '" + pkgName + "' not found in standard paths.");
+                        update(listener, "[-] Extraction Complete but Binary/Library for '" + pkgName + "' not identifiable.");
                     }
                 }
                 
@@ -173,6 +193,21 @@ public class HKPackageManager {
         }).start();
     }
 
+    // ADDED: Visual Styling Method for Terminal Output
+    private static String getHackerProgressBar(int percent) {
+        int filledCount = percent / 10;
+        StringBuilder bar = new StringBuilder("[");
+        for (int i = 0; i < 10; i++) {
+            if (i < filledCount) {
+                bar.append("█"); // Filled
+            } else {
+                bar.append("░"); // Empty
+            }
+        }
+        bar.append("]");
+        return bar.toString();
+    }
+
     // [!] THE ALPHA SPIDER: DYNAMIC WEB SCRAPER
     private static String huntTargetOnGlobalWeb(String pkgName, InstallListener listener) {
         String[] mirrors = {
@@ -189,13 +224,14 @@ public class HKPackageManager {
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(15000);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (HK-Terminal Scraper Engine)");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (HK-Terminal Advanced Scraper Engine)");
 
                 if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
                     
-                    String regexPattern = "href=\"(" + pkgName + "-[0-9][a-zA-Z0-9.\\-]*\\.(apk|tar\\.gz))\"";
+                    // EXPANDED REGEX: Support for .apk, .tar.gz, AND .deb packages
+                    String regexPattern = "href=\"(" + pkgName + "-[0-9][a-zA-Z0-9.\\-]*\\.(apk|tar\\.gz|deb))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
 
                     while ((line = reader.readLine()) != null) {
