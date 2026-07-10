@@ -9,7 +9,8 @@ android {
     defaultConfig {
         applicationId "com.hk.hkterminal"
         minSdk 21
-        targetSdk 34
+        // [!] THE MASTER KILL-SWITCH: Android Execution Security Bypass
+        targetSdk 28 
         versionCode 1
         versionName "1.0"
     }
