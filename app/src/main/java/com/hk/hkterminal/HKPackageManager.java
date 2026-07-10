@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
- * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Native Fast Extractor, Multi-Stream GZIP Bypass, Raw Musl Wrapper
+ * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
+ * DIRECTIVE    : Native Fast Extractor, Multi-Stream GZIP Bypass, Raw Musl Wrapper, Safe Sweeper
  */
 public class HKPackageManager {
 
@@ -130,51 +130,44 @@ public class HKPackageManager {
 
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX (Permanent GZIP Bypass)
+                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX 
                     if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
-                        // Zcat/Gzip pipe breaks the concatenated stream barrier in Android toybox
                         String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
                     } else {
-                        // Debian Package Extraction (ar + tar)
                         String unpackCmd = "cd '" + filesDir.getAbsolutePath() + "' && (ar x '" + payloadFile.getAbsolutePath() + "' 2>/dev/null && tar -xf data.tar.* -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null)";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
                     }
 
-                    // ULTIMATE PATH SWEEPER WITH SECURE QUOTING AND DEEP COPY (Preserves Symlinks & Libs)
-                    String sweepCmd = "cp -R '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "cp -R '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "cp -R '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "cp -R '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "cp -R '" + filesDir.getAbsolutePath() + "/usr/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "cp -R '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null";
+                    // [!] SAFE SWEEPER (Fixed Truncation Bug)
+                    String sweepCmd = "mv -f '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv -f '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv -f '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv -f '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv -f '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null;";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
-                    // FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
 
-                    // [!] BULLETPROOF JAVA BYTE-CLONER (Constructs missing libraries physically)
+                    // [!] THE ULTIMATE BYTE-CLONER (Destroys Broken Symlinks & Forces Physical Copies)
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
                             String name = lib.getName();
-                            int soIndex = name.indexOf(".so.");
-                            if (soIndex != -1 && lib.isFile() && lib.length() > 1000) {
-                                int endIdx = soIndex + 4; 
-                                while (endIdx < name.length() && Character.isDigit(name.charAt(endIdx))) {
-                                    endIdx++;
-                                }
-                                if (endIdx > soIndex + 4) {
-                                    String baseName = name.substring(0, endIdx); 
-                                    if (!baseName.equals(name)) {
-                                        File baseFile = new File(libDir, baseName);
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f '" + baseFile.getAbsolutePath() + "'"}).waitFor();
-                                        cloneFileSafely(lib, baseFile);
-                                        
-                                        String rootName = name.substring(0, soIndex + 3); 
-                                        File rootFile = new File(libDir, rootName);
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f '" + rootFile.getAbsolutePath() + "'"}).waitFor();
-                                        cloneFileSafely(lib, rootFile);
+                            // Target real physical libraries, avoid tiny broken symlinks
+                            if (name.contains(".so.") && lib.length() > 100) {
+                                int soIndex = name.indexOf(".so");
+                                if (soIndex != -1) {
+                                    // Construct base name (e.g., libncursesw.so)
+                                    String rootName = name.substring(0, soIndex + 3);
+                                    File rootFile = new File(libDir, rootName);
+                                    cloneFileSafely(lib, rootFile);
+
+                                    // Construct major version name (e.g., libncursesw.so.6)
+                                    int nextDot = name.indexOf('.', soIndex + 4);
+                                    if (nextDot != -1) {
+                                        File majorFile = new File(libDir, name.substring(0, nextDot));
+                                        cloneFileSafely(lib, majorFile);
                                     }
                                 }
                             }
@@ -256,10 +249,13 @@ public class HKPackageManager {
         }).start();
     }
 
-    // [!] JAVA NATIVE BYTE-CLONER
+    // [!] JAVA NATIVE BYTE-CLONER (Upgraded for precision cloning)
     private static void cloneFileSafely(File source, File dest) {
         try {
+            // Check if file is already perfectly cloned to save matrix processing power
+            if (dest.exists() && dest.length() == source.length()) return; 
             if (dest.exists()) dest.delete(); 
+            
             InputStream in = new FileInputStream(source);
             OutputStream out = new FileOutputStream(dest);
             byte[] buf = new byte[8192];
