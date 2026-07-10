@@ -12,9 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Hard-Copy Library Matrix, Raw Musl Wrapper, God-Eye Regex
+ * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Pure Java Lib Duplicator
  */
 public class HKPackageManager {
 
@@ -75,7 +75,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/10.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/11.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -144,17 +144,22 @@ public class HKPackageManager {
                     // FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
-                    // [!] HARD-COPY LIBRARY MATRIX (Replaces buggy symlinks with absolute file copies)
+                    // [!] 100% BULLETPROOF JAVA-NATIVE LIBRARY DUPLICATOR (Replaces Regex completely)
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
                             String name = lib.getName();
-                            if (name.contains(".so.")) {
-                                Matcher m = Pattern.compile("(.*\\.so\\.\\d+)").matcher(name);
-                                if (m.find()) {
-                                    String baseName = m.group(1);
+                            int soIndex = name.indexOf(".so.");
+                            if (soIndex != -1) {
+                                // Lock onto the exact first digit after .so.
+                                int endIdx = soIndex + 4; 
+                                while (endIdx < name.length() && Character.isDigit(name.charAt(endIdx))) {
+                                    endIdx++;
+                                }
+                                if (endIdx > soIndex + 4) {
+                                    // Cuts string perfectly, e.g., libncursesw.so.6.4 -> libncursesw.so.6
+                                    String baseName = name.substring(0, endIdx);
                                     if (!baseName.equals(name)) {
-                                        // 100% Guaranteed creation of base library file
                                         Runtime.getRuntime().exec(new String[]{"sh", "-c", "cp -f " + name + " " + baseName}, null, libDir).waitFor();
                                         Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod 777 " + baseName}, null, libDir).waitFor();
                                     }
@@ -165,7 +170,7 @@ public class HKPackageManager {
 
                     File extractedBin = new File(binDir, pkgName);
                     
-                    // [!] RAW MUSL WRAPPER INJECTION (Fixed for flawless execution)
+                    // [!] RAW MUSL WRAPPER INJECTION 
                     if (extractedBin.exists() && !extractedBin.getName().endsWith(".elf")) {
                         boolean isElf = false;
                         try {
@@ -184,7 +189,6 @@ public class HKPackageManager {
                                 try {
                                     FileWriter fw = new FileWriter(extractedBin);
                                     fw.write("#!/system/bin/sh\n");
-                                    // Raw LD_LIBRARY_PATH is all Musl needs
                                     fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + "\n");
                                     fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 " + binReal.getAbsolutePath() + " \"$@\"\n");
                                     fw.close();
