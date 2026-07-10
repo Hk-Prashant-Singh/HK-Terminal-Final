@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Auto-Directive, God-Eye Regex
+ * DIRECTIVE    : Dual-Stream Extractor, Musl-Wrapper Injection, Auto-Directive, God-Eye Regex
  */
 public class HKPackageManager {
 
@@ -75,7 +75,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/8.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/9.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -123,10 +123,14 @@ public class HKPackageManager {
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
                     String dest = filesDir.getAbsolutePath();
-                    String unpackCmd = "cd " + dest + " && " +
-                                       "(ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + dest + " 2>/dev/null) || " +
-                                       "tar -xzf " + payloadFile.getAbsolutePath() + " -C " + dest + " 2>/dev/null || " +
-                                       "unzip -o " + payloadFile.getAbsolutePath() + " -d " + dest + " 2>/dev/null";
+                    String unpackCmd;
+                    
+                    // [!] THE ALPINE DUAL-STREAM EXTRACTOR BYPASS (Fixes library missing errors)
+                    if (payloadFile.getName().endsWith(".apk")) {
+                        unpackCmd = "cd " + dest + " && gzip -d -c " + payloadFile.getAbsolutePath() + " | tar -xf - -C " + dest + " 2>/dev/null";
+                    } else {
+                        unpackCmd = "cd " + dest + " && (ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + dest + " 2>/dev/null) || tar -xzf " + payloadFile.getAbsolutePath() + " -C " + dest + " 2>/dev/null";
+                    }
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
 
                     // ULTIMATE PATH SWEEPER
@@ -138,10 +142,10 @@ public class HKPackageManager {
                                       "mv " + dest + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
-                    // [!] FORCE PERMISSION MATRIX (Absolute OS Security Override)
+                    // [!] FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
-                    // [!] 100% BULLETPROOF SYMLINK FIXER (JAVA REGEX ENGINE)
+                    // [!] 100% BULLETPROOF SYMLINK FIXER
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
@@ -180,7 +184,8 @@ public class HKPackageManager {
                                     FileWriter fw = new FileWriter(extractedBin);
                                     fw.write("#!/system/bin/sh\n");
                                     fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + ":$LD_LIBRARY_PATH\n");
-                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 " + binReal.getAbsolutePath() + " \"$@\"\n");
+                                    // Binding specific lib path to Musl
+                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 --library-path " + libDir.getAbsolutePath() + " " + binReal.getAbsolutePath() + " \"$@\"\n");
                                     fw.close();
                                     extractedBin.setExecutable(true, true);
                                     binReal.setExecutable(true, true);
@@ -259,7 +264,6 @@ public class HKPackageManager {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
                     
-                    // [!] THE GOD-EYE REGEX: Captures ANY complex version format flawlessly (including underscores, letters, & dots)
                     String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "-[0-9][^\"]*\\.(apk|tar\\.gz|deb))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
 
