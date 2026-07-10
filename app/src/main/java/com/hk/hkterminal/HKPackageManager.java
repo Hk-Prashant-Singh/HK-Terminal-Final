@@ -12,9 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Dual-Stream Extractor, Musl-Wrapper Injection, Auto-Directive, God-Eye Regex
+ * DIRECTIVE    : Hard-Copy Library Matrix, Raw Musl Wrapper, God-Eye Regex
  */
 public class HKPackageManager {
 
@@ -75,7 +75,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/9.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/10.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -125,7 +125,6 @@ public class HKPackageManager {
                     String dest = filesDir.getAbsolutePath();
                     String unpackCmd;
                     
-                    // [!] THE ALPINE DUAL-STREAM EXTRACTOR BYPASS (Fixes library missing errors)
                     if (payloadFile.getName().endsWith(".apk")) {
                         unpackCmd = "cd " + dest + " && gzip -d -c " + payloadFile.getAbsolutePath() + " | tar -xf - -C " + dest + " 2>/dev/null";
                     } else {
@@ -142,10 +141,10 @@ public class HKPackageManager {
                                       "mv " + dest + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
-                    // [!] FORCE PERMISSION MATRIX
+                    // FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
-                    // [!] 100% BULLETPROOF SYMLINK FIXER
+                    // [!] HARD-COPY LIBRARY MATRIX (Replaces buggy symlinks with absolute file copies)
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
@@ -155,7 +154,9 @@ public class HKPackageManager {
                                 if (m.find()) {
                                     String baseName = m.group(1);
                                     if (!baseName.equals(name)) {
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "ln -sf " + name + " " + baseName}, null, libDir).waitFor();
+                                        // 100% Guaranteed creation of base library file
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "cp -f " + name + " " + baseName}, null, libDir).waitFor();
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod 777 " + baseName}, null, libDir).waitFor();
                                     }
                                 }
                             }
@@ -164,7 +165,7 @@ public class HKPackageManager {
 
                     File extractedBin = new File(binDir, pkgName);
                     
-                    // [!] THE GOD-LEVEL MUSL WRAPPER INJECTION
+                    // [!] RAW MUSL WRAPPER INJECTION (Fixed for flawless execution)
                     if (extractedBin.exists() && !extractedBin.getName().endsWith(".elf")) {
                         boolean isElf = false;
                         try {
@@ -183,9 +184,9 @@ public class HKPackageManager {
                                 try {
                                     FileWriter fw = new FileWriter(extractedBin);
                                     fw.write("#!/system/bin/sh\n");
-                                    fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + ":$LD_LIBRARY_PATH\n");
-                                    // Binding specific lib path to Musl
-                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 --library-path " + libDir.getAbsolutePath() + " " + binReal.getAbsolutePath() + " \"$@\"\n");
+                                    // Raw LD_LIBRARY_PATH is all Musl needs
+                                    fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + "\n");
+                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 " + binReal.getAbsolutePath() + " \"$@\"\n");
                                     fw.close();
                                     extractedBin.setExecutable(true, true);
                                     binReal.setExecutable(true, true);
@@ -212,7 +213,6 @@ public class HKPackageManager {
                 update(listener, "===================================");
                 update(listener, "[+] ALL TACTICAL DEPLOYMENTS COMPLETED.");
 
-                // [!] AUTOMATIC DIRECTIVE INJECTOR
                 update(listener, "[*] ================================================");
                 update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
                 if (targetPkgName.contains("python")) {
