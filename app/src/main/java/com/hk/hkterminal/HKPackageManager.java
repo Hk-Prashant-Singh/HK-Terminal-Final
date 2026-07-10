@@ -10,12 +10,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
- * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure Java Tar Extractor, Zero-Block Bypass, Byte-Cloner, Raw Musl Wrapper
+ * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
+ * DIRECTIVE    : Native Fast Extractor, Zero-Block Bypass, Byte-Cloner, Raw Musl Wrapper
  */
 public class HKPackageManager {
 
@@ -65,91 +64,95 @@ public class HKPackageManager {
                     URL url = new URL(targetUrl);
                     boolean redirect;
                     int redirectCount = 0;
+                    int fileLength = 0;
+                    boolean downloadSuccess = false;
 
-                    do {
-                        conn = (HttpURLConnection) url.openConnection();
-                        conn.setRequestMethod("GET");
-                        conn.setConnectTimeout(30000); 
-                        conn.setReadTimeout(60000);    
-                        conn.setInstanceFollowRedirects(false); 
+                    try {
+                        do {
+                            conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.setConnectTimeout(30000); 
+                            conn.setReadTimeout(60000);    
+                            conn.setInstanceFollowRedirects(false); 
+                            
+                            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/16.0");
+                            conn.setRequestProperty("Accept", "*/*");
+                            conn.setRequestProperty("Connection", "keep-alive");
+
+                            int status = conn.getResponseCode();
+                            if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER) {
+                                redirect = true;
+                                url = new URL(conn.getHeaderField("Location"));
+                                redirectCount++;
+                            } else {
+                                redirect = false;
+                            }
+                        } while (redirect && redirectCount < 5); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/16.0");
-                        conn.setRequestProperty("Accept", "*/*");
-                        conn.setRequestProperty("Connection", "keep-alive");
-
-                        int status = conn.getResponseCode();
-                        if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER) {
-                            redirect = true;
-                            url = new URL(conn.getHeaderField("Location"));
-                            redirectCount++;
-                        } else {
-                            redirect = false;
+                        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                            update(listener, "[-] FATAL: Target unreachable. Skipping...");
+                            continue; 
                         }
-                    } while (redirect && redirectCount < 5); 
-                    
-                    if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                        update(listener, "[-] FATAL: Target unreachable. Skipping...");
-                        continue; 
-                    }
 
-                    int fileLength = conn.getContentLength();
-                    InputStream input = new BufferedInputStream(conn.getInputStream());
-                    OutputStream output = new FileOutputStream(payloadFile);
-                    byte[] data = new byte[8192];
-                    long total = 0;
-                    int count;
-                    int lastPercent = -1;
+                        fileLength = conn.getContentLength();
+                        InputStream input = new BufferedInputStream(conn.getInputStream());
+                        OutputStream output = new FileOutputStream(payloadFile);
+                        byte[] data = new byte[8192];
+                        long total = 0;
+                        int count;
+                        int lastPercent = -1;
 
-                    while ((count = input.read(data)) != -1) {
-                        total += count;
-                        output.write(data, 0, count);
-                        if (fileLength > 0) {
-                            int percent = (int) (total * 100 / fileLength);
-                            if (percent != lastPercent && percent % 5 == 0) {
-                                update(listener, "Progress: " + getHackerProgressBar(percent) + " [" + percent + "%] Fetching " + pkgName + "...");
-                                lastPercent = percent;
+                        while ((count = input.read(data)) != -1) {
+                            total += count;
+                            output.write(data, 0, count);
+                            if (fileLength > 0) {
+                                int percent = (int) (total * 100 / fileLength);
+                                if (percent != lastPercent && percent % 5 == 0) {
+                                    update(listener, "Progress: " + getHackerProgressBar(percent) + " [" + percent + "%] Fetching " + pkgName + "...");
+                                    lastPercent = percent;
+                                }
                             }
                         }
-                    }
-                    output.flush(); output.close(); input.close();
+                        output.flush(); 
+                        output.close(); 
+                        input.close();
 
-                    if (fileLength > 0 && total != fileLength) {
-                        update(listener, "[-] PAYLOAD CORRUPTED: Data lost during transit.");
-                        payloadFile.delete(); continue;
+                        if (fileLength > 0 && total != fileLength) {
+                            update(listener, "[-] PAYLOAD CORRUPTED: Data lost during transit.");
+                            payloadFile.delete(); 
+                            continue;
+                        }
+                        downloadSuccess = true;
+                    } finally {
+                        if (conn != null) {
+                            conn.disconnect();
+                        }
                     }
+
+                    if (!downloadSuccess) continue;
 
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Bypasses Android Toybox completely)
+                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX (Upgraded for Multi-Stream GZIP)
                     if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
-                        File tarFile = new File(cacheDir, pkgName + ".tar");
-                        try (GZIPInputStream gis = new GZIPInputStream(new FileInputStream(payloadFile));
-                             FileOutputStream fos = new FileOutputStream(tarFile)) {
-                            byte[] buf = new byte[8192];
-                            int l;
-                            while ((l = gis.read(buf)) > 0) {
-                                fos.write(buf, 0, l);
-                            }
-                        } catch (Exception e) {}
-                        
-                        // Extracting via Java to ignore Zero-Block Traps
-                        extractTarMatrix(tarFile, filesDir);
+                        String unpackCmd = "tar -xzf '" + payloadFile.getAbsolutePath() + "' -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
+                        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
                     } else {
-                        String unpackCmd = "cd " + filesDir.getAbsolutePath() + " && (ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + filesDir.getAbsolutePath() + " 2>/dev/null)";
+                        String unpackCmd = "cd '" + filesDir.getAbsolutePath() + "' && (ar x '" + payloadFile.getAbsolutePath() + "' 2>/dev/null && tar -xf data.tar.* -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null)";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
                     }
 
-                    // ULTIMATE PATH SWEEPER
-                    String sweepCmd = "mv " + filesDir.getAbsolutePath() + "/usr/local/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + filesDir.getAbsolutePath() + "/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + filesDir.getAbsolutePath() + "/usr/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + filesDir.getAbsolutePath() + "/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + filesDir.getAbsolutePath() + "/usr/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + filesDir.getAbsolutePath() + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
+                    // ULTIMATE PATH SWEEPER WITH SECURE QUOTING
+                    String sweepCmd = "mv '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv '" + filesDir.getAbsolutePath() + "/usr/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
                     // FORCE PERMISSION MATRIX
-                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
 
                     // [!] BULLETPROOF JAVA BYTE-CLONER (Constructs missing libraries physically)
                     File[] libs = libDir.listFiles();
@@ -163,15 +166,15 @@ public class HKPackageManager {
                                     endIdx++;
                                 }
                                 if (endIdx > soIndex + 4) {
-                                    String baseName = name.substring(0, endIdx); // libncursesw.so.6
+                                    String baseName = name.substring(0, endIdx); 
                                     if (!baseName.equals(name)) {
                                         File baseFile = new File(libDir, baseName);
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + baseFile.getAbsolutePath()}).waitFor();
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f '" + baseFile.getAbsolutePath() + "'"}).waitFor();
                                         cloneFileSafely(lib, baseFile);
                                         
-                                        String rootName = name.substring(0, soIndex + 3); // libncursesw.so
+                                        String rootName = name.substring(0, soIndex + 3); 
                                         File rootFile = new File(libDir, rootName);
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + rootFile.getAbsolutePath()}).waitFor();
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f '" + rootFile.getAbsolutePath() + "'"}).waitFor();
                                         cloneFileSafely(lib, rootFile);
                                     }
                                 }
@@ -215,8 +218,7 @@ public class HKPackageManager {
 
                     // GHOST CLEANUP
                     payloadFile.delete(); 
-                    new File(cacheDir, pkgName + ".tar").delete(); 
-                    String cleanupCmd = "rm -rf " + filesDir.getAbsolutePath() + "/control.tar.* " + filesDir.getAbsolutePath() + "/data.tar.* " + filesDir.getAbsolutePath() + "/debian-binary " + filesDir.getAbsolutePath() + "/*.json " + filesDir.getAbsolutePath() + "/payload " + filesDir.getAbsolutePath() + "/.PKGINFO " + filesDir.getAbsolutePath() + "/.SIGN.* 2>/dev/null";
+                    String cleanupCmd = "rm -rf '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
                     
                     boolean hasPayload = extractedBin.exists() || new File(binDir, pkgName + ".elf").exists() || (pkgName.contains("lib") && libDir.listFiles() != null && libDir.listFiles().length > 0);
@@ -249,47 +251,6 @@ public class HKPackageManager {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
-    }
-
-    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Defeats Zero-Block EOF Traps)
-    private static void extractTarMatrix(File tarFile, File destDir) {
-        try (InputStream is = new FileInputStream(tarFile)) {
-            byte[] header = new byte[512];
-            while (is.read(header) == 512) {
-                String name = new String(header, 0, 100).replace("\0", "").trim();
-                if (name.isEmpty()) continue; // Skips EOF Zero-Blocks completely
-                
-                String sizeStr = new String(header, 124, 12).replace("\0", "").trim();
-                long size = sizeStr.isEmpty() ? 0 : Long.parseLong(sizeStr, 8);
-                char type = (char) header[156];
-                
-                File outFile = new File(destDir, name);
-                if (type == '5') {
-                    outFile.mkdirs();
-                } else if (type == '0' || type == '\0') {
-                    outFile.getParentFile().mkdirs();
-                    try (OutputStream os = new FileOutputStream(outFile)) {
-                        byte[] buf = new byte[8192];
-                        long left = size;
-                        while (left > 0) {
-                            int r = is.read(buf, 0, (int)Math.min(left, buf.length));
-                            if (r <= 0) break;
-                            os.write(buf, 0, r);
-                            left -= r;
-                        }
-                    }
-                    outFile.setExecutable(true, false); 
-                    outFile.setReadable(true, false);
-                } 
-                
-                long skip = (512 - (size % 512)) % 512;
-                while (skip > 0) {
-                    long s = is.skip(skip);
-                    if (s <= 0) break;
-                    skip -= s;
-                }
-            }
-        } catch (Exception ignored) {}
     }
 
     // [!] JAVA NATIVE BYTE-CLONER
@@ -348,12 +309,14 @@ public class HKPackageManager {
                         if (matcher.find()) {
                             String exactFileName = matcher.group(1);
                             reader.close();
+                            conn.disconnect();
                             update(listener, "[+] Global Target Acquired: " + exactFileName);
                             return mirror + exactFileName;
                         }
                     }
                     reader.close();
                 }
+                conn.disconnect();
             } catch (Exception e) {
                 update(listener, "[-] Matrix search shifted...");
             }
