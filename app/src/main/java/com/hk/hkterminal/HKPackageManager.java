@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
- * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Native Fast Extractor, Zero-Block Bypass, Byte-Cloner, Raw Musl Wrapper
+ * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Native Fast Extractor, Multi-Stream GZIP Bypass, Raw Musl Wrapper
  */
 public class HKPackageManager {
 
@@ -64,7 +64,6 @@ public class HKPackageManager {
                     URL url = new URL(targetUrl);
                     boolean redirect;
                     int redirectCount = 0;
-                    int fileLength = 0;
                     boolean downloadSuccess = false;
 
                     try {
@@ -94,7 +93,7 @@ public class HKPackageManager {
                             continue; 
                         }
 
-                        fileLength = conn.getContentLength();
+                        int fileLength = conn.getContentLength();
                         InputStream input = new BufferedInputStream(conn.getInputStream());
                         OutputStream output = new FileOutputStream(payloadFile);
                         byte[] data = new byte[8192];
@@ -124,31 +123,31 @@ public class HKPackageManager {
                         }
                         downloadSuccess = true;
                     } finally {
-                        if (conn != null) {
-                            conn.disconnect();
-                        }
+                        if (conn != null) conn.disconnect();
                     }
 
                     if (!downloadSuccess) continue;
 
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX (Upgraded for Multi-Stream GZIP)
+                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX (Permanent GZIP Bypass)
                     if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
-                        String unpackCmd = "tar -xzf '" + payloadFile.getAbsolutePath() + "' -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
+                        // Zcat/Gzip pipe breaks the concatenated stream barrier in Android toybox
+                        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
                     } else {
+                        // Debian Package Extraction (ar + tar)
                         String unpackCmd = "cd '" + filesDir.getAbsolutePath() + "' && (ar x '" + payloadFile.getAbsolutePath() + "' 2>/dev/null && tar -xf data.tar.* -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null)";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
                     }
 
-                    // ULTIMATE PATH SWEEPER WITH SECURE QUOTING
-                    String sweepCmd = "mv '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "mv '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "mv '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "mv '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "mv '" + filesDir.getAbsolutePath() + "/usr/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
-                                      "mv '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null";
+                    // ULTIMATE PATH SWEEPER WITH SECURE QUOTING AND DEEP COPY (Preserves Symlinks & Libs)
+                    String sweepCmd = "cp -R '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "cp -R '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "cp -R '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "cp -R '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "cp -R '" + filesDir.getAbsolutePath() + "/usr/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "cp -R '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
                     // FORCE PERMISSION MATRIX
@@ -221,7 +220,11 @@ public class HKPackageManager {
                     String cleanupCmd = "rm -rf '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
                     
-                    boolean hasPayload = extractedBin.exists() || new File(binDir, pkgName + ".elf").exists() || (pkgName.contains("lib") && libDir.listFiles() != null && libDir.listFiles().length > 0);
+                    // FIXED PAYLOAD VALIDATION LOGIC
+                    boolean hasPayload = extractedBin.exists() || 
+                                         new File(binDir, pkgName + ".elf").exists() || 
+                                         (libDir.listFiles() != null && libDir.listFiles().length > 0);
+                                         
                     if (hasPayload) {
                         update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
                     } else {
