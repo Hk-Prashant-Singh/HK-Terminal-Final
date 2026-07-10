@@ -10,11 +10,12 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Pure Java Byte-Cloner, Symlink Annihilator, Raw Musl Wrapper
+ * DIRECTIVE    : Pure Java Tar Extractor, Zero-Block Bypass, Byte-Cloner, Raw Musl Wrapper
  */
 public class HKPackageManager {
 
@@ -26,7 +27,6 @@ public class HKPackageManager {
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
         new Thread(() -> {
             try {
-                // 1. TRUSTED MATRIX PATH INITIALIZATION
                 File filesDir = context.getFilesDir(); 
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
@@ -39,7 +39,6 @@ public class HKPackageManager {
 
                 update(listener, "[*] HK-PKG: Initiating Tactical Dependency Analysis for '" + targetPkgName + "'...");
 
-                // 2. DEPENDENCY RESOLUTION
                 List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
                 if (installQueue.isEmpty()) {
                     installQueue.add(targetPkgName);
@@ -47,7 +46,6 @@ public class HKPackageManager {
                     update(listener, "[+] Dependency Graph Resolved. Packages to integrate: " + installQueue.size());
                 }
 
-                // 3. THE ALPHA SPIDER LOOP
                 for (String pkgName : installQueue) {
                     update(listener, "-----------------------------------");
                     update(listener, "[*] Deploying Module: '" + pkgName + "'...");
@@ -75,7 +73,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/14.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/16.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -122,52 +120,57 @@ public class HKPackageManager {
 
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    String dest = filesDir.getAbsolutePath();
-                    String unpackCmd;
-                    
-                    if (payloadFile.getName().endsWith(".apk")) {
-                        unpackCmd = "cd " + dest + " && gzip -d -c " + payloadFile.getAbsolutePath() + " | tar -xf - -C " + dest + " 2>/dev/null";
+                    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Bypasses Android Toybox completely)
+                    if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
+                        File tarFile = new File(cacheDir, pkgName + ".tar");
+                        try (GZIPInputStream gis = new GZIPInputStream(new FileInputStream(payloadFile));
+                             FileOutputStream fos = new FileOutputStream(tarFile)) {
+                            byte[] buf = new byte[8192];
+                            int l;
+                            while ((l = gis.read(buf)) > 0) {
+                                fos.write(buf, 0, l);
+                            }
+                        } catch (Exception e) {}
+                        
+                        // Extracting via Java to ignore Zero-Block Traps
+                        extractTarMatrix(tarFile, filesDir);
                     } else {
-                        unpackCmd = "cd " + dest + " && (ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + dest + " 2>/dev/null) || tar -xzf " + payloadFile.getAbsolutePath() + " -C " + dest + " 2>/dev/null";
+                        String unpackCmd = "cd " + filesDir.getAbsolutePath() + " && (ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + filesDir.getAbsolutePath() + " 2>/dev/null)";
+                        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
                     }
-                    Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
 
                     // ULTIMATE PATH SWEEPER
-                    String sweepCmd = "mv " + dest + "/usr/local/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + dest + "/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + dest + "/usr/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + dest + "/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + dest + "/usr/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null; " +
-                                      "mv " + dest + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
+                    String sweepCmd = "mv " + filesDir.getAbsolutePath() + "/usr/local/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/usr/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/usr/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
                     // FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
-                    // [!] BULLETPROOF JAVA BYTE-CLONER WITH SYMLINK ANNIHILATOR
+                    // [!] BULLETPROOF JAVA BYTE-CLONER (Constructs missing libraries physically)
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
                             String name = lib.getName();
                             int soIndex = name.indexOf(".so.");
-                            // Ensure it's a real file holding actual data (ignores broken symlinks completely)
                             if (soIndex != -1 && lib.isFile() && lib.length() > 1000) {
                                 int endIdx = soIndex + 4; 
                                 while (endIdx < name.length() && Character.isDigit(name.charAt(endIdx))) {
                                     endIdx++;
                                 }
                                 if (endIdx > soIndex + 4) {
-                                    String baseName = name.substring(0, endIdx); // e.g., libncursesw.so.6
+                                    String baseName = name.substring(0, endIdx); // libncursesw.so.6
                                     if (!baseName.equals(name)) {
                                         File baseFile = new File(libDir, baseName);
-                                        
-                                        // [!] THE KILL-SHOT: Force delete absolute broken symlinks using shell
                                         Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + baseFile.getAbsolutePath()}).waitFor();
                                         cloneFileSafely(lib, baseFile);
                                         
-                                        String rootName = name.substring(0, soIndex + 3);
+                                        String rootName = name.substring(0, soIndex + 3); // libncursesw.so
                                         File rootFile = new File(libDir, rootName);
-                                        
                                         Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + rootFile.getAbsolutePath()}).waitFor();
                                         cloneFileSafely(lib, rootFile);
                                     }
@@ -212,13 +215,15 @@ public class HKPackageManager {
 
                     // GHOST CLEANUP
                     payloadFile.delete(); 
-                    String cleanupCmd = "rm -rf " + dest + "/control.tar.* " + dest + "/data.tar.* " + dest + "/debian-binary " + dest + "/*.json " + dest + "/payload " + dest + "/.PKGINFO " + dest + "/.SIGN.* 2>/dev/null";
+                    new File(cacheDir, pkgName + ".tar").delete(); 
+                    String cleanupCmd = "rm -rf " + filesDir.getAbsolutePath() + "/control.tar.* " + filesDir.getAbsolutePath() + "/data.tar.* " + filesDir.getAbsolutePath() + "/debian-binary " + filesDir.getAbsolutePath() + "/*.json " + filesDir.getAbsolutePath() + "/payload " + filesDir.getAbsolutePath() + "/.PKGINFO " + filesDir.getAbsolutePath() + "/.SIGN.* 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
                     
-                    if (extractedBin.exists() || (libDir.exists() && libDir.list() != null && libDir.list().length > 0)) {
+                    boolean hasPayload = extractedBin.exists() || new File(binDir, pkgName + ".elf").exists() || (pkgName.contains("lib") && libDir.listFiles() != null && libDir.listFiles().length > 0);
+                    if (hasPayload) {
                         update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
                     } else {
-                        update(listener, "[-] Extraction Matrix Alert: Binary/Library not identifiable.");
+                        update(listener, "[-] Extraction Matrix Alert: Binary/Library failed to deploy.");
                     }
                 }
                 
@@ -246,10 +251,51 @@ public class HKPackageManager {
         }).start();
     }
 
-    // [!] THE CORE BYTE-CLONER FUNCTION (Bulletproof against symlinks)
+    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Defeats Zero-Block EOF Traps)
+    private static void extractTarMatrix(File tarFile, File destDir) {
+        try (InputStream is = new FileInputStream(tarFile)) {
+            byte[] header = new byte[512];
+            while (is.read(header) == 512) {
+                String name = new String(header, 0, 100).replace("\0", "").trim();
+                if (name.isEmpty()) continue; // Skips EOF Zero-Blocks completely
+                
+                String sizeStr = new String(header, 124, 12).replace("\0", "").trim();
+                long size = sizeStr.isEmpty() ? 0 : Long.parseLong(sizeStr, 8);
+                char type = (char) header[156];
+                
+                File outFile = new File(destDir, name);
+                if (type == '5') {
+                    outFile.mkdirs();
+                } else if (type == '0' || type == '\0') {
+                    outFile.getParentFile().mkdirs();
+                    try (OutputStream os = new FileOutputStream(outFile)) {
+                        byte[] buf = new byte[8192];
+                        long left = size;
+                        while (left > 0) {
+                            int r = is.read(buf, 0, (int)Math.min(left, buf.length));
+                            if (r <= 0) break;
+                            os.write(buf, 0, r);
+                            left -= r;
+                        }
+                    }
+                    outFile.setExecutable(true, false); 
+                    outFile.setReadable(true, false);
+                } 
+                
+                long skip = (512 - (size % 512)) % 512;
+                while (skip > 0) {
+                    long s = is.skip(skip);
+                    if (s <= 0) break;
+                    skip -= s;
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // [!] JAVA NATIVE BYTE-CLONER
     private static void cloneFileSafely(File source, File dest) {
         try {
-            if (dest.exists()) dest.delete(); // Java deletion fallback
+            if (dest.exists()) dest.delete(); 
             InputStream in = new FileInputStream(source);
             OutputStream out = new FileOutputStream(dest);
             byte[] buf = new byte[8192];
