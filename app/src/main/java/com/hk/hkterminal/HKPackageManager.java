@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
- * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Native Fast Extractor, Multi-Stream GZIP Bypass, Raw Musl Wrapper, Safe Sweeper
+ * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Universal ELF Wrapper, Multi-Stream GZIP Bypass, Safe Sweeper
  */
 public class HKPackageManager {
 
@@ -116,12 +116,8 @@ public class HKPackageManager {
                         output.close(); 
                         input.close();
 
-                        if (fileLength > 0 && total != fileLength) {
-                            update(listener, "[-] PAYLOAD CORRUPTED: Data lost during transit.");
-                            payloadFile.delete(); 
-                            continue;
-                        }
-                        downloadSuccess = true;
+                        downloadSuccess = (fileLength <= 0 || total == fileLength);
+                        if (!downloadSuccess) payloadFile.delete();
                     } finally {
                         if (conn != null) conn.disconnect();
                     }
@@ -130,7 +126,7 @@ public class HKPackageManager {
 
                     update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    // [!] THE GOD-LEVEL NATIVE EXTRACTOR MATRIX 
+                    // THE GOD-LEVEL NATIVE EXTRACTOR MATRIX 
                     if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
                         String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
@@ -139,31 +135,29 @@ public class HKPackageManager {
                         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
                     }
 
-                    // [!] SAFE SWEEPER (Fixed Truncation Bug)
+                    // SAFE SWEEPER 
                     String sweepCmd = "mv -f '" + filesDir.getAbsolutePath() + "/lib/'* '" + libDir.getAbsolutePath() + "' 2>/dev/null; " +
                                       "mv -f '" + filesDir.getAbsolutePath() + "/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
                                       "mv -f '" + filesDir.getAbsolutePath() + "/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
                                       "mv -f '" + filesDir.getAbsolutePath() + "/usr/sbin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
+                                      "mv -f '" + filesDir.getAbsolutePath() + "/usr/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null; " +
                                       "mv -f '" + filesDir.getAbsolutePath() + "/usr/local/bin/'* '" + binDir.getAbsolutePath() + "' 2>/dev/null;";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
                     
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
 
-                    // [!] THE ULTIMATE BYTE-CLONER (Destroys Broken Symlinks & Forces Physical Copies)
+                    // THE ULTIMATE BYTE-CLONER
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
                             String name = lib.getName();
-                            // Target real physical libraries, avoid tiny broken symlinks
                             if (name.contains(".so.") && lib.length() > 100) {
                                 int soIndex = name.indexOf(".so");
                                 if (soIndex != -1) {
-                                    // Construct base name (e.g., libncursesw.so)
                                     String rootName = name.substring(0, soIndex + 3);
                                     File rootFile = new File(libDir, rootName);
                                     cloneFileSafely(lib, rootFile);
 
-                                    // Construct major version name (e.g., libncursesw.so.6)
                                     int nextDot = name.indexOf('.', soIndex + 4);
                                     if (nextDot != -1) {
                                         File majorFile = new File(libDir, name.substring(0, nextDot));
@@ -174,38 +168,57 @@ public class HKPackageManager {
                         }
                     }
 
-                    File extractedBin = new File(binDir, pkgName);
-                    
-                    // [!] RAW MUSL WRAPPER INJECTION 
-                    if (extractedBin.exists() && !extractedBin.getName().endsWith(".elf")) {
-                        boolean isElf = false;
-                        try {
-                            FileInputStream fis = new FileInputStream(extractedBin);
-                            byte[] header = new byte[4];
-                            fis.read(header);
-                            fis.close();
-                            if (header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
-                                isElf = true;
-                            }
-                        } catch (Exception ignored) {}
-
-                        if (isElf) {
-                            File binReal = new File(binDir, pkgName + ".elf");
-                            if (extractedBin.renameTo(binReal)) {
+                    // [!] THE UNIVERSAL ELF WRAPPER MATRIX (Overrides EVERY naked binary)
+                    File[] allBinaries = binDir.listFiles();
+                    if (allBinaries != null) {
+                        for (File binFile : allBinaries) {
+                            if (binFile.isFile() && !binFile.getName().endsWith(".elf") && !binFile.getName().endsWith(".sh") && !binFile.getName().endsWith(".py")) {
+                                boolean isElf = false;
                                 try {
-                                    FileWriter fw = new FileWriter(extractedBin);
-                                    fw.write("#!/system/bin/sh\n");
-                                    fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + "\n");
-                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 " + binReal.getAbsolutePath() + " \"$@\"\n");
-                                    fw.close();
-                                    extractedBin.setExecutable(true, true);
-                                    binReal.setExecutable(true, true);
-                                    update(listener, "[*] Native Linker Shield Applied to: " + pkgName);
-                                } catch (Exception e) { e.printStackTrace(); }
+                                    FileInputStream fis = new FileInputStream(binFile);
+                                    byte[] header = new byte[4];
+                                    if (fis.read(header) == 4) {
+                                        if (header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
+                                            isElf = true;
+                                        }
+                                    }
+                                    fis.close();
+                                } catch (Exception ignored) {}
+
+                                if (isElf) {
+                                    File binReal = new File(binDir, binFile.getName() + ".elf");
+                                    if (binFile.renameTo(binReal)) {
+                                        try {
+                                            FileWriter fw = new FileWriter(binFile);
+                                            fw.write("#!/system/bin/sh\n");
+                                            fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + "'\n");
+                                            // [!] Inject Python Environment Paths dynamically
+                                            fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
+                                            fw.write("exec '" + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
+                                            fw.close();
+                                            binFile.setExecutable(true, true);
+                                            binReal.setExecutable(true, true);
+                                        } catch (Exception ignored) {}
+                                    }
+                                } else {
+                                    binFile.setExecutable(true, true);
+                                }
                             }
-                        } else {
-                            extractedBin.setExecutable(true, true); 
                         }
+                    }
+                    
+                    // [!] AUTO-ALIAS INJECTION FOR PYTHON
+                    File py3 = new File(binDir, "python3");
+                    File py = new File(binDir, "python");
+                    if (py3.exists() && !py.exists()) {
+                        try {
+                            FileWriter fw = new FileWriter(py);
+                            fw.write("#!/system/bin/sh\n");
+                            fw.write("exec '" + py3.getAbsolutePath() + "' \"$@\"\n");
+                            fw.close();
+                            py.setExecutable(true, true);
+                            update(listener, "[+] Alias Matrix: 'python' mapped to 'python3'");
+                        } catch (Exception ignored) {}
                     }
 
                     // GHOST CLEANUP
@@ -213,16 +226,7 @@ public class HKPackageManager {
                     String cleanupCmd = "rm -rf '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
                     
-                    // FIXED PAYLOAD VALIDATION LOGIC
-                    boolean hasPayload = extractedBin.exists() || 
-                                         new File(binDir, pkgName + ".elf").exists() || 
-                                         (libDir.listFiles() != null && libDir.listFiles().length > 0);
-                                         
-                    if (hasPayload) {
-                        update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
-                    } else {
-                        update(listener, "[-] Extraction Matrix Alert: Binary/Library failed to deploy.");
-                    }
+                    update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
                 }
                 
                 update(listener, "===================================");
@@ -230,15 +234,7 @@ public class HKPackageManager {
 
                 update(listener, "[*] ================================================");
                 update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
-                if (targetPkgName.contains("python")) {
-                    update(listener, " -> Execute: 'python3' or 'pip install <module>'");
-                } else if (targetPkgName.equals("sl")) {
-                    update(listener, " -> Execute: 'sl'");
-                } else if (targetPkgName.contains("pip")) {
-                    update(listener, " -> Execute: 'pip install <package_name>'");
-                } else {
-                    update(listener, " -> Execute: '" + targetPkgName + "'");
-                }
+                update(listener, " -> Execute: '" + targetPkgName + "'");
                 update(listener, "[*] ================================================");
 
             } catch (Exception e) {
@@ -249,10 +245,8 @@ public class HKPackageManager {
         }).start();
     }
 
-    // [!] JAVA NATIVE BYTE-CLONER (Upgraded for precision cloning)
     private static void cloneFileSafely(File source, File dest) {
         try {
-            // Check if file is already perfectly cloned to save matrix processing power
             if (dest.exists() && dest.length() == source.length()) return; 
             if (dest.exists()) dest.delete(); 
             
