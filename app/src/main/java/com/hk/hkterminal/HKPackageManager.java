@@ -12,9 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Pure Java Lib Duplicator
+ * DIRECTIVE    : Pure Java Byte-Cloner, Symlink Annihilator, Raw Musl Wrapper
  */
 public class HKPackageManager {
 
@@ -75,7 +75,7 @@ public class HKPackageManager {
                         conn.setReadTimeout(60000);    
                         conn.setInstanceFollowRedirects(false); 
                         
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/11.0");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/14.0");
                         conn.setRequestProperty("Accept", "*/*");
                         conn.setRequestProperty("Connection", "keep-alive");
 
@@ -144,24 +144,32 @@ public class HKPackageManager {
                     // FORCE PERMISSION MATRIX
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
 
-                    // [!] 100% BULLETPROOF JAVA-NATIVE LIBRARY DUPLICATOR (Replaces Regex completely)
+                    // [!] BULLETPROOF JAVA BYTE-CLONER WITH SYMLINK ANNIHILATOR
                     File[] libs = libDir.listFiles();
                     if (libs != null) {
                         for (File lib : libs) {
                             String name = lib.getName();
                             int soIndex = name.indexOf(".so.");
-                            if (soIndex != -1) {
-                                // Lock onto the exact first digit after .so.
+                            // Ensure it's a real file holding actual data (ignores broken symlinks completely)
+                            if (soIndex != -1 && lib.isFile() && lib.length() > 1000) {
                                 int endIdx = soIndex + 4; 
                                 while (endIdx < name.length() && Character.isDigit(name.charAt(endIdx))) {
                                     endIdx++;
                                 }
                                 if (endIdx > soIndex + 4) {
-                                    // Cuts string perfectly, e.g., libncursesw.so.6.4 -> libncursesw.so.6
-                                    String baseName = name.substring(0, endIdx);
+                                    String baseName = name.substring(0, endIdx); // e.g., libncursesw.so.6
                                     if (!baseName.equals(name)) {
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "cp -f " + name + " " + baseName}, null, libDir).waitFor();
-                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod 777 " + baseName}, null, libDir).waitFor();
+                                        File baseFile = new File(libDir, baseName);
+                                        
+                                        // [!] THE KILL-SHOT: Force delete absolute broken symlinks using shell
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + baseFile.getAbsolutePath()}).waitFor();
+                                        cloneFileSafely(lib, baseFile);
+                                        
+                                        String rootName = name.substring(0, soIndex + 3);
+                                        File rootFile = new File(libDir, rootName);
+                                        
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + rootFile.getAbsolutePath()}).waitFor();
+                                        cloneFileSafely(lib, rootFile);
                                     }
                                 }
                             }
@@ -236,6 +244,24 @@ public class HKPackageManager {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
+    }
+
+    // [!] THE CORE BYTE-CLONER FUNCTION (Bulletproof against symlinks)
+    private static void cloneFileSafely(File source, File dest) {
+        try {
+            if (dest.exists()) dest.delete(); // Java deletion fallback
+            InputStream in = new FileInputStream(source);
+            OutputStream out = new FileOutputStream(dest);
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+            in.close();
+            out.close();
+            dest.setExecutable(true, false);
+            dest.setReadable(true, false);
+        } catch (Exception ignored) {}
     }
 
     private static String getHackerProgressBar(int percent) {
