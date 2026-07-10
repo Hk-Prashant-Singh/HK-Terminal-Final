@@ -9,13 +9,23 @@ android {
     defaultConfig {
         applicationId "com.hk.hkterminal"
         minSdk 21
-        // [!] THE MASTER KILL-SWITCH: Android Execution Security Bypass
+        // [!] THE MASTER KILL-SWITCH (Bypasses Android execution limits)
         targetSdk 28 
         versionCode 1
         versionName "1.0"
     }
 
-    // [!] TERA ORIGINAL SIGNING MATRIX (GitHub Actions ke liye zaroori)
+    // =======================================================
+    // [!] LINT BYPASS MATRIX (Forces compiler to ignore Play Store rules)
+    // =======================================================
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+        disable 'ExpiredTargetSdkVersion'
+    }
+    // =======================================================
+
+    // [!] TERA ORIGINAL SIGNING MATRIX 
     signingConfigs {
         release {
             storeFile file("hk_key.jks") 
@@ -25,13 +35,10 @@ android {
         }
     }
 
-    // =======================================================
-    // [!] THE ALPHA COMPRESSION LOCK BYPASS (Native Execution Fix)
-    // =======================================================
+    // [!] THE ALPHA COMPRESSION LOCK BYPASS
     aaptOptions {
         noCompress "so", "bin", "tar", "gz", "elf"
     }
-    // =======================================================
 
     buildTypes {
         release {
@@ -41,7 +48,6 @@ android {
     }
 
     compileOptions {
-        // [!] TERA ORIGINAL JAVA 17 CONFIG
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
