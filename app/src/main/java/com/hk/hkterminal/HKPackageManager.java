@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (100% EXECUTION MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Auto-Directive, Version Regex
+ * DIRECTIVE    : Absolute Permission Override, Musl-Wrapper Injection, Auto-Directive, God-Eye Regex
  */
 public class HKPackageManager {
 
@@ -259,8 +259,8 @@ public class HKPackageManager {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
                     
-                    // [!] UPGRADED REGEX: Captures exact version for proper listing and tracking
-                    String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "[-_]([0-9.]+[a-z0-9-]*)\\.(apk|tar\\.gz|deb))\"";
+                    // [!] THE GOD-EYE REGEX: Captures ANY complex version format flawlessly (including underscores, letters, & dots)
+                    String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "-[0-9][^\"]*\\.(apk|tar\\.gz|deb))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
 
                     while ((line = reader.readLine()) != null) {
