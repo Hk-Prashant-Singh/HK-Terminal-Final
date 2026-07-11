@@ -1,6 +1,8 @@
 package com.hk.hkterminal;
 
 import android.content.*;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.*;
@@ -30,9 +32,11 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 /**
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG)
+ * ============================================================================
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v4.0)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
  * DIRECTIVE    : Intelligent Auto-Directive, Pipeline Interceptor, Mass Global Sync Engine
+ * ============================================================================
  */
 public class MainActivity extends AppCompatActivity {
     public static CustomEditText outputView;
@@ -53,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
     public String lastSentCommand = null;
     private final Object streamLock = new Object();
     
+    // [!] v4.0 INTELLIGENCE MODULES
+    private HKDatabaseManager dbManager;
     private static TerminalTabFragment packagesFragmentInstance;
 
     public interface Callback { void onOutput(String line); }
@@ -68,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        
+        // Initialize Core Engines
+        dbManager = new HKDatabaseManager(this);
+        HKLogger.logEvent("SYSTEM_CORE", "BOOT_SEQUENCE", "MainActivity Initialized");
         
         headerProgress = findViewById(R.id.headerProgress);
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
@@ -108,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
         setupSystemButtons();
         setupUpgradeAllLogic();
+        setupCopyFeature(); // [!] Added Alpha Copy Feature
         
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
@@ -117,7 +128,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Running HK-Operation Diagnostic Protocol...\n");
+        appendMatrixText("[*] Booting HK-Operation Intelligence (v4.0)...\n");
+        appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
         File binDir = new File(getUsrBinPath());
         File libDir = new File(getUsrLibPath());
         
@@ -125,8 +137,37 @@ public class MainActivity extends AppCompatActivity {
         int libCount = (libDir.exists() && libDir.listFiles() != null) ? libDir.listFiles().length : 0;
         
         appendMatrixText("[+] Arsenal Status: " + weaponCount + " Weapons, " + libCount + " Libs loaded.\n");
+        
+        // [!] NEW v4.0 DB SCAN LOGIC
+        try {
+            SQLiteDatabase db = dbManager.getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT COUNT(*) FROM Health WHERE is_corrupted = 1", null);
+            if (c.moveToFirst() && c.getInt(0) > 0) {
+                appendMatrixText("[-] WARNING: " + c.getInt(0) + " packages corrupted! Run 'hk-C' to Auto-Heal.\n");
+            } else {
+                appendMatrixText("[+] System Health Matrix: 100% SECURE.\n");
+            }
+            c.close();
+        } catch (Exception e) {
+            appendMatrixText("[*] Database Registry initializing...\n");
+        }
+
         appendMatrixText("[+] Native Bypass Shield & PIP Interceptor: ACTIVE.\n");
         if (outputView != null) outputView.append(currentPrompt);
+    }
+
+    // [!] NEW COPY FEATURE ADDED
+    private void setupCopyFeature() {
+        if (outputView != null) {
+            outputView.setOnLongClickListener(v -> {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("HK_Terminal_Logs", outputView.getText().toString());
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(this, "[+] Alpha Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
+                HKLogger.logEvent("UI_LAYER", "LOGS_COPIED", "Terminal matrix data extracted.");
+                return true;
+            });
+        }
     }
 
     private void initStatefulShell() {
@@ -508,6 +549,18 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
+        // [!] THE v4.0 DISPATCHER INTERCEPTOR (INTELLIGENCE LAYER)
+        if (trimmedCmd.startsWith("hk ") || trimmedCmd.equals("hk-C")) {
+            appendMatrixText("[*] Intercepted by HK-Dispatcher (v4.0)...\n");
+            HKDispatcher.dispatch(trimmedCmd);
+            
+            if (trimmedCmd.equals("hk-C") || trimmedCmd.equals("hk repair --all")) {
+                appendMatrixText("[+] Auto-Repair Engine Engaged. Check logs for details.\n");
+                if (outputView != null) outputView.append(currentPrompt);
+                return;
+            }
+        }
+
         // [!] THE PIP SYSTEM INTERCEPTOR
         if (trimmedCmd.startsWith("pip ")) {
             appendMatrixText("[*] HK-Interceptor: Rerouting PIP via Native Python Matrix...\n");
@@ -852,7 +905,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] TABS AND VISUAL FACTORY
+    // [!] TABS AND VISUAL FACTORY (UPGRADED WITH DB SYNC)
     public static class TerminalTabFragment extends Fragment {
         int type;
         private LinearLayout rootLayoutRef;
@@ -924,7 +977,7 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARSENAL");
+            title.setText(">> HK WEAPON ARSENAL (v4.0 MATRIX)");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
@@ -933,6 +986,12 @@ public class MainActivity extends AppCompatActivity {
 
             MainActivity main = (MainActivity) getActivity();
             if (main == null) return;
+            
+            // [!] Connect to DB to fetch package status
+            HKDatabaseManager localDbManager = new HKDatabaseManager(context);
+            SQLiteDatabase db = null;
+            try { db = localDbManager.getReadableDatabase(); } catch(Exception ignored){}
+
             File binDir = new File(main.getUsrBinPath());
             if (binDir.exists() && binDir.isDirectory()) {
                 File[] files = binDir.listFiles();
@@ -941,14 +1000,31 @@ public class MainActivity extends AppCompatActivity {
                     for (File file : files) {
                         if (file.isDirectory()) continue; 
                         
+                        String pkgNameStr = file.getName();
+                        String statusStr = "UNKNOWN";
+                        String colorCode = "#FFFFFF";
+
+                        // [!] Query DB for Status
+                        if (db != null) {
+                            try {
+                                Cursor c = db.rawQuery("SELECT status FROM Packages WHERE package_name=?", new String[]{pkgNameStr});
+                                if (c.moveToFirst()) {
+                                    statusStr = c.getString(0);
+                                    if (statusStr.equals("READY")) colorCode = "#00FF41";
+                                    else if (statusStr.equals("FAILED") || statusStr.equals("WARNING")) colorCode = "#FF003C";
+                                }
+                                c.close();
+                            } catch (Exception ignored) {}
+                        }
+
                         LinearLayout row = new LinearLayout(context);
                         row.setOrientation(LinearLayout.HORIZONTAL);
                         row.setPadding(0, 20, 0, 20);
                         row.setGravity(Gravity.CENTER_VERTICAL);
 
                         TextView pkgName = new TextView(context);
-                        pkgName.setText(file.getName());
-                        pkgName.setTextColor(Color.parseColor("#FFFFFF"));
+                        pkgName.setText(pkgNameStr + " [" + statusStr + "]");
+                        pkgName.setTextColor(Color.parseColor(colorCode));
                         pkgName.setTypeface(Typeface.MONOSPACE);
                         pkgName.setTextSize(16f);
                         pkgName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -965,6 +1041,7 @@ public class MainActivity extends AppCompatActivity {
                         
                         delBtn.setOnClickListener(v -> {
                             if (file.delete()) {
+                                localDbManager.updatePackageState(pkgNameStr, "DELETED"); // [!] Sync with DB
                                 Toast.makeText(context, "[+] Target Wiped: " + file.getName(), Toast.LENGTH_SHORT).show();
                                 renderPackagesMatrix(rootLayout, context);
                             } else Toast.makeText(context, "[-] Matrix Deletion Blocked", Toast.LENGTH_SHORT).show();
