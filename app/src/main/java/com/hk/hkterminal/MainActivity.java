@@ -156,11 +156,12 @@ public class MainActivity extends AppCompatActivity {
         if (outputView != null) outputView.append(currentPrompt);
     }
 
-    // [!] NEW COPY FEATURE ADDED
+    // [!] NEW COPY FEATURE ADDED (FIXED AMBIGUOUS REFERENCE)
     private void setupCopyFeature() {
         if (outputView != null) {
             outputView.setOnLongClickListener(v -> {
-                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                // EXPLICITLY using android.content.ClipboardManager to avoid compiler clash
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("HK_Terminal_Logs", outputView.getText().toString());
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(this, "[+] Alpha Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
