@@ -577,9 +577,14 @@ public class MainActivity extends AppCompatActivity {
         // [!] THE INTELLIGENT DIRECTIVE DETECTIVE ENGINE
         String[] parts = trimmedCmd.split(" ");
         String baseCmd = parts[0];
-        if (!trimmedCmd.startsWith("hk ") && !trimmedCmd.startsWith("pip ") && 
-            !baseCmd.equals("clear") && !baseCmd.equals("su") && 
-            !baseCmd.equals("cd") && !baseCmd.equals("ls") && !baseCmd.equals("ll") && !baseCmd.equals("ip")) {
+        
+        // [!] ADDED: Native Shell Commands Whitelist (Bypasses the weapon check)
+        List<String> nativeCmds = Arrays.asList(
+            "clear", "su", "cd", "ls", "ll", "ip", "export", "chmod", "cat", 
+            "echo", "sh", "bash", "cp", "mv", "rm", "mkdir", "pwd", "grep", "env"
+        );
+
+        if (!trimmedCmd.startsWith("hk ") && !trimmedCmd.startsWith("pip ") && !nativeCmds.contains(baseCmd)) {
             
             File weapon = new File(getUsrBinPath(), baseCmd);
             if (!weapon.exists()) {
