@@ -1,6 +1,7 @@
 package com.hk.hkterminal;
 
 import android.content.Context;
+import android.os.Build; // [!] FIXED: Missing Build import added for SDK version check
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v4.1)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v5.0)
  * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Library Resolver, Wrapper Matrix, Smoke Test & Health Engine.
+ * DIRECTIVE    : 14-Module Strict Architecture, Smoke Test, DB Sync & Healing
  * ============================================================================
  */
 public class HKPackageManager {
@@ -45,12 +46,13 @@ public class HKPackageManager {
     }
 
     /**
-     * MAIN ENTRY: v4.1 COMPLETE DEPLOYMENT FLOW
+     * MODULE 01 & 02: COMMAND DISPATCHER & DEPENDENCY ENGINE INTEGRATION
+     * The Main Entry Point for v5.0 Strict Flow
      */
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
-            HKLogger.logEvent("MODULE-08", "INSTALL_INITIATED", "Target: " + targetPkgName);
+            HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
 
             try {
                 // PREFIX MATRIX DIRECTORIES
@@ -68,26 +70,27 @@ public class HKPackageManager {
                 ensureMatrixDirectories(binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v4.1 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v5.0 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
                 }
 
+                // DEPENDENCY ENGINE (Module 02)
                 List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
                 if (installQueue.isEmpty()) installQueue.add(targetPkgName);
                 
                 update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
 
                 for (String pkgName : installQueue) {
-                    int healthScore = 0; // Initialize Health Engine (Fix 08)
+                    int healthScore = 0; // Initialize Health Engine (Module 13)
                     dbManager.registerPackage(pkgName, "latest");
                     dbManager.updatePackageState(pkgName, "VERIFYING");
 
                     update(listener, "-----------------------------------");
                     update(listener, "[*] Deploying Tactical Module: '" + pkgName + "'...");
 
-                    // 1. NEURAL HUNTING
+                    // MODULE 03: DOWNLOAD ENGINE
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
                         update(listener, "[-] AI-FATAL: Weapon '" + pkgName + "' unidentifiable.");
@@ -95,7 +98,6 @@ public class HKPackageManager {
                         continue; 
                     }
 
-                    // 2. DOWNLOAD PHASE
                     dbManager.updatePackageState(pkgName, "DOWNLOADING");
                     File payloadFile = new File(cacheDir, pkgName + ".apk");
                     boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
@@ -103,44 +105,44 @@ public class HKPackageManager {
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue;
                     }
-                    healthScore += 20; // Download Success
+                    healthScore += 20; // Health: File System & Download
 
-                    // 3. EXTRACTION PHASE
+                    // MODULE 04: EXTRACTION ENGINE
                     dbManager.updatePackageState(pkgName, "EXTRACTING");
                     update(listener, "[+] Payload Secured. Initiating God-Level Force-Unpack...");
                     executeAggressiveExtraction(payloadFile, filesDir);
-                    healthScore += 20; // Extraction Success
 
-                    // 4. FILESYSTEM SWEEP & DEPLOYMENT
+                    // MODULE 05: DEPLOYMENT ENGINE
                     dbManager.updatePackageState(pkgName, "DEPLOYING");
                     executeSafeSweeperMatrix(filesDir, binDir, libDir, localLibDir, shareDir);
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
-                    healthScore += 20; // Deployment Success
+                    healthScore += 20; // Health: Deployment
 
-                    // 5. FIX 02: LIBRARY RESOLVER ENGINE (Aliases Generator)
+                    // MODULE 06: LIBRARY RESOLVER ENGINE
                     update(listener, "[*] Generating Universal Library Aliases...");
                     generateLibraryAliases(libDir);
                     generateLibraryAliases(localLibDir);
+                    healthScore += 20; // Health: Libraries
 
-                    // 6. FIX 04: WRAPPER GENERATOR
+                    // MODULE 07: WRAPPER ENGINE
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
 
-                    // 7. GHOST CLEANUP
                     executeGhostCleanup(payloadFile, filesDir);
                     
-                    // 8. FIX 01, 03, 06, 07: RUNTIME VALIDATION & SMOKE TEST
+                    // MODULE 08 & 09: VALIDATION & RUNTIME TEST ENGINE (Smoke Test)
                     dbManager.updatePackageState(pkgName, "VALIDATING");
                     update(listener, "[*] Running Runtime Validation & Smoke Test...");
                     boolean isRuntimeValid = runValidationMatrix(binDir, libDir, pkgName, listener);
 
-                    // 9. FIX 08 & 09: HEALTH ENGINE & READY DECISION
+                    // MODULE 11 & 13: DATABASE & HEALTH ENGINE (READY DECISION)
                     if (isRuntimeValid) {
-                        healthScore += 40; // Validation & Smoke Test Passed
+                        healthScore += 40; // Health: Runtime & Smoke Test Passed (100% Total)
                         dbManager.updatePackageState(pkgName, "READY");
                         dbManager.updateHealthScore(pkgName, healthScore, false);
                         update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: 100%].");
                     } else {
+                        // MODULE 10 Trigger: Package Marked REPAIRABLE
                         dbManager.updatePackageState(pkgName, "REPAIRABLE");
                         dbManager.updateHealthScore(pkgName, healthScore, true);
                         update(listener, "[-] Runtime Validation Failed. Module flagged as REPAIRABLE.");
@@ -162,7 +164,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // FIX 02: LIBRARY RESOLVER ENGINE (Auto-Alias Generator)
+    // MODULE 06: LIBRARY RESOLVER ENGINE
     // ============================================================================
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
@@ -172,16 +174,14 @@ public class HKPackageManager {
         
         for (File lib : libs) {
             String name = lib.getName();
-            // Match structures like libncursesw.so.6.1 or libsqlite3.so.0.8.6
             if (name.contains(".so.") && lib.length() > 512) { 
                 try {
                     int soIndex = name.indexOf(".so");
-                    String rootName = name.substring(0, soIndex + 3); // libname.so
+                    String rootName = name.substring(0, soIndex + 3);
                     cloneFileSafely(lib, new File(libDir, rootName));
 
                     String[] parts = name.split("\\.");
                     if (parts.length >= 3) {
-                        // e.g., libname.so.6
                         String majorName = parts[0] + "." + parts[1] + "." + parts[2];
                         cloneFileSafely(lib, new File(libDir, majorName));
                     }
@@ -191,10 +191,9 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // FIX 04 & 05: WRAPPER GENERATOR WITH EXHAUSTIVE ENV INJECTION
+    // MODULE 07: WRAPPER ENGINE
     // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
-        // Direct Python Cloner (Overrides faulty symlinks)
         File pyReal = new File(binDir, "python3.14");
         if (pyReal.exists() && pyReal.length() > 1024) {
             cloneFileSafely(pyReal, new File(binDir, "python.elf"));
@@ -222,12 +221,10 @@ public class HKPackageManager {
                         try {
                             FileWriter fw = new FileWriter(binFile);
                             fw.write("#!/system/bin/sh\n");
-                            // Full Environment Injection (Fix 04)
                             fw.write("export PREFIX='" + usrDir.getAbsolutePath() + "'\n");
                             fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
                             fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
                             fw.write("export PATH='" + binDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
-                            // Search Paths (Fix 05)
                             fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + ":/system/lib64:/system/lib'\n");
                             fw.write("export TERMINFO='" + usrDir.getAbsolutePath() + "/share/terminfo'\n");
                             fw.write("export LANG='en_US.UTF-8'\n");
@@ -237,7 +234,6 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            // Execute via Musl Loader
                             fw.write("exec '" + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
@@ -252,13 +248,12 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // FIX 01 & 07: RUNTIME VALIDATION AND SMOKE TEST
+    // MODULE 08 & 09: VALIDATION & RUNTIME TEST ENGINE
     // ============================================================================
     private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
         boolean binaryExists = false;
         File targetExecutable = null;
 
-        // Step 1: Check existence
         if (new File(binDir, pkgName).exists()) {
             binaryExists = true;
             targetExecutable = new File(binDir, pkgName);
@@ -266,8 +261,7 @@ public class HKPackageManager {
             binaryExists = true;
             targetExecutable = new File(binDir, pkgName);
         } else if (libDir.listFiles() != null && libDir.listFiles().length > 0) {
-            // It's a library package, no executable to test
-            return true;
+            return true; // Library-only package, passes implicitly
         }
 
         if (!binaryExists || targetExecutable == null) {
@@ -275,18 +269,15 @@ public class HKPackageManager {
             return false;
         }
 
-        // Step 2: Permissions Check
         if (!targetExecutable.canExecute()) {
             update(listener, "[-] Validation: Execution permission denied.");
             return false;
         }
 
-        // Step 3: Runtime Smoke Test (Timeout 5 Seconds)
         try {
             update(listener, "[*] Smoke Test: Firing package binary...");
             Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", targetExecutable.getAbsolutePath() + " --help"});
             
-            // Wait with Timeout (Java 8+)
             boolean finished = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 finished = process.waitFor(5, TimeUnit.SECONDS);
@@ -317,15 +308,13 @@ public class HKPackageManager {
                 errorOutput.append(line).append(" ");
             }
 
-            // Validation Logic: If it complains about a library, fail it immediately.
             String errStr = errorOutput.toString().toLowerCase();
             if (errStr.contains("not found") || errStr.contains("error loading shared library") || errStr.contains("symbol not found")) {
                 update(listener, "[-] Smoke Test: Library linkage failure detected -> " + errStr.trim());
                 return false;
             }
 
-            // Exit code 0, 1, or 255 (for help commands) are generally acceptable if no linkage errors occurred.
-            if (exitCode == 127) { // 127 is Command Not Found in shell
+            if (exitCode == 127) { 
                 update(listener, "[-] Smoke Test: Fatal Shell Error (127).");
                 return false;
             }
@@ -338,7 +327,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // UTILITY METHODS & DEPLOYMENT ENGINES
+    // CORE UTILITIES
     // ============================================================================
     private static void ensureMatrixDirectories(File... dirs) {
         for (File dir : dirs) {
