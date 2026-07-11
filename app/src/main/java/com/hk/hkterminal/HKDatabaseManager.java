@@ -8,9 +8,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 /**
  * ============================================================================
  * HK-BOT MASTER ARCHITECTURE - MODULE 19: DATABASE ENGINE
- * Engine: HK-BOT Runtime Intelligence System
+ * Engine: HK-BOT Runtime Intelligence System (v4.0)
  * Author: HK Prashant (Tech Wizard)
- * Architecture: Persistent Storage • State Machine • Zero Data Loss
+ * Architecture: Persistent Storage • State Machine • Zero Data Loss (SECURE MATRIX)
  * ============================================================================
  */
 public class HKDatabaseManager extends SQLiteOpenHelper {
@@ -25,9 +25,10 @@ public class HKDatabaseManager extends SQLiteOpenHelper {
     private static final String TABLE_HISTORY = "History";
 
     public HKDatabaseManager(Context context) {
-        // Zero-Trust: Route database file directly to the secure internal storage
-        super(context, "/sdcard/hk/database/" + DATABASE_NAME, null, DATABASE_VERSION);
-        HKLogger.logEvent("DB-ENGINE", "INITIALIZATION", "HK Database Engine Connected.");
+        // [!] FIXED: Shifted to Native Android Secure Database path (Bypasses Scoped Storage block)
+        // HK-Bot will now initialize the database in a secure, OS-protected directory.
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        HKLogger.logEvent("DB-ENGINE", "INITIALIZATION", "HK Database Engine Connected in Secure App Matrix.");
     }
 
     @Override
