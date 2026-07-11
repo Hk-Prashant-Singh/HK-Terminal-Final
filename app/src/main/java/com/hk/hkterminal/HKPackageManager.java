@@ -5,18 +5,14 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
-import android.util.Log;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +25,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE WITH AI NEURAL MATRIX
- * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Predictive Resolution, Self-Healing, Universal ELF Wrappers.
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (v4.0 INTEGRATED)
+ * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Predictive Resolution, Self-Healing, hk bot + Database Hooks.
  * ============================================================================
  */
 public class HKPackageManager {
@@ -49,10 +45,13 @@ public class HKPackageManager {
     }
 
     /**
-     * MAIN ENTRY: The AI-Driven Package Installation Matrix
+     * MAIN ENTRY: The AI-Driven Package Installation Matrix with v4.0 Hooks
      */
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
         new Thread(() -> {
+            HKDatabaseManager dbManager = new HKDatabaseManager(context);
+            HKLogger.logEvent("MODULE-08", "INSTALL_INITIATED", "Target: " + targetPkgName);
+
             try {
                 // [!] 1. INITIALIZE AI FILE SYSTEM VECTORS
                 File filesDir = context.getFilesDir();
@@ -71,6 +70,7 @@ public class HKPackageManager {
                 
                 // [!] 2. RESOURCE ALLOCATION & PRE-FLIGHT CHECK
                 if (!performAIPreFlightCheck(filesDir, listener)) {
+                    HKLogger.logCrash("MODULE-08", "Insufficient System Resources.");
                     throw new Exception("Insufficient System Resources for HK-Operation.");
                 }
 
@@ -78,53 +78,66 @@ public class HKPackageManager {
                 if (installQueue.isEmpty()) installQueue.add(targetPkgName);
                 
                 update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
-                update(listener, "[*] ================================================\n");
+                HKLogger.logEvent("MODULE-08", "DEPENDENCY_RESOLVED", "Total queue: " + installQueue.size());
 
                 // [!] 3. TACTICAL DEPLOYMENT LOOP
                 for (String pkgName : installQueue) {
+                    dbManager.registerPackage(pkgName, "latest");
+                    dbManager.updatePackageState(pkgName, "VERIFYING");
+
                     update(listener, "-----------------------------------");
                     update(listener, "[*] Deploying Tactical Module: '" + pkgName + "'...");
 
-                    // Neural Hunting (Finds the best target dynamically)
+                    // Neural Hunting
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
                         update(listener, "[-] AI-FATAL: Weapon '" + pkgName + "' unidentifiable globally. Skipping.");
+                        dbManager.updatePackageState(pkgName, "FAILED");
                         continue; 
                     }
 
                     String ext = targetUrl.endsWith(".apk") ? ".apk" : (targetUrl.endsWith(".deb") ? ".deb" : ".tar.gz");
                     File payloadFile = new File(cacheDir, pkgName + ext);
 
-                    // Download with Auto-Healing and Integrity Checks
+                    // Download Phase
+                    dbManager.updatePackageState(pkgName, "DOWNLOADING");
                     boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
-                    if (!downloadSuccess) continue;
+                    if (!downloadSuccess) {
+                        dbManager.updatePackageState(pkgName, "FAILED");
+                        continue;
+                    }
 
+                    // Extraction Phase
+                    dbManager.updatePackageState(pkgName, "EXTRACTING");
                     update(listener, "[+] Payload Secured. Initiating God-Level Force-Unpack...");
-
-                    // [!] 4. THE GOD-LEVEL NATIVE EXTRACTOR MATRIX (Force GZIP Pipe Bypass)
                     executeAggressiveExtraction(payloadFile, filesDir, listener);
 
-                    // [!] 5. ADVANCED PATH SWEEPER (Includes missing /usr/lib/ for heavy weapons like Python)
+                    // Deployment & Sweeping Phase
+                    dbManager.updatePackageState(pkgName, "DEPLOYING");
                     executeSafeSweeperMatrix(filesDir, binDir, libDir, listener);
-                    
-                    // Force Deep Permission Injection
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
 
-                    // [!] 6. ULTIMATE BYTE-CLONER & INTEGRITY SCANNER
+                    // Cloner & Wrapper
                     executeAIByteCloner(libDir, listener);
-
-                    // [!] 7. UNIVERSAL ELF WRAPPER (Auto-wraps naked binaries and injects Python HOME)
                     applyUniversalElfWrapper(binDir, libDir, usrDir, pkgName, listener);
 
-                    // [!] 8. GHOST CLEANUP (Erase traces)
+                    // Ghost Cleanup
                     executeGhostCleanup(payloadFile, filesDir);
                     
-                    // AI Payload Validation
+                    // Validation Phase
+                    dbManager.updatePackageState(pkgName, "VALIDATING");
                     boolean hasPayload = validateIntegration(binDir, libDir, pkgName);
+                    
                     if (hasPayload) {
+                        dbManager.updatePackageState(pkgName, "READY");
+                        dbManager.updateHealthScore(pkgName, 100, false);
                         update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly.");
+                        HKLogger.logEvent("MODULE-08", "PACKAGE_READY", pkgName + " installed successfully.");
                     } else {
+                        dbManager.updatePackageState(pkgName, "WARNING");
+                        dbManager.updateHealthScore(pkgName, 50, true);
                         update(listener, "[-] Extraction Matrix Alert: Payload verification failed.");
+                        HKLogger.logEvent("MODULE-08", "VALIDATION_FAILED", pkgName + " flagged as REPAIRABLE.");
                     }
                 }
                 
@@ -133,11 +146,12 @@ public class HKPackageManager {
                 update(listener, "[*] ================================================");
                 update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
                 update(listener, " -> Execute: '" + targetPkgName + "'");
-                update(listener, "[*] ================================================");
+                
+                HKLogger.logEvent("MODULE-08", "INSTALLATION_COMPLETE", "Master target: " + targetPkgName);
 
             } catch (Exception e) {
                 update(listener, "[-] AI System Error: " + e.getMessage());
-                Log.e(TAG, "Matrix Crash", e);
+                HKLogger.logCrash("MODULE-08", "Critical error during install: " + e.getMessage());
             } finally {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
@@ -165,7 +179,7 @@ public class HKPackageManager {
             }
             return true;
         } catch (Exception e) {
-            return true; // Fallback if stat fails
+            return true; 
         }
     }
 
@@ -180,7 +194,6 @@ public class HKPackageManager {
             "https://uk.alpinelinux.org/alpine/edge/community/aarch64/"
         };
 
-        // Simple AI logic: Prioritize mirrors that responded faster in previous operations
         List<String> sortedMirrors = new ArrayList<>();
         Collections.addAll(sortedMirrors, masterMirrors);
         sortedMirrors.sort((m1, m2) -> {
@@ -202,7 +215,7 @@ public class HKPackageManager {
 
                 if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     long latency = System.currentTimeMillis() - startTime;
-                    mirrorLatencyCache.put(mirror, latency); // Teach the AI
+                    mirrorLatencyCache.put(mirror, latency); 
 
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
@@ -268,7 +281,7 @@ public class HKPackageManager {
             int fileLength = conn.getContentLength();
             InputStream input = new BufferedInputStream(conn.getInputStream());
             OutputStream output = new FileOutputStream(payloadFile);
-            byte[] data = new byte[16384]; // 16KB buffer for max speed
+            byte[] data = new byte[16384]; 
             long total = 0;
             int count;
             int lastPercent = -1;
@@ -281,7 +294,7 @@ public class HKPackageManager {
                     int percent = (int) (total * 100 / fileLength);
                     if (percent != lastPercent && percent % 5 == 0) {
                         long elapsed = System.currentTimeMillis() - startTime;
-                        long speed = (elapsed > 0) ? (total / elapsed) : 0; // kbps approx
+                        long speed = (elapsed > 0) ? (total / elapsed) : 0; 
                         update(listener, "Progress: " + getHackerProgressBar(percent) + " [" + percent + "%] " + speed + "KB/s");
                         lastPercent = percent;
                     }
@@ -291,9 +304,9 @@ public class HKPackageManager {
             output.close(); 
             input.close();
 
-            // Self-Healing Logic: Check if download was truncated
             if (fileLength > 0 && total != fileLength) {
                 update(listener, "[-] AI-DETECTED: Payload corrupted during transit. Matrix will self-heal on next run.");
+                HKLogger.logEvent("MODULE-08", "DOWNLOAD_CORRUPTED", pkgName + " payload size mismatch.");
                 payloadFile.delete(); 
                 success = false;
             } else {
@@ -301,6 +314,7 @@ public class HKPackageManager {
             }
         } catch (Exception e) {
             update(listener, "[-] Download Stream Error: " + e.getMessage());
+            HKLogger.logCrash("MODULE-08", "Download Stream Error for " + pkgName + " -> " + e.getMessage());
             if (payloadFile.exists()) payloadFile.delete();
             success = false;
         } finally {
@@ -318,10 +332,8 @@ public class HKPackageManager {
         String unpackCmd;
 
         if (path.endsWith(".apk") || path.endsWith(".tar.gz")) {
-            // Zcat/Gzip pipe breaks the concatenated stream barrier in Android toybox
             unpackCmd = "gzip -dc '" + path + "' | tar -xf - -C '" + dest + "' 2>/dev/null";
         } else {
-            // Debian / AR format
             unpackCmd = "cd '" + dest + "' && (ar x '" + path + "' 2>/dev/null && tar -xf data.tar.* -C '" + dest + "' 2>/dev/null)";
         }
 
@@ -337,7 +349,6 @@ public class HKPackageManager {
         String targetLib = libDir.getAbsolutePath();
         String targetBin = binDir.getAbsolutePath();
 
-        // THE MISSING LINK IS HERE: '/usr/lib/' matrix mapped to core libDir
         String sweepCmd = 
             "mv -f '" + base + "/lib/'* '" + targetLib + "' 2>/dev/null; " +
             "mv -f '" + base + "/usr/lib/'* '" + targetLib + "' 2>/dev/null; " + 
@@ -359,16 +370,13 @@ public class HKPackageManager {
         
         for (File lib : libs) {
             String name = lib.getName();
-            // Target real physical libraries, avoid tiny broken symlinks (<100 bytes)
             if (name.contains(".so.") && lib.length() > 100) {
                 int soIndex = name.indexOf(".so");
                 if (soIndex != -1) {
-                    // Construct base name (e.g., libncursesw.so)
                     String rootName = name.substring(0, soIndex + 3);
                     File rootFile = new File(libDir, rootName);
                     cloneFileSafely(lib, rootFile);
 
-                    // Construct major version name (e.g., libncursesw.so.6)
                     int nextDot = name.indexOf('.', soIndex + 4);
                     if (nextDot != -1) {
                         File majorFile = new File(libDir, name.substring(0, nextDot));
@@ -426,7 +434,6 @@ public class HKPackageManager {
                                 fw.write("#!/system/bin/sh\n");
                                 fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + "'\n");
                                 
-                                // [!] AI INJECTION: Python Environment Paths
                                 if (pkgName.contains("python") || binFile.getName().contains("python")) {
                                     fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                                 }
@@ -444,7 +451,6 @@ public class HKPackageManager {
             }
         }
         
-        // AUTO-ALIAS INJECTION FOR PYTHON
         File py3 = new File(binDir, "python3");
         File py = new File(binDir, "python");
         if (py3.exists() && !py.exists()) {
