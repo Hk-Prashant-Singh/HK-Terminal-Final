@@ -12,7 +12,7 @@ import java.util.Locale;
  * HK-BOT MASTER ARCHITECTURE - MODULE 15: LOGGER ENGINE
  * Engine: HK-BOT Runtime Intelligence System
  * Author: HK Prashant Singh (Tech Wizard)
- * Architecture: Structured Logging • Event Driven • Persistent
+ * Architecture: Structured Logging • Event Driven • Persistent 
  * ============================================================================
  */
 public class HKLogger {
