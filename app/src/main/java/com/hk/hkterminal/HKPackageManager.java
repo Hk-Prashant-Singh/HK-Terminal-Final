@@ -1,7 +1,7 @@
 package com.hk.hkterminal;
 
 import android.content.Context;
-import android.os.Build; // [!] FIXED: Missing Build import added for SDK version check
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v5.0)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v5.1)
  * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : 14-Module Strict Architecture, Smoke Test, DB Sync & Healing
+ * DIRECTIVE    : Sandbox Extraction, Anti-Self-Destruct Matrix, 14-Module Strict Flow
  * ============================================================================
  */
 public class HKPackageManager {
@@ -45,10 +45,6 @@ public class HKPackageManager {
         void onComplete();
     }
 
-    /**
-     * MODULE 01 & 02: COMMAND DISPATCHER & DEPENDENCY ENGINE INTEGRATION
-     * The Main Entry Point for v5.0 Strict Flow
-     */
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
@@ -66,31 +62,30 @@ public class HKPackageManager {
                 File usrSbinDir = new File(usrDir, "sbin");
                 File shareDir = new File(usrDir, "share");
                 File tmpDir = new File(filesDir, "tmp");
+                File extTmpDir = new File(filesDir, "ext_tmp"); // [!] NEW: SANDBOX TEMP DIR
                 
-                ensureMatrixDirectories(binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir);
+                ensureMatrixDirectories(binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v5.0 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v5.1 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
                 }
 
-                // DEPENDENCY ENGINE (Module 02)
                 List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
                 if (installQueue.isEmpty()) installQueue.add(targetPkgName);
                 
                 update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
 
                 for (String pkgName : installQueue) {
-                    int healthScore = 0; // Initialize Health Engine (Module 13)
+                    int healthScore = 0; 
                     dbManager.registerPackage(pkgName, "latest");
                     dbManager.updatePackageState(pkgName, "VERIFYING");
 
                     update(listener, "-----------------------------------");
                     update(listener, "[*] Deploying Tactical Module: '" + pkgName + "'...");
 
-                    // MODULE 03: DOWNLOAD ENGINE
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
                         update(listener, "[-] AI-FATAL: Weapon '" + pkgName + "' unidentifiable.");
@@ -105,44 +100,40 @@ public class HKPackageManager {
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue;
                     }
-                    healthScore += 20; // Health: File System & Download
+                    healthScore += 20;
 
-                    // MODULE 04: EXTRACTION ENGINE
                     dbManager.updatePackageState(pkgName, "EXTRACTING");
-                    update(listener, "[+] Payload Secured. Initiating God-Level Force-Unpack...");
-                    executeAggressiveExtraction(payloadFile, filesDir);
+                    update(listener, "[+] Payload Secured. Initiating Sandbox Extraction...");
+                    // [!] FIX: Extracting into ext_tmp Sandbox instead of Root
+                    executeAggressiveExtraction(payloadFile, extTmpDir);
 
-                    // MODULE 05: DEPLOYMENT ENGINE
                     dbManager.updatePackageState(pkgName, "DEPLOYING");
-                    executeSafeSweeperMatrix(filesDir, binDir, libDir, localLibDir, shareDir);
+                    // [!] FIX: Sweeper now scans ext_tmp and moves files safely to Root Arsenal
+                    executeSafeSweeperMatrix(extTmpDir, binDir, libDir, localLibDir, shareDir);
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
-                    healthScore += 20; // Health: Deployment
+                    healthScore += 20;
 
-                    // MODULE 06: LIBRARY RESOLVER ENGINE
                     update(listener, "[*] Generating Universal Library Aliases...");
                     generateLibraryAliases(libDir);
                     generateLibraryAliases(localLibDir);
-                    healthScore += 20; // Health: Libraries
+                    healthScore += 20;
 
-                    // MODULE 07: WRAPPER ENGINE
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
 
-                    executeGhostCleanup(payloadFile, filesDir);
+                    // [!] FIX: Deep Ghost Cleanup (Wipes Sandbox too)
+                    executeGhostCleanup(payloadFile, filesDir, extTmpDir);
                     
-                    // MODULE 08 & 09: VALIDATION & RUNTIME TEST ENGINE (Smoke Test)
                     dbManager.updatePackageState(pkgName, "VALIDATING");
                     update(listener, "[*] Running Runtime Validation & Smoke Test...");
                     boolean isRuntimeValid = runValidationMatrix(binDir, libDir, pkgName, listener);
 
-                    // MODULE 11 & 13: DATABASE & HEALTH ENGINE (READY DECISION)
                     if (isRuntimeValid) {
-                        healthScore += 40; // Health: Runtime & Smoke Test Passed (100% Total)
+                        healthScore += 40; 
                         dbManager.updatePackageState(pkgName, "READY");
                         dbManager.updateHealthScore(pkgName, healthScore, false);
                         update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: 100%].");
                     } else {
-                        // MODULE 10 Trigger: Package Marked REPAIRABLE
                         dbManager.updatePackageState(pkgName, "REPAIRABLE");
                         dbManager.updateHealthScore(pkgName, healthScore, true);
                         update(listener, "[-] Runtime Validation Failed. Module flagged as REPAIRABLE.");
@@ -163,9 +154,6 @@ public class HKPackageManager {
         }).start();
     }
 
-    // ============================================================================
-    // MODULE 06: LIBRARY RESOLVER ENGINE
-    // ============================================================================
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
         
@@ -190,9 +178,6 @@ public class HKPackageManager {
         }
     }
 
-    // ============================================================================
-    // MODULE 07: WRAPPER ENGINE
-    // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         File pyReal = new File(binDir, "python3.14");
         if (pyReal.exists() && pyReal.length() > 1024) {
@@ -247,9 +232,6 @@ public class HKPackageManager {
         }
     }
 
-    // ============================================================================
-    // MODULE 08 & 09: VALIDATION & RUNTIME TEST ENGINE
-    // ============================================================================
     private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
         boolean binaryExists = false;
         File targetExecutable = null;
@@ -261,7 +243,7 @@ public class HKPackageManager {
             binaryExists = true;
             targetExecutable = new File(binDir, pkgName);
         } else if (libDir.listFiles() != null && libDir.listFiles().length > 0) {
-            return true; // Library-only package, passes implicitly
+            return true;
         }
 
         if (!binaryExists || targetExecutable == null) {
@@ -326,9 +308,6 @@ public class HKPackageManager {
         }
     }
 
-    // ============================================================================
-    // CORE UTILITIES
-    // ============================================================================
     private static void ensureMatrixDirectories(File... dirs) {
         for (File dir : dirs) {
             if (!dir.exists()) dir.mkdirs();
@@ -396,23 +375,25 @@ public class HKPackageManager {
         }
     }
 
-    private static void executeAggressiveExtraction(File payloadFile, File filesDir) throws Exception {
-        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + filesDir.getAbsolutePath() + "' 2>/dev/null";
+    // [!] FIX: Target extraction dir updated to Sandbox
+    private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
+        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
     }
 
-    private static void executeSafeSweeperMatrix(File filesDir, File binDir, File libDir, File localLibDir, File shareDir) {
-        moveFilesWithJava(new File(filesDir, "lib"), libDir);
-        moveFilesWithJava(new File(filesDir, "usr/lib"), libDir);
-        moveFilesWithJava(new File(filesDir, "usr/local/lib"), localLibDir);
-        moveFilesWithJava(new File(filesDir, "bin"), binDir);
-        moveFilesWithJava(new File(filesDir, "sbin"), binDir);
-        moveFilesWithJava(new File(filesDir, "usr/sbin"), binDir);
-        moveFilesWithJava(new File(filesDir, "usr/bin"), binDir);
-        moveFilesWithJava(new File(filesDir, "usr/local/bin"), binDir);
+    // [!] FIX: Sweeper pulls from Sandbox and pushes to Root
+    private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
+        moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/local/lib"), localLibDir);
+        moveFilesWithJava(new File(extTmpDir, "bin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "sbin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/sbin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/bin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/local/bin"), binDir);
         
         if(!shareDir.exists()) shareDir.mkdirs();
-        moveFilesWithJava(new File(filesDir, "usr/share/terminfo"), new File(shareDir, "terminfo"));
+        moveFilesWithJava(new File(extTmpDir, "usr/share/terminfo"), new File(shareDir, "terminfo"));
     }
 
     private static void moveFilesWithJava(File sourceDir, File targetDir) {
@@ -446,9 +427,10 @@ public class HKPackageManager {
         } catch (Exception ignored) {}
     }
 
-    private static void executeGhostCleanup(File payloadFile, File filesDir) throws Exception {
+    private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
         if (payloadFile.exists()) payloadFile.delete();
-        String cleanupCmd = "rm -rf '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
+        // Wipe the sandbox completely
+        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "' '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
     }
 
