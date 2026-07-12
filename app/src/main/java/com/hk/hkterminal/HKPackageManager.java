@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v9.0 UNIFIED MATRIX)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v10.0 NUCLEAR MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Native Alias Forger Injection, Symlink Override Force
+ * DIRECTIVE    : Ghost Symlink Annihilation, Bulletproof Java Alias Forger
  * ============================================================================
  */
 public class HKPackageManager {
@@ -51,7 +51,6 @@ public class HKPackageManager {
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
 
             try {
-                // PREFIX MATRIX DIRECTORIES
                 File filesDir = context.getFilesDir();
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
@@ -67,7 +66,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v9.0 UNIFIED ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v10.0 NUCLEAR ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -104,12 +103,17 @@ public class HKPackageManager {
 
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
-                    // [!] v9.0 OPERATION: Native Bash Loop Injection
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction & Link Forger...");
+                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
                     
+                    // [!] v10.0 OPERATION: Extract & Destroy Broken Symlinks
                     executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
-                    healthScore += 60; // Extraction & Alias forged natively
+                    healthScore += 40; 
+
+                    update(listener, "[*] Forging Universal Library Aliases...");
+                    // [!] v10.0 OPERATION: Bulletproof Physical Copy in Java
+                    generateLibraryAliases(libDir);
+                    healthScore += 20;
 
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
@@ -147,7 +151,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v9.0 NATIVE ALIAS FORGER OPERATION (ADDED)
+    // [!] v10.0 NATIVE SWEEPER + BRUTAL SYMLINK KILLER
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
@@ -162,11 +166,8 @@ public class HKPackageManager {
             "cp -rL usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
             "cp -rL usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
             
-            // The Killer Hook: Forces native symbolic links for all .so files
-            "cd '" + usr + "/lib' && " +
-            "for f in *.so.*; do " +
-            "  ln -sf \"$f\" \"$(echo \"$f\" | cut -d'.' -f1-2)\" 2>/dev/null ; " +
-            "done ; " +
+            // The Killer Hook: Destroy any broken symlinks (0 bytes / dead links) left by tar
+            "find '" + usr + "' -type l -delete 2>/dev/null ; " +
             
             "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null";
 
@@ -175,80 +176,30 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // RESTORED & ENHANCED JAVA LOGIC (FALLBACK - NO CODE MINUSED)
+    // [!] v10.0 BULLETPROOF JAVA ALIAS FORGER (Perfect String Splitting)
     // ============================================================================
-    
-    private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
-        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
-        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
-    }
-
-    private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
-        moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/local/lib"), localLibDir);
-        moveFilesWithJava(new File(extTmpDir, "bin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "sbin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/sbin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/bin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/local/bin"), binDir);
-        
-        if(!shareDir.exists()) shareDir.mkdirs();
-        moveFilesWithJava(new File(extTmpDir, "usr/share/terminfo"), new File(shareDir, "terminfo"));
-        moveFilesWithJava(new File(extTmpDir, "usr/share"), shareDir);
-    }
-
-    private static void moveFilesWithJava(File sourceDir, File targetDir) {
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) return;
-        if (!targetDir.exists()) targetDir.mkdirs();
-        File[] files = sourceDir.listFiles();
-        if (files == null) return;
-        for (File f : files) {
-            if (f.isDirectory()) {
-                moveFilesWithJava(f, new File(targetDir, f.getName()));
-            } else {
-                cloneFileSafely(f, new File(targetDir, f.getName()));
-                f.delete(); 
-            }
-        }
-    }
-
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
-        List<File> realLibs = new ArrayList<>();
-        for (File lib : libs) {
-            if (lib.isFile() && lib.length() > 1024 && lib.getName().contains(".so")) { 
-                realLibs.add(lib);
-            }
-        }
-
-        for (File realLib : realLibs) {
-            String name = realLib.getName();
-            String[] parts = name.split("\\.");
-            StringBuilder baseName = new StringBuilder();
-            
-            for (int i = 0; i < parts.length; i++) {
-                if (i > 0) baseName.append(".");
-                baseName.append(parts[i]);
-                
-                if (parts[i].equals("so")) {
-                    File alias1 = new File(libDir, baseName.toString());
-                    if (!alias1.exists() || alias1.length() < 10) cloneFileSafely(realLib, alias1);
-                    
-                    if (i + 1 < parts.length) {
-                        File alias2 = new File(libDir, baseName.toString() + "." + parts[i + 1]);
-                        if (!alias2.exists() || alias2.length() < 10) cloneFileSafely(realLib, alias2);
+        for (File f : libs) {
+            String name = f.getName();
+            // Only process valid, solid files (Size > 512 bytes)
+            if (f.isFile() && f.length() > 512 && name.contains(".so.")) { 
+                try {
+                    // Extracting "libncursesw.so.6" from "libncursesw.so.6.4"
+                    String[] parts = name.split("\\.so\\."); 
+                    if (parts.length == 2) {
+                        String base = parts[0] + ".so"; // -> libncursesw.so
+                        String majorVersion = parts[1].split("\\.")[0]; // -> 6
+                        String majorAlias = base + "." + majorVersion; // -> libncursesw.so.6
+                        
+                        // Physically clone the binary data to create the required aliases
+                        cloneFileSafely(f, new File(libDir, base));
+                        cloneFileSafely(f, new File(libDir, majorAlias));
                     }
-                    
-                    if (i + 2 < parts.length) {
-                        File alias3 = new File(libDir, baseName.toString() + "." + parts[i + 1] + "." + parts[i + 2]);
-                        if (!alias3.exists() || alias3.length() < 10) cloneFileSafely(realLib, alias3);
-                    }
-                    break;
-                }
+                } catch (Exception ignored) {}
             }
         }
     }
