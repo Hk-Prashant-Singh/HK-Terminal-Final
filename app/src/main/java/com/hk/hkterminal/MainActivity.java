@@ -33,9 +33,9 @@ import java.util.*;
 
 /**
  * ============================================================================
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v4.0)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v5.2)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Intelligent Auto-Directive, Pipeline Interceptor, Mass Global Sync Engine
+ * DIRECTIVE    : UI Popup Blocker, Native Execution Patch, v5.1 Engine Sync
  * ============================================================================
  */
 public class MainActivity extends AppCompatActivity {
@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout upgradeAllPanel;
     private Button btnUpgradeAll;
     
-    // ALPHA STATE ENGINE
     private java.lang.Process shellProcess;
     private DataOutputStream shellInput;
     private boolean isCtrl = false;
@@ -57,13 +56,11 @@ public class MainActivity extends AppCompatActivity {
     public String lastSentCommand = null;
     private final Object streamLock = new Object();
     
-    // [!] v4.0 INTELLIGENCE MODULES
     private HKDatabaseManager dbManager;
     private static TerminalTabFragment packagesFragmentInstance;
 
     public interface Callback { void onOutput(String line); }
 
-    // [!] DYNAMIC TRUSTED CORE PATHS
     private String getBaseHomePath() { return getFilesDir().getAbsolutePath() + "/home"; }
     private String getUsrBinPath() { return getFilesDir().getAbsolutePath() + "/usr/bin"; }
     private String getUsrLibPath() { return getFilesDir().getAbsolutePath() + "/usr/lib"; }
@@ -75,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
         
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         
-        // Initialize Core Engines
         dbManager = new HKDatabaseManager(this);
         HKLogger.logEvent("SYSTEM_CORE", "BOOT_SEQUENCE", "MainActivity Initialized");
         
@@ -118,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
         setupSystemButtons();
         setupUpgradeAllLogic();
-        setupCopyFeature(); // [!] Added Alpha Copy Feature
+        setupCopyFeature(); 
         
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
@@ -128,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Booting HK-Operation Intelligence (v4.0)...\n");
+        appendMatrixText("[*] Booting HK-Operation Intelligence (v5.2)...\n");
         appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
         File binDir = new File(getUsrBinPath());
         File libDir = new File(getUsrLibPath());
@@ -138,7 +134,6 @@ public class MainActivity extends AppCompatActivity {
         
         appendMatrixText("[+] Arsenal Status: " + weaponCount + " Weapons, " + libCount + " Libs loaded.\n");
         
-        // [!] NEW v4.0 DB SCAN LOGIC
         try {
             SQLiteDatabase db = dbManager.getReadableDatabase();
             Cursor c = db.rawQuery("SELECT COUNT(*) FROM Health WHERE is_corrupted = 1", null);
@@ -156,17 +151,15 @@ public class MainActivity extends AppCompatActivity {
         if (outputView != null) outputView.append(currentPrompt);
     }
 
-    // [!] NEW COPY FEATURE ADDED (FIXED AMBIGUOUS REFERENCE)
     private void setupCopyFeature() {
         if (outputView != null) {
             outputView.setOnLongClickListener(v -> {
-                // EXPLICITLY using android.content.ClipboardManager to avoid compiler clash
                 android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("HK_Terminal_Logs", outputView.getText().toString());
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(this, "[+] Alpha Logs Copied to Clipboard", Toast.LENGTH_SHORT).show();
                 HKLogger.logEvent("UI_LAYER", "LOGS_COPIED", "Terminal matrix data extracted.");
-                return true;
+                return true; 
             });
         }
     }
@@ -175,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             String[] env = {
                 "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
-                "LD_LIBRARY_PATH=" + getUsrLibPath(), 
+                "LD_LIBRARY_PATH=/system/lib64:/system/lib", 
                 "TERM=xterm-256color", 
                 "HOME=" + getBaseHomePath(),
                 "PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr",
@@ -280,7 +273,10 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 outputView.append(ssb);
-                outputView.setSelection(outputView.getText().length()); 
+                // [!] FIX: Prevent annoying cursor jumping during append which causes copy-paste popup
+                if (outputView.getSelectionStart() == outputView.getSelectionEnd()) {
+                    outputView.setSelection(outputView.getText().length());
+                }
                 scrollToBottom();
             });
         }
@@ -550,7 +546,6 @@ public class MainActivity extends AppCompatActivity {
 
         String trimmedCmd = command.trim();
 
-        // [!] THE v4.0 DISPATCHER INTERCEPTOR (INTELLIGENCE LAYER)
         if (trimmedCmd.startsWith("hk ") || trimmedCmd.equals("hk-C")) {
             appendMatrixText("[*] Intercepted by HK-Dispatcher (v4.0)...\n");
             HKDispatcher.dispatch(trimmedCmd);
@@ -562,30 +557,25 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // [!] THE PIP SYSTEM INTERCEPTOR
         if (trimmedCmd.startsWith("pip ")) {
             appendMatrixText("[*] HK-Interceptor: Rerouting PIP via Native Python Matrix...\n");
             trimmedCmd = "python3 -m " + trimmedCmd;
         }
 
-        // [!] IFCONFIG TO IP ADDR AUTO-ALIAS INTERCEPTOR
         if (trimmedCmd.equals("ifconfig")) {
             appendMatrixText("[*] HK-Interceptor: Rerouting network interface command...\n");
             trimmedCmd = "ip addr";
         }
 
-        // [!] THE INTELLIGENT DIRECTIVE DETECTIVE ENGINE
         String[] parts = trimmedCmd.split(" ");
         String baseCmd = parts[0];
         
-        // [!] ADDED: Native Shell Commands Whitelist (Bypasses the weapon check)
         List<String> nativeCmds = Arrays.asList(
             "clear", "su", "cd", "ls", "ll", "ip", "export", "chmod", "cat", 
             "echo", "sh", "bash", "cp", "mv", "rm", "mkdir", "pwd", "grep", "env"
         );
 
         if (!trimmedCmd.startsWith("hk ") && !trimmedCmd.startsWith("pip ") && !nativeCmds.contains(baseCmd)) {
-            
             File weapon = new File(getUsrBinPath(), baseCmd);
             if (!weapon.exists()) {
                 appendMatrixText("[!] Directive: Weapon '" + baseCmd + "' not found in active repository.\n");
@@ -675,7 +665,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // [!] EXTENDED SHIELD LOGIC FOR BINARY LINKING
         File targetBin = new File(getUsrBinPath(), baseCmd);
         if (targetBin.exists()) {
             targetBin.setExecutable(true, true); 
@@ -738,7 +727,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // STANDARD SHELL EXECUTION BINDING
         if (shellInput != null) { 
             try {
                 shellInput.writeBytes(trimmedCmd + "\n");
@@ -791,7 +779,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    // [!] INTERACTIVE INPUT MATRIX ENGINE
     public static class CustomEditText extends androidx.appcompat.widget.AppCompatEditText {
         private ScaleGestureDetector scaleDetector;
         private float currentTextSize = 14f;
@@ -911,7 +898,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // [!] TABS AND VISUAL FACTORY (UPGRADED WITH DB SYNC)
     public static class TerminalTabFragment extends Fragment {
         int type;
         private LinearLayout rootLayoutRef;
@@ -948,7 +934,15 @@ public class MainActivity extends AppCompatActivity {
             outputView.setPadding(10, 10, 10, 10);
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
-            outputView.setTextIsSelectable(true); 
+            // [!] FIX: Removed setTextIsSelectable(true) to avoid native UI clashes during append.
+            
+            // [!] FIX: Blocking OS Action Menu popup automatically during rapid matrix outputs
+            outputView.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+                @Override public boolean onCreateActionMode(ActionMode mode, Menu menu) { return false; }
+                @Override public boolean onPrepareActionMode(ActionMode mode, Menu menu) { return false; }
+                @Override public boolean onActionItemClicked(ActionMode mode, MenuItem item) { return false; }
+                @Override public void onDestroyActionMode(ActionMode mode) {}
+            });
 
             outputView.setOnEditorActionListener((v, actionId, event) -> {
                 boolean isEnter = (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
@@ -966,8 +960,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setOnTouchListener((v, e) -> {
                 if (e.getAction() == MotionEvent.ACTION_UP) {
                     v.requestFocus();
-                    MainActivity mainActivity = (MainActivity) getActivity();
-                    if (mainActivity != null) mainActivity.forceKeyboard(v);
                 }
                 return false; 
             });
@@ -983,7 +975,7 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARSENAL (v4.0 MATRIX)");
+            title.setText(">> HK WEAPON ARSENAL (v5.2 MATRIX)");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
@@ -993,7 +985,6 @@ public class MainActivity extends AppCompatActivity {
             MainActivity main = (MainActivity) getActivity();
             if (main == null) return;
             
-            // [!] Connect to DB to fetch package status
             HKDatabaseManager localDbManager = new HKDatabaseManager(context);
             SQLiteDatabase db = null;
             try { db = localDbManager.getReadableDatabase(); } catch(Exception ignored){}
@@ -1010,7 +1001,6 @@ public class MainActivity extends AppCompatActivity {
                         String statusStr = "UNKNOWN";
                         String colorCode = "#FFFFFF";
 
-                        // [!] Query DB for Status
                         if (db != null) {
                             try {
                                 Cursor c = db.rawQuery("SELECT status FROM Packages WHERE package_name=?", new String[]{pkgNameStr});
@@ -1047,7 +1037,7 @@ public class MainActivity extends AppCompatActivity {
                         
                         delBtn.setOnClickListener(v -> {
                             if (file.delete()) {
-                                localDbManager.updatePackageState(pkgNameStr, "DELETED"); // [!] Sync with DB
+                                localDbManager.updatePackageState(pkgNameStr, "DELETED"); 
                                 Toast.makeText(context, "[+] Target Wiped: " + file.getName(), Toast.LENGTH_SHORT).show();
                                 renderPackagesMatrix(rootLayout, context);
                             } else Toast.makeText(context, "[-] Matrix Deletion Blocked", Toast.LENGTH_SHORT).show();
