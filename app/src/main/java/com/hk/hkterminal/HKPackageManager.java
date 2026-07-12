@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v6.0 NATIVE)
- * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Pure Native OS Symlink Preservation, Added Validation Filters
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v6.1 NATIVE)
+ * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * DIRECTIVE    : Symlink Dereferencing (-rL), Dynamic Loader, Path Merger Fix
  * ============================================================================
  */
 public class HKPackageManager {
@@ -67,7 +67,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v6.0 NATIVE ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v6.1 NATIVE ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -102,12 +102,13 @@ public class HKPackageManager {
                     }
                     healthScore += 20;
 
-                    // Auto-Respawn Sandbox to prevent Silent Extraction Failure
+                    // Auto-Respawn Sandbox
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
-                    // [!] v6.0 FIX: PURE NATIVE BASH SCRIPT OVERRIDE (Preserves all Symlinks)
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
                     update(listener, "[*] Initiating OS-Level Native Shell Deployment...");
+                    
+                    // [!] v6.1 FIX: DEREFERENCE SYMLINKS & EXACT PATH MERGER
                     executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
                     healthScore += 40;
 
@@ -118,7 +119,6 @@ public class HKPackageManager {
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
 
-                    // Cleanup empties Sandbox safely without deleting directory wrapper
                     executeGhostCleanup(payloadFile, filesDir, extTmpDir);
                     
                     dbManager.updatePackageState(pkgName, "VALIDATING");
@@ -126,7 +126,7 @@ public class HKPackageManager {
                     boolean isRuntimeValid = runValidationMatrix(binDir, libDir, pkgName, listener);
 
                     if (isRuntimeValid) {
-                        healthScore += 20; // Reaches 100%
+                        healthScore += 20; 
                         dbManager.updatePackageState(pkgName, "READY");
                         dbManager.updateHealthScore(pkgName, healthScore, false);
                         update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: 100%].");
@@ -152,17 +152,23 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] ADDED v6.0: NATIVE OS-LEVEL SWEEPER (THE MASTER FIX FOR SYMLINKS)
+    // [!] v6.1: NATIVE OS-LEVEL SWEEPER (SOLID FILES & PATH MERGER)
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
-        // Direct bash script to handle the extraction and movement purely at the OS level.
-        // 'cp -a' perfectly copies symlinks without converting them to dead ghost files.
+        String usr = usrDir.getAbsolutePath();
+        // 'cp -rL' forces Symlinks to be copied as SOLID Physical Files. Path merger prevents nesting.
         String script = 
             "cd '" + extTmpDir.getAbsolutePath() + "' && " +
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null && " +
-            "cp -a * '" + usrDir.getAbsolutePath() + "/' 2>/dev/null && " +
-            "chmod -R 777 '" + usrDir.getAbsolutePath() + "/bin' 2>/dev/null && " +
-            "chmod -R 777 '" + usrDir.getAbsolutePath() + "/lib' 2>/dev/null";
+            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+            "[ -d lib ] && cp -rL lib/. '" + usr + "/lib/' 2>/dev/null ; " +
+            "[ -d usr/lib ] && cp -rL usr/lib/. '" + usr + "/lib/' 2>/dev/null ; " +
+            "[ -d bin ] && cp -rL bin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/bin ] && cp -rL usr/bin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d sbin ] && cp -rL sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/sbin ] && cp -rL usr/sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/share ] && cp -rL usr/share/. '" + usr + "/share/' 2>/dev/null ; " +
+            "chmod -R 777 '" + usr + "/bin' 2>/dev/null ; " +
+            "chmod -R 777 '" + usr + "/lib' 2>/dev/null";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
         process.waitFor();
@@ -192,7 +198,23 @@ public class HKPackageManager {
         }
     }
 
+    // ============================================================================
+    // [!] v6.1: DYNAMIC LOADER INJECTION (ARCH INDEPENDENT)
+    // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
+        
+        // Find Dynamic Musl Loader
+        String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
+        File[] libs = libDir.listFiles();
+        if (libs != null) {
+            for (File f : libs) {
+                if (f.getName().startsWith("libc.musl-") || f.getName().startsWith("ld-musl-")) {
+                    muslLoaderPath = f.getAbsolutePath();
+                    break;
+                }
+            }
+        }
+
         File pyReal = new File(binDir, "python3.14");
         if (pyReal.exists() && pyReal.length() > 1024) {
             cloneFileSafely(pyReal, new File(binDir, "python.elf"));
@@ -233,7 +255,7 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            fw.write("exec '" + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
+                            fw.write("exec '" + muslLoaderPath + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
                             binReal.setExecutable(true, true);
@@ -246,7 +268,6 @@ public class HKPackageManager {
         }
     }
 
-    // [!] FIX: Strict Validation Engine & Expanded Whitelist.
     private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
         boolean binaryExists = false;
         File targetExecutable = null;
@@ -260,7 +281,6 @@ public class HKPackageManager {
         }
 
         if (!binaryExists || targetExecutable == null) {
-            // [!] ADDED: Expanded Whitelist for Native Support Libraries (prevents False-Failures)
             if (pkgName.contains("lib") || pkgName.contains("musl") || pkgName.contains("terminfo") || 
                 pkgName.contains("ca-certificates") || pkgName.contains("tzdata") || pkgName.contains("ncurses") || 
                 pkgName.contains("sqlite") || pkgName.contains("zlib") || pkgName.contains("openssl") || pkgName.contains("bzip")) {
@@ -394,49 +414,11 @@ public class HKPackageManager {
         }
     }
 
-    // ============================================================================
-    // PRESERVED FALLBACK METHODS (NO CODE DELETED)
-    // ============================================================================
-    private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
-        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
-        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
-    }
-
-    private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
-        moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/local/lib"), localLibDir);
-        moveFilesWithJava(new File(extTmpDir, "bin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "sbin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/sbin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/bin"), binDir);
-        moveFilesWithJava(new File(extTmpDir, "usr/local/bin"), binDir);
-        
-        if(!shareDir.exists()) shareDir.mkdirs();
-        moveFilesWithJava(new File(extTmpDir, "usr/share/terminfo"), new File(shareDir, "terminfo"));
-    }
-
-    private static void moveFilesWithJava(File sourceDir, File targetDir) {
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) return;
-        if (!targetDir.exists()) targetDir.mkdirs();
-        File[] files = sourceDir.listFiles();
-        if (files == null) return;
-        for (File f : files) {
-            if (f.isDirectory()) {
-                moveFilesWithJava(f, new File(targetDir, f.getName()));
-            } else {
-                cloneFileSafely(f, new File(targetDir, f.getName()));
-                f.delete(); 
-            }
-        }
-    }
-
-    // [!] FIX: Resolves Alpine Symlinks into REAL physical binaries when fallback is used
+    // Fallback for Library Alias Gen
     private static void cloneFileSafely(File source, File dest) {
         try {
-            // Get the actual file behind the symlink
             File realSource = source.getCanonicalFile();
-            if (!realSource.exists()) return; // Skip if it's a dead ghost link
+            if (!realSource.exists()) return; 
 
             if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
             if (dest.exists()) dest.delete(); 
@@ -456,7 +438,7 @@ public class HKPackageManager {
 
     private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
         if (payloadFile.exists()) payloadFile.delete();
-        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
+        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
     }
 
