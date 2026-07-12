@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v6.1 NATIVE)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v6.2 NATIVE)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Symlink Dereferencing (-rL), Dynamic Loader, Path Merger Fix
+ * DIRECTIVE    : Ghost Symlink Annihilation, Force-Deletion Matrix
  * ============================================================================
  */
 public class HKPackageManager {
@@ -67,7 +67,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v6.1 NATIVE ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v6.2 NATIVE ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -102,13 +102,12 @@ public class HKPackageManager {
                     }
                     healthScore += 20;
 
-                    // Auto-Respawn Sandbox
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
                     update(listener, "[*] Initiating OS-Level Native Shell Deployment...");
                     
-                    // [!] v6.1 FIX: DEREFERENCE SYMLINKS & EXACT PATH MERGER
+                    // [!] v6.2 FIX: Bulletproof Native Extraction
                     executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
                     healthScore += 40;
 
@@ -152,21 +151,20 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v6.1: NATIVE OS-LEVEL SWEEPER (SOLID FILES & PATH MERGER)
+    // [!] v6.2: NATIVE SWEEPER (Reverted to 'cp -a' to prevent aborts on broken links)
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
-        // 'cp -rL' forces Symlinks to be copied as SOLID Physical Files. Path merger prevents nesting.
         String script = 
             "cd '" + extTmpDir.getAbsolutePath() + "' && " +
             "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
-            "[ -d lib ] && cp -rL lib/. '" + usr + "/lib/' 2>/dev/null ; " +
-            "[ -d usr/lib ] && cp -rL usr/lib/. '" + usr + "/lib/' 2>/dev/null ; " +
-            "[ -d bin ] && cp -rL bin/. '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/bin ] && cp -rL usr/bin/. '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d sbin ] && cp -rL sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/sbin ] && cp -rL usr/sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/share ] && cp -rL usr/share/. '" + usr + "/share/' 2>/dev/null ; " +
+            "[ -d lib ] && cp -a lib/. '" + usr + "/lib/' 2>/dev/null ; " +
+            "[ -d usr/lib ] && cp -a usr/lib/. '" + usr + "/lib/' 2>/dev/null ; " +
+            "[ -d bin ] && cp -a bin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/bin ] && cp -a usr/bin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d sbin ] && cp -a sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/sbin ] && cp -a usr/sbin/. '" + usr + "/bin/' 2>/dev/null ; " +
+            "[ -d usr/share ] && cp -a usr/share/. '" + usr + "/share/' 2>/dev/null ; " +
             "chmod -R 777 '" + usr + "/bin' 2>/dev/null ; " +
             "chmod -R 777 '" + usr + "/lib' 2>/dev/null";
 
@@ -182,6 +180,7 @@ public class HKPackageManager {
         
         for (File lib : libs) {
             String name = lib.getName();
+            // Real library physical files will pass this size check, symlinks are ignored
             if (name.contains(".so.") && lib.length() > 512) { 
                 try {
                     int soIndex = name.indexOf(".so");
@@ -199,11 +198,35 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v6.1: DYNAMIC LOADER INJECTION (ARCH INDEPENDENT)
+    // [!] v6.2: THE GHOST KILLER (Blind Delete prevents False-Existence Check)
     // ============================================================================
+    private static void cloneFileSafely(File source, File dest) {
+        try {
+            File realSource = source.getCanonicalFile();
+            if (!realSource.exists() || realSource.isDirectory()) return; 
+
+            // Only skip if a perfectly matching REAL file is already there
+            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
+            
+            // [!] CRITICAL FIX: Force delete without checking .exists()
+            // This brutally murders absolute broken symlinks that report FALSE for exists()
+            dest.delete(); 
+            
+            InputStream in = new FileInputStream(realSource); 
+            OutputStream out = new FileOutputStream(dest);
+            byte[] buf = new byte[16384];
+            int len;
+            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+            
+            in.close(); out.close();
+            
+            dest.setExecutable(true, false); 
+            dest.setReadable(true, false);
+        } catch (Exception ignored) {}
+    }
+
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
-        
-        // Find Dynamic Musl Loader
+        // Find Dynamic Musl Loader robustly
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
         File[] libs = libDir.listFiles();
         if (libs != null) {
@@ -412,28 +435,6 @@ public class HKPackageManager {
             if (payloadFile.exists()) payloadFile.delete();
             return false;
         }
-    }
-
-    // Fallback for Library Alias Gen
-    private static void cloneFileSafely(File source, File dest) {
-        try {
-            File realSource = source.getCanonicalFile();
-            if (!realSource.exists()) return; 
-
-            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
-            if (dest.exists()) dest.delete(); 
-            
-            InputStream in = new FileInputStream(realSource); 
-            OutputStream out = new FileOutputStream(dest);
-            byte[] buf = new byte[16384];
-            int len;
-            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-            
-            in.close(); out.close();
-            
-            dest.setExecutable(true, false); 
-            dest.setReadable(true, false);
-        } catch (Exception ignored) {}
     }
 
     private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
