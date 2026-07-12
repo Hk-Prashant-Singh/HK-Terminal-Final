@@ -33,9 +33,9 @@ import java.util.*;
 
 /**
  * ============================================================================
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v5.2)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v6.0)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : UI Popup Blocker, Native Execution Patch, v5.1 Engine Sync
+ * DIRECTIVE    : UI Popup Blocker, Native Execution Patch, Alpha Pipeline Sync
  * ============================================================================
  */
 public class MainActivity extends AppCompatActivity {
@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Booting HK-Operation Intelligence (v5.2)...\n");
+        appendMatrixText("[*] Booting HK-Operation Intelligence (v6.0 NATIVE)...\n");
         appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
         File binDir = new File(getUsrBinPath());
         File libDir = new File(getUsrLibPath());
@@ -166,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initStatefulShell() {
         try {
+            // [!] FIX: Global LD_LIBRARY_PATH reset to Native Android.
             String[] env = {
                 "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
                 "LD_LIBRARY_PATH=/system/lib64:/system/lib", 
@@ -547,7 +548,7 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk ") || trimmedCmd.equals("hk-C")) {
-            appendMatrixText("[*] Intercepted by HK-Dispatcher (v4.0)...\n");
+            appendMatrixText("[*] Intercepted by HK-Dispatcher (v6.0)...\n");
             HKDispatcher.dispatch(trimmedCmd);
             
             if (trimmedCmd.equals("hk-C") || trimmedCmd.equals("hk repair --all")) {
@@ -934,7 +935,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setPadding(10, 10, 10, 10);
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
-            // [!] FIX: Removed setTextIsSelectable(true) to avoid native UI clashes during append.
             
             // [!] FIX: Blocking OS Action Menu popup automatically during rapid matrix outputs
             outputView.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
@@ -975,7 +975,7 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARSENAL (v5.2 MATRIX)");
+            title.setText(">> HK WEAPON ARSENAL (v6.0 MATRIX)");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
@@ -1007,7 +1007,7 @@ public class MainActivity extends AppCompatActivity {
                                 if (c.moveToFirst()) {
                                     statusStr = c.getString(0);
                                     if (statusStr.equals("READY")) colorCode = "#00FF41";
-                                    else if (statusStr.equals("FAILED") || statusStr.equals("WARNING")) colorCode = "#FF003C";
+                                    else if (statusStr.equals("FAILED") || statusStr.equals("WARNING") || statusStr.equals("REPAIRABLE")) colorCode = "#FF003C";
                                 }
                                 c.close();
                             } catch (Exception ignored) {}
