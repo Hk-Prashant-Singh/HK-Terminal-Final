@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v5.1)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v5.3)
  * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Sandbox Extraction, Anti-Self-Destruct Matrix, 14-Module Strict Flow
+ * DIRECTIVE    : Auto-Respawn Sandbox, Strict Validation Matrix
  * ============================================================================
  */
 public class HKPackageManager {
@@ -62,12 +62,12 @@ public class HKPackageManager {
                 File usrSbinDir = new File(usrDir, "sbin");
                 File shareDir = new File(usrDir, "share");
                 File tmpDir = new File(filesDir, "tmp");
-                File extTmpDir = new File(filesDir, "ext_tmp"); // [!] NEW: SANDBOX TEMP DIR
+                File extTmpDir = new File(filesDir, "ext_tmp");
                 
-                ensureMatrixDirectories(binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
+                ensureMatrixDirectories(binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v5.1 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v5.3 NEURAL ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -102,13 +102,14 @@ public class HKPackageManager {
                     }
                     healthScore += 20;
 
+                    // [!] FIX: Auto-Respawn Sandbox to prevent Silent Extraction Failure
+                    if (!extTmpDir.exists()) extTmpDir.mkdirs();
+
                     dbManager.updatePackageState(pkgName, "EXTRACTING");
                     update(listener, "[+] Payload Secured. Initiating Sandbox Extraction...");
-                    // [!] FIX: Extracting into ext_tmp Sandbox instead of Root
                     executeAggressiveExtraction(payloadFile, extTmpDir);
 
                     dbManager.updatePackageState(pkgName, "DEPLOYING");
-                    // [!] FIX: Sweeper now scans ext_tmp and moves files safely to Root Arsenal
                     executeSafeSweeperMatrix(extTmpDir, binDir, libDir, localLibDir, shareDir);
                     Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 '" + usrDir.getAbsolutePath() + "' 2>/dev/null"}).waitFor();
                     healthScore += 20;
@@ -121,7 +122,7 @@ public class HKPackageManager {
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
 
-                    // [!] FIX: Deep Ghost Cleanup (Wipes Sandbox too)
+                    // [!] FIX: Cleanup empties Sandbox safely without deleting directory wrapper
                     executeGhostCleanup(payloadFile, filesDir, extTmpDir);
                     
                     dbManager.updatePackageState(pkgName, "VALIDATING");
@@ -232,6 +233,7 @@ public class HKPackageManager {
         }
     }
 
+    // [!] FIX: Strict Validation Engine.
     private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
         boolean binaryExists = false;
         File targetExecutable = null;
@@ -242,12 +244,14 @@ public class HKPackageManager {
         } else if (new File(binDir, pkgName + ".elf").exists()) {
             binaryExists = true;
             targetExecutable = new File(binDir, pkgName);
-        } else if (libDir.listFiles() != null && libDir.listFiles().length > 0) {
-            return true;
         }
 
         if (!binaryExists || targetExecutable == null) {
-            update(listener, "[-] Validation: Binary wrapper not found.");
+            // Check if it is a pure library package.
+            if (pkgName.contains("lib") || pkgName.contains("musl") || pkgName.contains("terminfo") || pkgName.contains("ca-certificates") || pkgName.contains("tzdata")) {
+                return true; 
+            }
+            update(listener, "[-] Validation: Binary wrapper not found for weapon.");
             return false;
         }
 
@@ -375,13 +379,11 @@ public class HKPackageManager {
         }
     }
 
-    // [!] FIX: Target extraction dir updated to Sandbox
     private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
         String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
     }
 
-    // [!] FIX: Sweeper pulls from Sandbox and pushes to Root
     private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
         moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
         moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
@@ -429,8 +431,8 @@ public class HKPackageManager {
 
     private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
         if (payloadFile.exists()) payloadFile.delete();
-        // Wipe the sandbox completely
-        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "' '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
+        // [!] FIX: Empties the sandbox completely without deleting the wrapper folder
+        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* '" + filesDir.getAbsolutePath() + "/control.tar.'* '" + filesDir.getAbsolutePath() + "/data.tar.'* '" + filesDir.getAbsolutePath() + "/debian-binary' '" + filesDir.getAbsolutePath() + "/*.json' '" + filesDir.getAbsolutePath() + "/payload' '" + filesDir.getAbsolutePath() + "/.PKGINFO' '" + filesDir.getAbsolutePath() + "/.SIGN.'* 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
     }
 
