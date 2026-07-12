@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v10.0 NUCLEAR MATRIX)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v11.0 OMEGA MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Ghost Symlink Annihilation, Bulletproof Java Alias Forger
+ * DIRECTIVE    : Ghost Move & Nuke, Progressive Forger, Musl --library-path
  * ============================================================================
  */
 public class HKPackageManager {
@@ -49,6 +49,7 @@ public class HKPackageManager {
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
+            String currentTraceStep = "INITIALIZATION";
 
             try {
                 File filesDir = context.getFilesDir();
@@ -66,7 +67,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v10.0 NUCLEAR ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v11.0 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -87,7 +88,7 @@ public class HKPackageManager {
 
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
-                        update(listener, "[-] AI-FATAL: Weapon '" + pkgName + "' unidentifiable.");
+                        triggerErrorPopup(listener, "SPIDER_MODULE", "Failed to locate '" + pkgName + "'.");
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue; 
                     }
@@ -96,6 +97,7 @@ public class HKPackageManager {
                     File payloadFile = new File(cacheDir, pkgName + ".apk");
                     boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
                     if (!downloadSuccess) {
+                        triggerErrorPopup(listener, "DOWNLOAD_TUNNEL", "Network collapsed or payload corrupted.");
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue;
                     }
@@ -106,14 +108,24 @@ public class HKPackageManager {
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
                     update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
                     
-                    // [!] v10.0 OPERATION: Extract & Destroy Broken Symlinks
-                    executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
-                    healthScore += 40; 
+                    try {
+                        // [!] v11.0: Safe 'cp -a' extraction
+                        executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
+                        healthScore += 40; 
+                    } catch (Exception e) {
+                        triggerErrorPopup(listener, "NATIVE_EXTRACTION", "Extraction crash -> " + e.getMessage());
+                        dbManager.updatePackageState(pkgName, "FAILED");
+                        continue;
+                    }
 
                     update(listener, "[*] Forging Universal Library Aliases...");
-                    // [!] v10.0 OPERATION: Bulletproof Physical Copy in Java
-                    generateLibraryAliases(libDir);
-                    healthScore += 20;
+                    try {
+                        // [!] v11.0: Progressive Solid File Forger
+                        generateLibraryAliases(libDir);
+                        healthScore += 20;
+                    } catch (Exception e) {
+                        triggerErrorPopup(listener, "ALIAS_FORGER", "Symlink clone failed -> " + e.getMessage());
+                    }
 
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
@@ -132,7 +144,6 @@ public class HKPackageManager {
                     } else {
                         dbManager.updatePackageState(pkgName, "REPAIRABLE");
                         dbManager.updateHealthScore(pkgName, healthScore, true);
-                        update(listener, "[-] Runtime Validation Failed. Module flagged as REPAIRABLE.");
                     }
                 }
                 
@@ -143,32 +154,41 @@ public class HKPackageManager {
                 update(listener, " -> Execute: '" + targetPkgName + "'");
 
             } catch (Exception e) {
-                update(listener, "[-] AI System Error: " + e.getMessage());
+                triggerErrorPopup(listener, "GLOBAL_SYSTEM", e.getMessage());
+                update(listener, "[-] AI System Error: Engine Halted.");
             } finally {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
     }
 
+    public static void triggerErrorPopup(InstallListener listener, String step, String exactCause) {
+        update(listener, "\n[-] ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄");
+        update(listener, "[-] 🚨 SYSTEM TRACE : CRITICAL FAILURE 🚨");
+        update(listener, "[-] 📍 FAILED AT STEP : " + step);
+        update(listener, "[-] 🔍 EXACT CAUSE    : " + exactCause);
+        update(listener, "[-] ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
+    }
+
     // ============================================================================
-    // [!] v10.0 NATIVE SWEEPER + BRUTAL SYMLINK KILLER
+    // [!] v11.0 OMEGA SWEEPER: Ghost Move & Nuke (No Crashes)
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
         String script = 
             "cd '" + extTmpDir.getAbsolutePath() + "' && " +
             "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
-            "cp -rL lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "cp -rL usr/lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "cp -rL bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rL usr/bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rL sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rL usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rL usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
+            // cp -a prevents aborts on broken absolute symlinks!
+            "cp -a lib/* '" + usr + "/lib/' 2>/dev/null ; " +
+            "cp -a usr/lib/* '" + usr + "/lib/' 2>/dev/null ; " +
+            "cp -a bin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -a usr/bin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -a sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -a usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -a usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
             
-            // The Killer Hook: Destroy any broken symlinks (0 bytes / dead links) left by tar
+            // Nuke all broken/ghost symlinks safely
             "find '" + usr + "' -type l -delete 2>/dev/null ; " +
-            
             "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
@@ -176,30 +196,34 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v10.0 BULLETPROOF JAVA ALIAS FORGER (Perfect String Splitting)
+    // [!] v11.0 OMEGA JAVA FORGER: Progressive Split Engine
     // ============================================================================
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
+        List<File> realLibs = new ArrayList<>();
         for (File f : libs) {
-            String name = f.getName();
-            // Only process valid, solid files (Size > 512 bytes)
-            if (f.isFile() && f.length() > 512 && name.contains(".so.")) { 
-                try {
-                    // Extracting "libncursesw.so.6" from "libncursesw.so.6.4"
-                    String[] parts = name.split("\\.so\\."); 
-                    if (parts.length == 2) {
-                        String base = parts[0] + ".so"; // -> libncursesw.so
-                        String majorVersion = parts[1].split("\\.")[0]; // -> 6
-                        String majorAlias = base + "." + majorVersion; // -> libncursesw.so.6
-                        
-                        // Physically clone the binary data to create the required aliases
-                        cloneFileSafely(f, new File(libDir, base));
-                        cloneFileSafely(f, new File(libDir, majorAlias));
-                    }
-                } catch (Exception ignored) {}
+            // Real physical files only
+            if (f.isFile() && f.length() > 512 && f.getName().contains(".so")) { 
+                realLibs.add(f);
+            }
+        }
+
+        for (File real : realLibs) {
+            String name = real.getName();
+            String[] parts = name.split("\\.");
+            String alias = "";
+            
+            // Progressive Alias Forger: generates libncursesw.so, then .so.6, then .so.6.4
+            for (String part : parts) {
+                if (alias.isEmpty()) alias = part;
+                else alias += "." + part;
+                
+                if (alias.contains(".so")) {
+                    cloneFileSafely(real, new File(libDir, alias));
+                }
             }
         }
     }
@@ -230,6 +254,9 @@ public class HKPackageManager {
         } catch (Exception ignored) {}
     }
 
+    // ============================================================================
+    // [!] v11.0 OMEGA WRAPPER: Musl Library-Path Override
+    // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
         File[] libs = libDir.listFiles();
@@ -282,7 +309,8 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            fw.write("exec '" + muslLoaderPath + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
+                            // [!] THE KILLER COMMAND: Musl gets explicit instructions to ONLY use our forged path
+                            fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + ":/system/lib64:/system/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
                             binReal.setExecutable(true, true);
@@ -313,12 +341,12 @@ public class HKPackageManager {
                 pkgName.contains("sqlite") || pkgName.contains("zlib") || pkgName.contains("openssl") || pkgName.contains("bzip")) {
                 return true; 
             }
-            update(listener, "[-] Validation: Binary wrapper not found for weapon.");
+            triggerErrorPopup(listener, "VALIDATION_BINARY_CHECK", "Binary wrapper not found.");
             return false;
         }
 
         if (!targetExecutable.canExecute()) {
-            update(listener, "[-] Validation: Execution permission denied.");
+            triggerErrorPopup(listener, "VALIDATION_PERMISSION", "Execution permission denied.");
             return false;
         }
 
@@ -344,7 +372,7 @@ public class HKPackageManager {
 
             if (!finished) {
                 process.destroy();
-                update(listener, "[-] Smoke Test: Process Timed Out (Hanged).");
+                triggerErrorPopup(listener, "SMOKE_TEST_HANG", "Process Timed Out. Deep OS block detected.");
                 return false;
             }
 
@@ -358,18 +386,18 @@ public class HKPackageManager {
 
             String errStr = errorOutput.toString().toLowerCase();
             if (errStr.contains("not found") || errStr.contains("error loading shared library") || errStr.contains("symbol not found")) {
-                update(listener, "[-] Smoke Test: Library linkage failure detected -> " + errStr.trim());
+                triggerErrorPopup(listener, "SMOKE_TEST_LINKAGE", errStr.trim());
                 return false;
             }
 
             if (exitCode == 127) { 
-                update(listener, "[-] Smoke Test: Fatal Shell Error (127).");
+                triggerErrorPopup(listener, "SMOKE_TEST_EXECUTION", "Fatal Shell Error (127).");
                 return false;
             }
 
             return true;
         } catch (Exception e) {
-            update(listener, "[-] Smoke Test: Execution exception -> " + e.getMessage());
+            triggerErrorPopup(listener, "SMOKE_TEST_EXCEPTION", e.getMessage());
             return false;
         }
     }
