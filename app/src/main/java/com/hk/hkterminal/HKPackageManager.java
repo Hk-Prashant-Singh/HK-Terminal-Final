@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v7.0 ULTIMATE)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v8.0 PURE JAVA MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Native Alias Forger, Pure Bash Symlink Override, Zero-Java Link Fix
+ * DIRECTIVE    : Restored Java Core, Added Os.chmod, Master Java Alias Forger
  * ============================================================================
  */
 public class HKPackageManager {
@@ -51,6 +51,7 @@ public class HKPackageManager {
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
 
             try {
+                // PREFIX MATRIX DIRECTORIES
                 File filesDir = context.getFilesDir();
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
@@ -66,7 +67,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v7.0 ULTIMATE ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v8.0 PURE JAVA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -104,11 +105,20 @@ public class HKPackageManager {
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[*] Initiating OS-Level Native Shell Deployment...");
+                    update(listener, "[+] Payload Secured. Initiating Aggressive Sandbox Extraction...");
                     
-                    // [!] v7.0 FIX: Extracts payload, copies solid files, and natively creates missing aliases!
-                    executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
-                    healthScore += 60; // Merged alias generation health score
+                    // RESTORED: Heavy Java extraction logic!
+                    executeAggressiveExtraction(payloadFile, extTmpDir);
+                    healthScore += 20;
+
+                    update(listener, "[*] Executing Safe Java Sweeper Matrix...");
+                    executeSafeSweeperMatrix(extTmpDir, binDir, libDir, localLibDir, shareDir);
+                    healthScore += 20;
+
+                    update(listener, "[*] Forging Universal Library Aliases in Java...");
+                    generateLibraryAliases(libDir);
+                    generateLibraryAliases(localLibDir);
+                    healthScore += 20;
 
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
@@ -146,46 +156,122 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v7.0 THE ULTIMATE MASTER SCRIPT (NATIVE ALIAS FORGER)
+    // RESTORED & ENHANCED JAVA LOGIC (NO CODE MINUSED)
     // ============================================================================
-    private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
-        String usr = usrDir.getAbsolutePath();
-        String script = 
-            "cd '" + extTmpDir.getAbsolutePath() + "' && " +
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+    
+    private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
+        // Uses native gunzip and tar to dump payload into sandbox
+        String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
+        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
+    }
+
+    private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
+        // Restored Java pure sweeping logic
+        moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/local/lib"), localLibDir);
+        moveFilesWithJava(new File(extTmpDir, "bin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "sbin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/sbin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/bin"), binDir);
+        moveFilesWithJava(new File(extTmpDir, "usr/local/bin"), binDir);
+        
+        if(!shareDir.exists()) shareDir.mkdirs();
+        moveFilesWithJava(new File(extTmpDir, "usr/share/terminfo"), new File(shareDir, "terminfo"));
+        moveFilesWithJava(new File(extTmpDir, "usr/share"), shareDir);
+    }
+
+    private static void moveFilesWithJava(File sourceDir, File targetDir) {
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) return;
+        if (!targetDir.exists()) targetDir.mkdirs();
+        File[] files = sourceDir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) {
+                moveFilesWithJava(f, new File(targetDir, f.getName()));
+            } else {
+                cloneFileSafely(f, new File(targetDir, f.getName()));
+                f.delete(); 
+            }
+        }
+    }
+
+    // [!] THE MASTER ALIAS FORGER (Fixes libncursesw.so.6 error permanently via Java)
+    private static void generateLibraryAliases(File libDir) {
+        if (!libDir.exists() || !libDir.isDirectory()) return;
+        File[] libs = libDir.listFiles();
+        if (libs == null) return;
+
+        // 1. Gather all solid physical libraries
+        List<File> realLibs = new ArrayList<>();
+        for (File lib : libs) {
+            if (lib.isFile() && lib.length() > 1024 && lib.getName().contains(".so")) { 
+                realLibs.add(lib);
+            }
+        }
+
+        // 2. Clone missing alias names explicitly (e.g. libncursesw.so.6.4 -> libncursesw.so.6)
+        for (File realLib : realLibs) {
+            String name = realLib.getName();
+            String[] parts = name.split("\\.");
+            StringBuilder baseName = new StringBuilder();
             
-            // 1. Force Copy Physical Files (Ignores broken absolute symlinks like /lib/...)
-            "[ -d lib ] && cp -rL lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "[ -d usr/lib ] && cp -rL usr/lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "[ -d bin ] && cp -rL bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/bin ] && cp -rL usr/bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d sbin ] && cp -rL sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/sbin ] && cp -rL usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "[ -d usr/share ] && cp -rL usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) baseName.append(".");
+                baseName.append(parts[i]);
+                
+                if (parts[i].equals("so")) {
+                    // Create main .so alias
+                    File alias1 = new File(libDir, baseName.toString());
+                    if (!alias1.exists() || alias1.length() < 10) cloneFileSafely(realLib, alias1);
+                    
+                    // Create major version alias (.so.6)
+                    if (i + 1 < parts.length) {
+                        File alias2 = new File(libDir, baseName.toString() + "." + parts[i + 1]);
+                        if (!alias2.exists() || alias2.length() < 10) cloneFileSafely(realLib, alias2);
+                    }
+                    
+                    // Create minor version alias (.so.6.4)
+                    if (i + 2 < parts.length) {
+                        File alias3 = new File(libDir, baseName.toString() + "." + parts[i + 1] + "." + parts[i + 2]);
+                        if (!alias3.exists() || alias3.length() < 10) cloneFileSafely(realLib, alias3);
+                    }
+                    break;
+                }
+            }
+        }
+    }
 
-            // 2. [THE GAME CHANGER] Generate missing Aliases (.so.6, .so) from Real files natively
-            "cd '" + usr + "/lib' && " +
-            "for f in *; do " +
-            "  if [ -f \"$f\" ] && [ ! -L \"$f\" ]; then " +
-            "    case \"$f\" in " +
-            "      *.so.*) " +
-            "        b=\"${f%%.so.*}.so\" ; cp \"$f\" \"$b\" 2>/dev/null ; " +
-            "        p1=\"${f%.*}\" ; cp \"$f\" \"$p1\" 2>/dev/null ; " +
-            "        p2=\"${p1%.*}\" ; cp \"$f\" \"$p2\" 2>/dev/null ; " +
-            "        ;; " +
-            "    esac ; " +
-            "  fi ; " +
-            "done ; " +
+    private static void cloneFileSafely(File source, File dest) {
+        try {
+            File realSource = source.getCanonicalFile();
+            if (!realSource.exists() || realSource.isDirectory()) return; 
 
-            "chmod -R 777 '" + usr + "/bin' 2>/dev/null ; " +
-            "chmod -R 777 '" + usr + "/lib' 2>/dev/null";
-
-        Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
-        process.waitFor();
+            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
+            dest.delete(); 
+            
+            InputStream in = new FileInputStream(realSource); 
+            OutputStream out = new FileOutputStream(dest);
+            byte[] buf = new byte[16384];
+            int len;
+            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+            
+            in.close(); out.close();
+            
+            // [!] ADDED FROM TERMUXINSTALLER LOGIC
+            try {
+                // Attempt OS level chmod
+                android.system.Os.chmod(dest.getAbsolutePath(), 0777);
+            } catch (Exception e) {
+                // Fallback to java permission setting
+                dest.setExecutable(true, false); 
+                dest.setReadable(true, false);
+                dest.setWritable(true, false);
+            }
+        } catch (Exception ignored) {}
     }
 
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
-        // Musl dynamic loader locator
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
         File[] libs = libDir.listFiles();
         if (libs != null) {
@@ -392,27 +478,6 @@ public class HKPackageManager {
             if (payloadFile.exists()) payloadFile.delete();
             return false;
         }
-    }
-
-    private static void cloneFileSafely(File source, File dest) {
-        try {
-            File realSource = source.getCanonicalFile();
-            if (!realSource.exists() || realSource.isDirectory()) return; 
-
-            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
-            dest.delete(); 
-            
-            InputStream in = new FileInputStream(realSource); 
-            OutputStream out = new FileOutputStream(dest);
-            byte[] buf = new byte[16384];
-            int len;
-            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-            
-            in.close(); out.close();
-            
-            dest.setExecutable(true, false); 
-            dest.setReadable(true, false);
-        } catch (Exception ignored) {}
     }
 
     private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
