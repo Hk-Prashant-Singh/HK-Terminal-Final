@@ -33,8 +33,8 @@ import java.util.*;
 
 /**
  * ============================================================================
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v6.0)
- * ARCHITECT    : HK Prashant Singh (Tech Wizard)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v9.0)
+ * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
  * DIRECTIVE    : UI Popup Blocker, Native Execution Patch, Alpha Pipeline Sync
  * ============================================================================
  */
@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Booting HK-Operation Intelligence (v6.0 NATIVE)...\n");
+        appendMatrixText("[*] Booting HK-Operation Intelligence (v9.0 NATIVE)...\n");
         appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
         File binDir = new File(getUsrBinPath());
         File libDir = new File(getUsrLibPath());
@@ -166,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initStatefulShell() {
         try {
-            // [!] FIX: Global LD_LIBRARY_PATH reset to Native Android.
             String[] env = {
                 "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
                 "LD_LIBRARY_PATH=/system/lib64:/system/lib", 
@@ -274,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 outputView.append(ssb);
-                // [!] FIX: Prevent annoying cursor jumping during append which causes copy-paste popup
                 if (outputView.getSelectionStart() == outputView.getSelectionEnd()) {
                     outputView.setSelection(outputView.getText().length());
                 }
@@ -548,11 +546,13 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk ") || trimmedCmd.equals("hk-C")) {
-            appendMatrixText("[*] Intercepted by HK-Dispatcher (v6.0)...\n");
+            appendMatrixText("[*] Intercepted by HK-Dispatcher (v9.0)...\n");
             HKDispatcher.dispatch(trimmedCmd);
             
             if (trimmedCmd.equals("hk-C") || trimmedCmd.equals("hk repair --all")) {
                 appendMatrixText("[+] Auto-Repair Engine Engaged. Check logs for details.\n");
+                // [!] v9.0 OPERATION: Auto-Refresh UI Dashboard after repair execution
+                if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
                 if (outputView != null) outputView.append(currentPrompt);
                 return;
             }
@@ -975,7 +975,7 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARSENAL (v6.0 MATRIX)");
+            title.setText(">> HK WEAPON ARSENAL (v9.0 MATRIX)");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
