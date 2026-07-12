@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v8.0 PURE JAVA MATRIX)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v9.0 UNIFIED MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Restored Java Core, Added Os.chmod, Master Java Alias Forger
+ * DIRECTIVE    : Native Alias Forger Injection, Symlink Override Force
  * ============================================================================
  */
 public class HKPackageManager {
@@ -67,7 +67,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v8.0 PURE JAVA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v9.0 UNIFIED ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -104,21 +104,12 @@ public class HKPackageManager {
 
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
+                    // [!] v9.0 OPERATION: Native Bash Loop Injection
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Initiating Aggressive Sandbox Extraction...");
+                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction & Link Forger...");
                     
-                    // RESTORED: Heavy Java extraction logic!
-                    executeAggressiveExtraction(payloadFile, extTmpDir);
-                    healthScore += 20;
-
-                    update(listener, "[*] Executing Safe Java Sweeper Matrix...");
-                    executeSafeSweeperMatrix(extTmpDir, binDir, libDir, localLibDir, shareDir);
-                    healthScore += 20;
-
-                    update(listener, "[*] Forging Universal Library Aliases in Java...");
-                    generateLibraryAliases(libDir);
-                    generateLibraryAliases(localLibDir);
-                    healthScore += 20;
+                    executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
+                    healthScore += 60; // Extraction & Alias forged natively
 
                     update(listener, "[*] Injecting Advanced Wrapper Matrix...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
@@ -156,17 +147,43 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // RESTORED & ENHANCED JAVA LOGIC (NO CODE MINUSED)
+    // [!] v9.0 NATIVE ALIAS FORGER OPERATION (ADDED)
+    // ============================================================================
+    private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
+        String usr = usrDir.getAbsolutePath();
+        String script = 
+            "cd '" + extTmpDir.getAbsolutePath() + "' && " +
+            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+            "cp -rL lib/* '" + usr + "/lib/' 2>/dev/null ; " +
+            "cp -rL usr/lib/* '" + usr + "/lib/' 2>/dev/null ; " +
+            "cp -rL bin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -rL usr/bin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -rL sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -rL usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
+            "cp -rL usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
+            
+            // The Killer Hook: Forces native symbolic links for all .so files
+            "cd '" + usr + "/lib' && " +
+            "for f in *.so.*; do " +
+            "  ln -sf \"$f\" \"$(echo \"$f\" | cut -d'.' -f1-2)\" 2>/dev/null ; " +
+            "done ; " +
+            
+            "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null";
+
+        Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
+        process.waitFor();
+    }
+
+    // ============================================================================
+    // RESTORED & ENHANCED JAVA LOGIC (FALLBACK - NO CODE MINUSED)
     // ============================================================================
     
     private static void executeAggressiveExtraction(File payloadFile, File extTmpDir) throws Exception {
-        // Uses native gunzip and tar to dump payload into sandbox
         String unpackCmd = "gzip -dc '" + payloadFile.getAbsolutePath() + "' | tar -xf - -C '" + extTmpDir.getAbsolutePath() + "' 2>/dev/null";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor();
     }
 
     private static void executeSafeSweeperMatrix(File extTmpDir, File binDir, File libDir, File localLibDir, File shareDir) {
-        // Restored Java pure sweeping logic
         moveFilesWithJava(new File(extTmpDir, "lib"), libDir);
         moveFilesWithJava(new File(extTmpDir, "usr/lib"), libDir);
         moveFilesWithJava(new File(extTmpDir, "usr/local/lib"), localLibDir);
@@ -196,13 +213,11 @@ public class HKPackageManager {
         }
     }
 
-    // [!] THE MASTER ALIAS FORGER (Fixes libncursesw.so.6 error permanently via Java)
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
-        // 1. Gather all solid physical libraries
         List<File> realLibs = new ArrayList<>();
         for (File lib : libs) {
             if (lib.isFile() && lib.length() > 1024 && lib.getName().contains(".so")) { 
@@ -210,7 +225,6 @@ public class HKPackageManager {
             }
         }
 
-        // 2. Clone missing alias names explicitly (e.g. libncursesw.so.6.4 -> libncursesw.so.6)
         for (File realLib : realLibs) {
             String name = realLib.getName();
             String[] parts = name.split("\\.");
@@ -221,17 +235,14 @@ public class HKPackageManager {
                 baseName.append(parts[i]);
                 
                 if (parts[i].equals("so")) {
-                    // Create main .so alias
                     File alias1 = new File(libDir, baseName.toString());
                     if (!alias1.exists() || alias1.length() < 10) cloneFileSafely(realLib, alias1);
                     
-                    // Create major version alias (.so.6)
                     if (i + 1 < parts.length) {
                         File alias2 = new File(libDir, baseName.toString() + "." + parts[i + 1]);
                         if (!alias2.exists() || alias2.length() < 10) cloneFileSafely(realLib, alias2);
                     }
                     
-                    // Create minor version alias (.so.6.4)
                     if (i + 2 < parts.length) {
                         File alias3 = new File(libDir, baseName.toString() + "." + parts[i + 1] + "." + parts[i + 2]);
                         if (!alias3.exists() || alias3.length() < 10) cloneFileSafely(realLib, alias3);
@@ -258,12 +269,9 @@ public class HKPackageManager {
             
             in.close(); out.close();
             
-            // [!] ADDED FROM TERMUXINSTALLER LOGIC
             try {
-                // Attempt OS level chmod
                 android.system.Os.chmod(dest.getAbsolutePath(), 0777);
             } catch (Exception e) {
-                // Fallback to java permission setting
                 dest.setExecutable(true, false); 
                 dest.setReadable(true, false);
                 dest.setWritable(true, false);
