@@ -1,11 +1,12 @@
 package com.hk.hkterminal;
 
 import java.io.File;
+import android.system.Os;
 
 /**
  * HK-OPERATION : GHOST EXTRACTOR (STEALTH MATRIX UNPACKER)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Silent extraction and integration of .deb/.tar archives.
+ * DIRECTIVE    : Silent extraction, Native Permission Lock & Integration of .deb/.tar archives.
  */
 public class HKGhostExtractor {
 
@@ -31,8 +32,14 @@ public class HKGhostExtractor {
             java.lang.Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd});
             int exitCode = p.waitFor();
 
-            // Secure file system mapping (Auto-chmod)
-            Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 755 " + dest + "/usr 2>/dev/null"}).waitFor();
+            // Secure file system mapping (Shell Chmod)
+            Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + dest + "/usr 2>/dev/null"}).waitFor();
+
+            // [!] v9.0 OPERATION: Enforce Native OS Permission Lock (Bypass Shell restrictions)
+            File usrDir = new File(targetBaseDir, "usr");
+            if (usrDir.exists()) {
+                applyNativePermissions(usrDir);
+            }
 
             // Ghost cleanup
             if (payloadFile.exists()) {
@@ -47,5 +54,24 @@ public class HKGhostExtractor {
             return false;
         }
     }
-}
 
+    // [!] v9.0 OPERATION: Recursive Native Chmod to prevent 127 / Permission Denied
+    private static void applyNativePermissions(File file) {
+        try {
+            if (file.exists()) {
+                // Force 0777 (rwxrwxrwx) via Android OS Native Call
+                Os.chmod(file.getAbsolutePath(), 0777);
+                if (file.isDirectory()) {
+                    File[] children = file.listFiles();
+                    if (children != null) {
+                        for (File child : children) {
+                            applyNativePermissions(child);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Failsafe: Let it pass if OS blocks a specific node to prevent loop breaks
+        }
+    }
+}
