@@ -1,8 +1,7 @@
 package com.hk.hkterminal;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.res.AssetManager;
+import android.os.Environment;
 import android.util.Log;
 import java.io.*;
 import java.net.ServerSocket;
@@ -13,7 +12,7 @@ import java.util.zip.ZipInputStream;
 /**
  * HK-OPERATION : ALPHA SILENT ROUTER & CORE KERNEL
  * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : 15-Second Access Engine & Native Bootstrap Engine
+ * DIRECTIVE    : 15-Second Access Engine, Local Storage Unpacker & Symlink Forger
  */
 public class TerminalEngine {
 
@@ -82,12 +81,32 @@ public class TerminalEngine {
         return new File(BIN_PATH, "bash").exists();
     }
 
+    // ============================================================================
+    // [!] v13.0 LOCAL DOWNLOAD DIR EXTRACTOR & SYMLINK FORGER
+    // ============================================================================
     private static void extractBootstrapMatrix(Context context, MainActivity.Callback cb) {
         try {
-            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Unpacking Native Matrix from Core...\n");
+            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Scanning Device Downloads for Matrix Payload...\n");
             
-            AssetManager assetManager = context.getAssets();
-            InputStream is = assetManager.open("bootstrap.zip");
+            // 🚨 NEW LOGIC: Target the public Download folder
+            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File zipFile = new File(downloadDir, "bootstrap.zip");
+            
+            // Fallback just in case
+            if (!zipFile.exists()) {
+                zipFile = new File("/sdcard/Download/bootstrap.zip");
+            }
+
+            if (!zipFile.exists()) {
+                if (cb != null) cb.onOutput("[-] HK-BOOTSTRAP ERROR: 'bootstrap.zip' not found in Download folder!\n");
+                if (cb != null) cb.onOutput("[+] DIRECTIVE: Please place 'bootstrap.zip' inside your phone's Download folder and restart.\n");
+                return; // Stop extraction if file doesn't exist
+            }
+
+            if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Payload Secured! Unpacking Native Matrix...\n");
+
+            // Extracting directly from Download folder
+            InputStream is = new FileInputStream(zipFile);
             ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is));
             ZipEntry ze;
             byte[] buffer = new byte[16384];
@@ -109,11 +128,35 @@ public class TerminalEngine {
             zis.close();
             is.close();
 
+            // 🚨 THE SYMLINK FORGER: Reading SYMLINKS.txt and restoring broken shortcuts
+            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Restoring Matrix Shortcuts (Symlinks)...\n");
+            File symlinkFile = new File(PREFIX_PATH, "SYMLINKS.txt");
+            if (symlinkFile.exists()) {
+                BufferedReader br = new BufferedReader(new FileReader(symlinkFile));
+                String linkLine;
+                while ((linkLine = br.readLine()) != null) {
+                    if (linkLine.contains("←")) {
+                        String[] parts = linkLine.split("←");
+                        if (parts.length == 2) {
+                            String target = parts[0].replace("com.termux", "com.hk.hkterminal");
+                            String linkPath = parts[1].replaceFirst("^\\./", PREFIX_PATH + "/");
+                            
+                            File linkFile = new File(linkPath);
+                            if (linkFile.exists()) linkFile.delete(); 
+                            
+                            try {
+                                android.system.Os.symlink(target, linkFile.getAbsolutePath());
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+                br.close();
+                symlinkFile.delete(); 
+            }
+
             Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + BIN_PATH + " " + LIB_PATH}).waitFor();
             
-            if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Matrix integrated successfully.\n");
-        } catch (FileNotFoundException e) {
-            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: bootstrap.zip not found in assets. Falling back to default shell.\n");
+            if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Matrix integrated successfully. Booting Core...\n");
         } catch (Exception e) {
             if (cb != null) cb.onOutput("[-] HK-BOOTSTRAP ERROR: " + e.getMessage() + "\n");
         }
@@ -146,10 +189,7 @@ public class TerminalEngine {
                 pb.environment().put("HOME", HOME_PATH);
                 pb.environment().put("PREFIX", PREFIX_PATH);
                 pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
-                
-                // 🚨 FIX: Isolate Android native commands from Musl libraries
                 pb.environment().put("LD_LIBRARY_PATH", "/system/lib64:/system/lib");
-                
                 pb.environment().put("TERM", "xterm-256color");
                 pb.environment().put("LANG", "en_US.UTF-8");
                 
