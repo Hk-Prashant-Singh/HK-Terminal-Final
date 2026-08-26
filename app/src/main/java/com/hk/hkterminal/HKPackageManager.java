@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 /**
  * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (ALL-IN-ONE FINAL MASTER v15.0)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (ALL-IN-ONE FINAL MASTER v15.1)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
  * DIRECTIVE    : Universal Package Compatibility, Zero-Failure Sandbox & Aliases
  * ============================================================================
@@ -212,6 +212,7 @@ public class HKPackageManager {
             }
         }
 
+        if (files == null) return;
         for (File real : files) {
             if (!real.isFile() || isSymbolicLinkCompat(real)) continue;
             String name = real.getName();
@@ -308,13 +309,11 @@ public class HKPackageManager {
                             fw.write("export PYTHONHOME='" + alpineDir.getAbsolutePath() + "'\n");
                         }
                         
-                        // 🚨 UNIVERSAL DUAL LIBRARY-PATH (Fixes graphic/ncurses tools like 'sl' & 'nano')
                         fw.write("exec '" + muslLoaderPath + "' --library-path '" + alpineLibDir.getAbsolutePath() + ":" + usrDir.getAbsolutePath() + "/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                         fw.close();
                         wrapperFile.setExecutable(true, true);
                         binReal.setExecutable(true, true);
 
-                        // 🚨 SMART ALIASES FOR PYTHON & NPM
                         if (name.equals("python3")) {
                             File pyAlias = new File(mainBinDir, "python");
                             FileWriter afw = new FileWriter(pyAlias);
@@ -338,8 +337,25 @@ public class HKPackageManager {
         }
     }
 
+    private static void cloneFileSafely(File source, File dest) {
+        try {
+            File realSource = source.getCanonicalFile();
+            if (!realSource.exists() || realSource.isDirectory()) return; 
+            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
+            dest.delete(); 
+            
+            InputStream in = new FileInputStream(realSource); 
+            OutputStream out = new FileOutputStream(dest);
+            byte[] buf = new byte[16384];
+            int len;
+            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+            
+            in.close(); out.close();
+            dest.setExecutable(true, false); 
+        } catch (Exception ignored) {}
+    }
+
     private static boolean runValidationMatrix(File binDir, File alpineLibDir, String pkgName, InstallListener listener) {
-        // 🚨 100% BULLETPROOF BYPASS: Never block any installation. Everything installs seamlessly.
         return true;
     }
 
