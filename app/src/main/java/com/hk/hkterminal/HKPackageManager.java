@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v12.0 ALPHA MATRIX)
+ * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v12.1 OMEGA MATRIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Ghost Move & Nuke, Progressive Forger, Musl --library-path
+ * DIRECTIVE    : Direct Injection, Matrix Flattening & Solid Forger
  * ============================================================================
  */
 public class HKPackageManager {
@@ -66,7 +66,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v12.0 ALPHA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v12.1 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -105,10 +105,10 @@ public class HKPackageManager {
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
+                    update(listener, "[+] Payload Secured. Initiating Direct Target Extraction...");
                     
                     try {
-                        // [!] v12.0: Aggressive symlink nuke and force copy
+                        // [!] v12.1: The Tech Wizard's 1000% working Direct-Injection approach
                         executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
                         healthScore += 40; 
                     } catch (Exception e) {
@@ -119,7 +119,7 @@ public class HKPackageManager {
 
                     update(listener, "[*] Forging Universal Library Aliases...");
                     try {
-                        // Recreate solid libraries for all missing versions
+                        // Creates solid clones for any missing symlinked `.so` libraries
                         generateLibraryAliases(libDir);
                         healthScore += 20;
                     } catch (Exception e) {
@@ -170,26 +170,24 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v12.0 ALPHA SWEEPER: Symlink Nuke & Force Copy
+    // [!] v12.1 OMEGA DIRECT-INJECTION: The Tech Wizard's Core Method
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
+        
+        // 1. Direct Extraction to Target (Bypassing extTmpDir & cp completely)
         String script = 
-            "cd '" + extTmpDir.getAbsolutePath() + "' && " +
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+            "tar -xf '" + payloadFile.getAbsolutePath() + "' -C '" + usr + "' 2>/dev/null ; " +
             
-            // MASTER FIX: Delete all broken absolute symlinks to prevent OS shell crashes
-            "find . -type l -delete 2>/dev/null ; " +
+            // 2. Flatten Matrix (Alpine nested directories to flat directories)
+            "mv -f '" + usr + "/usr/lib/'* '" + usr + "/lib/' 2>/dev/null ; " +
+            "mv -f '" + usr + "/usr/bin/'* '" + usr + "/bin/' 2>/dev/null ; " +
+            "mv -f '" + usr + "/usr/sbin/'* '" + usr + "/bin/' 2>/dev/null ; " +
+            "mv -f '" + usr + "/sbin/'* '" + usr + "/bin/' 2>/dev/null ; " +
+            "mv -f '" + usr + "/usr/share/'* '" + usr + "/share/' 2>/dev/null ; " +
             
-            // Force copy the remaining solid real files to the system matrix
-            "cp -rf lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "cp -rf usr/lib/* '" + usr + "/lib/' 2>/dev/null ; " +
-            "cp -rf bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rf usr/bin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rf sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rf usr/sbin/* '" + usr + "/bin/' 2>/dev/null ; " +
-            "cp -rf usr/share/* '" + usr + "/share/' 2>/dev/null ; " +
-            
+            // 3. Nuke remnants and lock execution rights
+            "rm -rf '" + usr + "/usr' 2>/dev/null ; " +
             "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
@@ -197,7 +195,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v12.0 ALPHA JAVA FORGER: Progressive Split Engine
+    // [!] v12.1 OMEGA JAVA FORGER: Progressive Split Engine
     // ============================================================================
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
@@ -256,7 +254,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v12.0 ALPHA WRAPPER: Musl Library-Path Override
+    // [!] v12.1 OMEGA WRAPPER: Musl Library-Path Override
     // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
