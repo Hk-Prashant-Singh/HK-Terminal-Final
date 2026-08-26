@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             String[] env = {
                 "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
-                "LD_LIBRARY_PATH=" + getUsrLibPath() + ":" + getFilesDir().getAbsolutePath() + "/usr/local/lib:/system/lib64:/system/lib", 
+                "LD_LIBRARY_PATH=/system/lib64:/system/lib", 
                 "TERM=xterm-256color", 
                 "HOME=" + getBaseHomePath(),
                 "PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr",
@@ -683,7 +683,7 @@ public class MainActivity extends AppCompatActivity {
 
                 String envInject = "export HOME=" + getBaseHomePath() + "; " +
                                    "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
-                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":" + getFilesDir().getAbsolutePath() + "/usr/local/lib:/system/lib64:/system/lib; " +
+                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; " +
                                    "export PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr; " +
                                    "export PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14; ";
 
@@ -691,7 +691,12 @@ public class MainActivity extends AppCompatActivity {
                 if (isShellScript) {
                     finalCmd = envInject + "sh " + targetBin.getAbsolutePath() + " " + passArgs + "\n";
                 } else {
-                    finalCmd = envInject + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                    File linker64 = new File("/system/bin/linker64");
+                    if (linker64.exists()) {
+                        finalCmd = envInject + "/system/bin/linker64 " + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                    } else {
+                        finalCmd = envInject + targetBin.getAbsolutePath() + " " + passArgs + "\n";
+                    }
                 }
 
                 try {
@@ -1057,3 +1062,4 @@ public class MainActivity extends AppCompatActivity {
         } catch (Throwable ignored) {}
     }
 }
+
