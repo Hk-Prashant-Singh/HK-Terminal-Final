@@ -81,18 +81,13 @@ public class TerminalEngine {
         return new File(BIN_PATH, "bash").exists();
     }
 
-    // ============================================================================
-    // [!] v13.0 LOCAL DOWNLOAD DIR EXTRACTOR & SYMLINK FORGER
-    // ============================================================================
     private static void extractBootstrapMatrix(Context context, MainActivity.Callback cb) {
         try {
             if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Scanning Device Downloads for Matrix Payload...\n");
             
-            // 🚨 NEW LOGIC: Target the public Download folder
             File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             File zipFile = new File(downloadDir, "bootstrap.zip");
             
-            // Fallback just in case
             if (!zipFile.exists()) {
                 zipFile = new File("/sdcard/Download/bootstrap.zip");
             }
@@ -100,12 +95,11 @@ public class TerminalEngine {
             if (!zipFile.exists()) {
                 if (cb != null) cb.onOutput("[-] HK-BOOTSTRAP ERROR: 'bootstrap.zip' not found in Download folder!\n");
                 if (cb != null) cb.onOutput("[+] DIRECTIVE: Please place 'bootstrap.zip' inside your phone's Download folder and restart.\n");
-                return; // Stop extraction if file doesn't exist
+                return; 
             }
 
             if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Payload Secured! Unpacking Native Matrix...\n");
 
-            // Extracting directly from Download folder
             InputStream is = new FileInputStream(zipFile);
             ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is));
             ZipEntry ze;
@@ -128,7 +122,6 @@ public class TerminalEngine {
             zis.close();
             is.close();
 
-            // 🚨 THE SYMLINK FORGER: Reading SYMLINKS.txt and restoring broken shortcuts
             if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Restoring Matrix Shortcuts (Symlinks)...\n");
             File symlinkFile = new File(PREFIX_PATH, "SYMLINKS.txt");
             if (symlinkFile.exists()) {
@@ -189,7 +182,10 @@ public class TerminalEngine {
                 pb.environment().put("HOME", HOME_PATH);
                 pb.environment().put("PREFIX", PREFIX_PATH);
                 pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
-                pb.environment().put("LD_LIBRARY_PATH", "/system/lib64:/system/lib");
+                
+                // 🚨 MASTER FIX: Added LIB_PATH back so bash can find libandroid-support.so
+                pb.environment().put("LD_LIBRARY_PATH", LIB_PATH + ":/system/lib64:/system/lib");
+                
                 pb.environment().put("TERM", "xterm-256color");
                 pb.environment().put("LANG", "en_US.UTF-8");
                 
