@@ -1,11 +1,15 @@
 package com.hk.hkterminal;
 
+import android.Manifest;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.*;
+import android.provider.Settings;
 import android.text.*;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -17,6 +21,8 @@ import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -30,15 +36,19 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ============================================================================
- * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v9.0)
+ * HK-OPERATION : MASTER COMMAND CENTER (ULTIMATE INTEGRATED ALPHA RIG v12.0)
  * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : UI Popup Blocker, Native Execution Patch, Alpha Pipeline Sync
+ * DIRECTIVE    : Future-Proof UI, AI-Voice Ready, Omni-Storage Bypass
  * ============================================================================
  */
 public class MainActivity extends AppCompatActivity {
+    
+    private static final int MATRIX_PERMISSION_CODE = 999;
+    
     public static CustomEditText outputView;
     private List<String> history = new ArrayList<>();
     private int hIndex = -1;
@@ -52,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean isCtrl = false;
     private boolean isAlt = false;
     
-    // [!] FIX: Updated Prompt to HK-bot
     private String currentPrompt = "HK-bot:~$ ";
     private boolean isRootMode = false;
     public String lastSentCommand = null;
@@ -81,6 +90,9 @@ public class MainActivity extends AppCompatActivity {
         extraKeysLayout = findViewById(R.id.extraKeysLayout);
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
+
+        // [!] THE MASTER FIX: Initialize all future AI & Storage permissions on boot
+        initializeFutureMatrixPermissions();
 
         initHKEnvironment();
         loadHistory(); 
@@ -125,8 +137,47 @@ public class MainActivity extends AppCompatActivity {
         }, 400);
     }
 
+    // ============================================================================
+    // [!] v12.0 OPERATION: Universal Permission Matrix (AI Voice + Omni-Storage)
+    // ============================================================================
+    private void initializeFutureMatrixPermissions() {
+        // 1. Android 11+ Scoped Storage Bypass (For Logger & Guardian)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                    intent.addCategory("android.intent.category.DEFAULT");
+                    intent.setData(Uri.parse(String.format("package:%s", getApplicationContext().getPackageName())));
+                    startActivity(intent);
+                    Toast.makeText(this, "[!] HK-SYSTEM: Grant All Files Access for Alpha Matrix", Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    startActivity(intent);
+                }
+            }
+        }
+
+        // 2. Standard Runtime Permissions for Future AI Engine & Legacy Storage
+        String[] requiredPermissions = {
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        };
+
+        List<String> permissionsToRequest = new ArrayList<>();
+        for (String permission : requiredPermissions) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(permission);
+            }
+        }
+
+        if (!permissionsToRequest.isEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toArray(new String[0]), MATRIX_PERMISSION_CODE);
+        }
+    }
+
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Booting HK-Operation Intelligence (v9.0 NATIVE)...\n");
+        appendMatrixText("[*] Booting HK-Operation Intelligence (v12.0 NATIVE)...\n");
         appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
         File binDir = new File(getUsrBinPath());
         File libDir = new File(getUsrLibPath());
@@ -149,8 +200,7 @@ public class MainActivity extends AppCompatActivity {
             appendMatrixText("[*] Database Registry initializing...\n");
         }
 
-        appendMatrixText("[+] Native Bypass Shield & PIP Interceptor: ACTIVE.\n");
-        // [!] FIX: Removed double prompt insertion. Shell's ---HK_DONE--- will trigger the prompt naturally.
+        appendMatrixText("[+] Native Bypass Shield & Future AI Core: ACTIVE.\n");
     }
 
     private void setupCopyFeature() {
@@ -426,8 +476,7 @@ public class MainActivity extends AppCompatActivity {
                         int totalFiles = files.length;
                         
                         if (totalFiles > 0) {
-                            // [!] FIX: Synchronized tracking to ensure 100% completion before printing success
-                            java.util.concurrent.atomic.AtomicInteger completedCount = new java.util.concurrent.atomic.AtomicInteger(0);
+                            AtomicInteger completedCount = new AtomicInteger(0);
                             
                             for (File f : files) {
                                 String pkg = f.getName();
@@ -436,7 +485,6 @@ public class MainActivity extends AppCompatActivity {
                                 HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
                                     @Override public void onUpdate(String msg) {}
                                     @Override public void onComplete() {
-                                        // Check if this was the last package to finish
                                         if (completedCount.incrementAndGet() == totalFiles) {
                                             runOnUiThread(() -> {
                                                 btnUpgradeAll.setEnabled(true);
@@ -449,7 +497,6 @@ public class MainActivity extends AppCompatActivity {
                                 });
                             }
                         } else {
-                            // If no packages exist
                             runOnUiThread(() -> {
                                 btnUpgradeAll.setEnabled(true);
                                 btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
@@ -566,7 +613,7 @@ public class MainActivity extends AppCompatActivity {
         String trimmedCmd = command.trim();
 
         if (trimmedCmd.startsWith("hk ") || trimmedCmd.equals("hk-C")) {
-            appendMatrixText("[*] Intercepted by HK-Dispatcher (v9.0)...\n");
+            appendMatrixText("[*] Intercepted by HK-Dispatcher (v12.0)...\n");
             HKDispatcher.dispatch(trimmedCmd);
             
             if (trimmedCmd.equals("hk-C") || trimmedCmd.equals("hk repair --all")) {
@@ -734,7 +781,6 @@ public class MainActivity extends AppCompatActivity {
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
-                // [!] FIX: Updated Prompt for Root
                 currentPrompt = "root@HK-bot:~# ";
             } else {
                 appendMatrixText("su: Permission denied (System Guardian blocked request)\n");
@@ -743,7 +789,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
             isRootMode = false;
-            // [!] FIX: Updated Prompt for Exit
             currentPrompt = "HK-bot:~$ ";
             if (outputView != null) outputView.append(currentPrompt);
             return;
@@ -957,7 +1002,6 @@ public class MainActivity extends AppCompatActivity {
             outputView.setFocusableInTouchMode(true);
             outputView.setFocusable(true);
             
-            // [!] FIX: Blocking OS Action Menu popup automatically during rapid matrix outputs
             outputView.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
                 @Override public boolean onCreateActionMode(ActionMode mode, Menu menu) { return false; }
                 @Override public boolean onPrepareActionMode(ActionMode mode, Menu menu) { return false; }
@@ -996,7 +1040,7 @@ public class MainActivity extends AppCompatActivity {
         private void renderPackagesMatrix(LinearLayout rootLayout, Context context) {
             rootLayout.removeAllViews();
             TextView title = new TextView(context);
-            title.setText(">> HK WEAPON ARSENAL (v9.0 MATRIX)");
+            title.setText(">> HK WEAPON ARSENAL (v12.0 MATRIX)");
             title.setTextColor(Color.parseColor("#00FF41")); 
             title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
             title.setPadding(0, 0, 0, 50);
