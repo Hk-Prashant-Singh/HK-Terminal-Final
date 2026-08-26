@@ -195,7 +195,7 @@ public class HKPackageManager {
                 "tar -xf data.tar 2>/dev/null ; " +
             "fi ; " +
 
-            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; "
+            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; " +
 
             // Top-level package paths.
             "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
