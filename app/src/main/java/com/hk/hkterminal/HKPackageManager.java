@@ -27,9 +27,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.2 FINAL ALPINE FIX)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.3 FINAL ALPINE FIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Direct APK Extraction, Permission Bypass, Bionic Isolation
+ * DIRECTIVE    : Direct APK Extraction (GZIP Fix), Permission Bypass, Bionic Isolation
  * ============================================================================
  */
 public class HKPackageManager {
@@ -66,7 +66,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v11.2 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v11.3 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -167,6 +167,9 @@ public class HKPackageManager {
         update(listener, "[-] ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
     }
 
+    // ============================================================================
+    // [!] v11.3 OMEGA SWEEPER: 100% Android-Compatible Extraction (GZIP + CP FIX)
+    // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
@@ -177,19 +180,20 @@ public class HKPackageManager {
             "mkdir -p '" + tmp + "'; " +
             "cd '" + tmp + "'; " +
 
-            "tar -oxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || true; " +
+            // Android's tar needs -z for .apk files. Fallback to normal tar if -z fails.
+            "tar -ozxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || tar -oxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || true; " +
 
             "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" +
                 usr + "/sbin' '" + usr + "/share'; " +
 
-            "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/lib ]; then cp -a usr/lib/. '" + usr + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d bin ]; then cp -a bin/. '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/bin ]; then cp -a usr/bin/. '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d sbin ]; then cp -a sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/sbin ]; then cp -a usr/sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d share ]; then cp -a share/. '" + usr + "/share/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/share ]; then cp -a usr/share/. '" + usr + "/share/' 2>/dev/null || true; fi; " +
+            "if [ -d lib ]; then cp -r lib/* '" + usr + "/lib/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/lib ]; then cp -r usr/lib/* '" + usr + "/lib/' 2>/dev/null || true; fi; " +
+            "if [ -d bin ]; then cp -r bin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/bin ]; then cp -r usr/bin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d sbin ]; then cp -r sbin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/sbin ]; then cp -r usr/sbin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d share ]; then cp -r share/* '" + usr + "/share/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/share ]; then cp -r usr/share/* '" + usr + "/share/' 2>/dev/null || true; fi; " +
 
             "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null || true";
 
