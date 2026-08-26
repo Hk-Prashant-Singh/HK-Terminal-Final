@@ -51,7 +51,9 @@ public class MainActivity extends AppCompatActivity {
     private DataOutputStream shellInput;
     private boolean isCtrl = false;
     private boolean isAlt = false;
-    private String currentPrompt = "pshacker@hk:~$ ";
+    
+    // [!] FIX: Updated Prompt to HK-bot
+    private String currentPrompt = "HK-bot:~$ ";
     private boolean isRootMode = false;
     public String lastSentCommand = null;
     private final Object streamLock = new Object();
@@ -148,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         appendMatrixText("[+] Native Bypass Shield & PIP Interceptor: ACTIVE.\n");
-        if (outputView != null) outputView.append(currentPrompt);
+        // [!] FIX: Removed double prompt insertion. Shell's ---HK_DONE--- will trigger the prompt naturally.
     }
 
     private void setupCopyFeature() {
@@ -421,23 +423,41 @@ public class MainActivity extends AppCompatActivity {
                     File binDir = new File(getUsrBinPath());
                     if (binDir.exists() && binDir.listFiles() != null) {
                         File[] files = binDir.listFiles();
-                        for (File f : files) {
-                            String pkg = f.getName();
-                            runOnUiThread(() -> appendMatrixText("[*] Syncing Weapon: " + pkg + "...\n"));
+                        int totalFiles = files.length;
+                        
+                        if (totalFiles > 0) {
+                            // [!] FIX: Synchronized tracking to ensure 100% completion before printing success
+                            java.util.concurrent.atomic.AtomicInteger completedCount = new java.util.concurrent.atomic.AtomicInteger(0);
                             
-                            HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
-                                @Override public void onUpdate(String msg) {}
-                                @Override public void onComplete() {}
+                            for (File f : files) {
+                                String pkg = f.getName();
+                                runOnUiThread(() -> appendMatrixText("[*] Syncing Weapon: " + pkg + "...\n"));
+                                
+                                HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
+                                    @Override public void onUpdate(String msg) {}
+                                    @Override public void onComplete() {
+                                        // Check if this was the last package to finish
+                                        if (completedCount.incrementAndGet() == totalFiles) {
+                                            runOnUiThread(() -> {
+                                                btnUpgradeAll.setEnabled(true);
+                                                btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
+                                                appendMatrixText("[+] 100% GLOBAL ARSENAL SYNCED TO LATEST VERSION.\n");
+                                                if (outputView != null) outputView.append(currentPrompt);
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        } else {
+                            // If no packages exist
+                            runOnUiThread(() -> {
+                                btnUpgradeAll.setEnabled(true);
+                                btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
+                                appendMatrixText("[-] No weapons found in Arsenal to sync.\n");
+                                if (outputView != null) outputView.append(currentPrompt);
                             });
                         }
                     }
-                    
-                    runOnUiThread(() -> {
-                        btnUpgradeAll.setEnabled(true);
-                        btnUpgradeAll.setText("UPGRADE ALL PACKAGES");
-                        appendMatrixText("[+] GLOBAL ARSENAL SYNCED TO LATEST VERSION.\n");
-                        if (outputView != null) outputView.append(currentPrompt);
-                    });
                 }).start();
             });
         }
@@ -551,7 +571,6 @@ public class MainActivity extends AppCompatActivity {
             
             if (trimmedCmd.equals("hk-C") || trimmedCmd.equals("hk repair --all")) {
                 appendMatrixText("[+] Auto-Repair Engine Engaged. Check logs for details.\n");
-                // [!] v9.0 OPERATION: Auto-Refresh UI Dashboard after repair execution
                 if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
                 if (outputView != null) outputView.append(currentPrompt);
                 return;
@@ -715,7 +734,8 @@ public class MainActivity extends AppCompatActivity {
         if (trimmedCmd.equals("su")) {
             if (RootUtils.isRootAvailable()) {
                 isRootMode = true;
-                currentPrompt = "root@pshacker:~# ";
+                // [!] FIX: Updated Prompt for Root
+                currentPrompt = "root@HK-bot:~# ";
             } else {
                 appendMatrixText("su: Permission denied (System Guardian blocked request)\n");
             }
@@ -723,7 +743,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         } else if (trimmedCmd.equals("exit") && isRootMode) {
             isRootMode = false;
-            currentPrompt = "pshacker@hk:~$ ";
+            // [!] FIX: Updated Prompt for Exit
+            currentPrompt = "HK-bot:~$ ";
             if (outputView != null) outputView.append(currentPrompt);
             return;
         }
@@ -1062,4 +1083,3 @@ public class MainActivity extends AppCompatActivity {
         } catch (Throwable ignored) {}
     }
 }
-
