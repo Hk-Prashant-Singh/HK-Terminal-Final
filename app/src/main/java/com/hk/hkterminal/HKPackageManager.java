@@ -167,14 +167,10 @@ public class HKPackageManager {
         update(listener, "[-] ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
     }
 
-    // ============================================================================
-    // [!] v11.2 OMEGA SWEEPER: Safe Extraction (FINAL ALPINE LOGIC)
-    // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
 
-        // 🚨 FINAL FIX: Directly extract APK contents while bypassing ownership errors
         String script =
             "set -e; " +
             "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
@@ -258,9 +254,6 @@ public class HKPackageManager {
         } catch (Exception ignored) {}
     }
 
-    // ============================================================================
-    // [!] v11.2 OMEGA JAVA FORGER: Progressive Split Engine
-    // ============================================================================
     private static boolean isSymbolicLinkCompat(File file) {
         try {
             Process p = Runtime.getRuntime().exec(new String[]{
@@ -321,9 +314,6 @@ public class HKPackageManager {
         } catch (Exception ignored) {}
     }
 
-    // ============================================================================
-    // [!] v11.2 OMEGA WRAPPER: Musl Library-Path Override (100% ISOLATED)
-    // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
         File[] libs = libDir.listFiles();
@@ -368,8 +358,7 @@ public class HKPackageManager {
                             fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
                             fw.write("export PATH='" + binDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
                             
-                            // BIONIC ISOLATION FIX: Removed /system/lib64
-                            fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + "'\n");
+                            // 🚨 CRITICAL FIX: Removed LD_LIBRARY_PATH export entirely to avoid poisoning Android native commands.
                             
                             fw.write("export TERMINFO='" + usrDir.getAbsolutePath() + "/share/terminfo'\n");
                             fw.write("export LANG='en_US.UTF-8'\n");
@@ -379,7 +368,6 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            // BIONIC ISOLATION FIX: Explicit linkage strictly bounds execution to HK libs
                             fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
