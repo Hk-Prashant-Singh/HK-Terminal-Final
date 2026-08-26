@@ -20,18 +20,15 @@ public class TerminalEngine {
     private static ServerSocket amSocketServer;
     private static Thread amSocketThread;
     
-    // HK-Operation Core Paths (System DNA Matrix)
     public static final String DATA_DIR = "/data/data/com.hk.hkterminal/files";
     public static final String HOME_PATH = DATA_DIR + "/home";
     public static final String PREFIX_PATH = DATA_DIR + "/usr";
     public static final String BIN_PATH = PREFIX_PATH + "/bin";
     public static final String LIB_PATH = PREFIX_PATH + "/lib";
 
-    // Persistent Shell Vectors (The Ghost in the Machine)
     private static Process persistentShell;
     private static DataOutputStream shellInput;
 
-    // 1. ADVANCED SOCKET IPC: Bind external triggers to the core engine
     public static void startAmSocketServer() {
         if (amSocketThread != null && amSocketThread.isAlive()) return;
         amSocketThread = new Thread(() -> {
@@ -81,11 +78,7 @@ public class TerminalEngine {
         }
     }
 
-    // ============================================================================
-    // [!] v12.0 BOOTSTRAP ENGINE: First-Boot Extraction Logic
-    // ============================================================================
     private static boolean isBootstrapInstalled() {
-        // Checking if native bash exists
         return new File(BIN_PATH, "bash").exists();
     }
 
@@ -116,7 +109,6 @@ public class TerminalEngine {
             zis.close();
             is.close();
 
-            // Secure the native execution permissions
             Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + BIN_PATH + " " + LIB_PATH}).waitFor();
             
             if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Matrix integrated successfully.\n");
@@ -127,14 +119,11 @@ public class TerminalEngine {
         }
     }
 
-    // 2. ENGINE IGNITION: Start the Stealth Persistent Shell
-    // [!] Note: Passed 'Context' to allow asset extraction
     public static void igniteEngine(Context context, final MainActivity.Callback cb) {
-        if (persistentShell != null) return; // Core is already burning
+        if (persistentShell != null) return; 
 
         new Thread(() -> {
             try {
-                // Foundation Verification
                 File homeDir = new File(HOME_PATH);
                 if (!homeDir.exists()) homeDir.mkdirs();
                 File usrDir = new File(PREFIX_PATH);
@@ -144,24 +133,23 @@ public class TerminalEngine {
                 File libDir = new File(LIB_PATH);
                 if (!libDir.exists()) libDir.mkdirs();
 
-                // Phase 1: Bootstrap Injection Check
                 if (!isBootstrapInstalled()) {
                     extractBootstrapMatrix(context, cb);
                 }
 
-                // Phase 2: The Shell Swap (sh -> bash)
                 File bashTarget = new File(BIN_PATH, "bash");
                 String shellToExecute = bashTarget.exists() ? bashTarget.getAbsolutePath() : "sh";
 
-                // Build the Core Shell Matrix
                 ProcessBuilder pb = new ProcessBuilder(shellToExecute);
                 pb.directory(homeDir);
                 
-                // Injecting HK-Terminal DNA
                 pb.environment().put("HOME", HOME_PATH);
                 pb.environment().put("PREFIX", PREFIX_PATH);
                 pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
-                pb.environment().put("LD_LIBRARY_PATH", LIB_PATH);
+                
+                // 🚨 FIX: Isolate Android native commands from Musl libraries
+                pb.environment().put("LD_LIBRARY_PATH", "/system/lib64:/system/lib");
+                
                 pb.environment().put("TERM", "xterm-256color");
                 pb.environment().put("LANG", "en_US.UTF-8");
                 
@@ -186,7 +174,6 @@ public class TerminalEngine {
         }).start();
     }
 
-    // 3. COMMAND INJECTION: Direct raw command execution payload
     public static void run(final String cmd) {
         if (shellInput == null) return;
         new Thread(() -> {
