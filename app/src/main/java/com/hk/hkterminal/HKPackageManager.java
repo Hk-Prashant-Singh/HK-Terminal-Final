@@ -185,9 +185,17 @@ public class HKPackageManager {
         String script =
             "rm -rf '" + tmp + "'/* 2>/dev/null ; " +
             "cd '" + tmp + "' && " +
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
 
-            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; " +
+            // Alpine .apk is an outer tar archive containing data.tar.gz.
+            // Extract the actual package payload before copying usr/lib/usr/bin.
+            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+            "if [ -f data.tar.gz ]; then " +
+                "tar -xzf data.tar.gz 2>/dev/null || tar -xf data.tar.gz 2>/dev/null ; " +
+            "elif [ -f data.tar ]; then " +
+                "tar -xf data.tar 2>/dev/null ; " +
+            "fi ; " +
+
+            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; "
 
             // Top-level package paths.
             "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
@@ -209,6 +217,13 @@ public class HKPackageManager {
 
         if (exit != 0) {
             throw new Exception("Package extraction failed (exit " + exit + ").");
+        }
+
+        // Do not silently continue when an Alpine APK unpacked only its
+        // metadata. The actual data.tar.gz must have been extracted.
+        if (new File(usrDir, "lib").listFiles() == null &&
+            new File(usrDir, "bin").listFiles() == null) {
+            throw new Exception("Package payload was not extracted.");
         }
 
         repairCommonLibraryLinks(libDirFrom(usrDir));
