@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.1 LINKAGE FIX)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.1 LINKAGE FIX + BIONIC ISOLATION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
  * DIRECTIVE    : Ghost Move & Nuke, Progressive Forger, Musl --library-path
  * ============================================================================
@@ -108,7 +108,6 @@ public class HKPackageManager {
                     update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
                     
                     try {
-                        // [!] v11.0: Safe 'cp -a' extraction
                         executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
                         healthScore += 40; 
                     } catch (Exception e) {
@@ -119,14 +118,13 @@ public class HKPackageManager {
 
                     update(listener, "[*] Forging Universal Library Aliases...");
                     try {
-                        // [!] v11.0: Progressive Solid File Forger
                         generateLibraryAliases(libDir);
                         healthScore += 20;
                     } catch (Exception e) {
                         triggerErrorPopup(listener, "ALIAS_FORGER", "Symlink clone failed -> " + e.getMessage());
                     }
 
-                    update(listener, "[*] Injecting Advanced Wrapper Matrix...");
+                    update(listener, "[*] Injecting Advanced Wrapper Matrix (100% ISOLATED)...");
                     generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
 
                     executeGhostCleanup(payloadFile, filesDir, extTmpDir);
@@ -170,34 +168,20 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v11.0 OMEGA SWEEPER: Ghost Move & Nuke (No Crashes)
+    // [!] v11.1 OMEGA SWEEPER: Safe Extraction
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
 
-        /*
-         * Alpine APK format:
-         *
-         *   package.apk
-         *       ├── .PKGINFO
-         *       ├── .SIGN.RSA.*
-         *       └── data.tar.gz   <-- actual filesystem payload
-         *
-         * The previous V2 code could silently continue when the nested
-         * data.tar.gz extraction failed. That is why nano later reported
-         * libncursesw.so.6 as missing.
-         */
         String script =
             "set -e; " +
             "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
             "mkdir -p '" + tmp + "'; " +
             "cd '" + tmp + "'; " +
 
-            // First unpack the outer APK tar.
             "tar -xf '" + payloadFile.getAbsolutePath() + "'; " +
 
-            // Then unpack the REAL filesystem payload.
             "if [ -f data.tar.gz ]; then " +
                 "tar -xzf data.tar.gz; " +
             "elif [ -f data.tar ]; then " +
@@ -209,7 +193,6 @@ public class HKPackageManager {
             "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" +
                 usr + "/sbin' '" + usr + "/share'; " +
 
-            // Copy package filesystem while preserving symlinks.
             "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/'; fi; " +
             "if [ -d usr/lib ]; then cp -a usr/lib/. '" + usr + "/lib/'; fi; " +
             "if [ -d bin ]; then cp -a bin/. '" + usr + "/bin/'; fi; " +
@@ -225,9 +208,7 @@ public class HKPackageManager {
         int exit = process.waitFor();
 
         if (exit != 0) {
-            BufferedReader err = new BufferedReader(
-                new InputStreamReader(process.getErrorStream())
-            );
+            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
             StringBuilder details = new StringBuilder();
             String line;
             while ((line = err.readLine()) != null) {
@@ -236,14 +217,13 @@ public class HKPackageManager {
             throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
         }
 
-        // The actual payload must have produced package files.
         File extractedLib = new File(tmp, "usr/lib");
         File extractedBin = new File(tmp, "usr/bin");
         if (!extractedLib.isDirectory() && !extractedBin.isDirectory()) {
             throw new Exception("APK data.tar.gz was extracted, but no usr/lib or usr/bin was produced.");
         }
 
-        repairCommonLibraryLinks(new File(usrDir, "lib"));
+        repairCommonLibraryLinks(libDirFrom(usrDir));
     }
 
     private static File libDirFrom(File usrDir) {
@@ -261,8 +241,6 @@ public class HKPackageManager {
 
             String name = real.getName();
 
-            // Only repair conventional ELF shared-library SONAMEs.
-            // Keep this conservative so unrelated files are untouched.
             Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.([0-9]+))+$").matcher(name);
             if (!m.matches()) continue;
 
@@ -273,8 +251,6 @@ public class HKPackageManager {
                 createRelativeSymlink(real, major);
             }
 
-            // Some binaries request the unversioned .so name. Create it only
-            // when there is a real versioned library and no existing .so file.
             File unversioned = new File(libDir, m.group(1));
             if (!unversioned.exists()) {
                 createRelativeSymlink(real, unversioned);
@@ -296,8 +272,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-
-    // [!] v11.0 OMEGA JAVA FORGER: Progressive Split Engine
+    // [!] v11.1 OMEGA JAVA FORGER: Progressive Split Engine
     // ============================================================================
     private static boolean isSymbolicLinkCompat(File file) {
         try {
@@ -313,8 +288,6 @@ public class HKPackageManager {
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
 
-        // Preserve real libraries and create SONAME links only when absent.
-        // Do not duplicate ELF shared objects byte-for-byte under many names.
         repairCommonLibraryLinks(libDir);
 
         File[] libs = libDir.listFiles();
@@ -325,7 +298,6 @@ public class HKPackageManager {
 
             String name = f.getName();
 
-            // For common versioned libraries, ensure the major SONAME exists.
             Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\..+)?$").matcher(name);
             if (m.matches()) {
                 File major = new File(libDir, m.group(1) + "." + m.group(2));
@@ -363,7 +335,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v11.0 OMEGA WRAPPER: Musl Library-Path Override
+    // [!] v11.1 OMEGA WRAPPER: Musl Library-Path Override (100% ISOLATED)
     // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
@@ -408,7 +380,10 @@ public class HKPackageManager {
                             fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
                             fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
                             fw.write("export PATH='" + binDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
-                            fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + ":/system/lib64:/system/lib'\n");
+                            
+                            // 🚨 BIONIC ISOLATION FIX: Removed /system/lib64
+                            fw.write("export LD_LIBRARY_PATH='" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + "'\n");
+                            
                             fw.write("export TERMINFO='" + usrDir.getAbsolutePath() + "/share/terminfo'\n");
                             fw.write("export LANG='en_US.UTF-8'\n");
                             fw.write("export LC_ALL='en_US.UTF-8'\n");
@@ -417,8 +392,8 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            // [!] THE KILLER COMMAND: Musl gets explicit instructions to ONLY use our forged path
-                            fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + ":/system/lib64:/system/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
+                            // 🚨 BIONIC ISOLATION FIX: Explicit linkage strictly bounds execution to HK libs
+                            fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
                             binReal.setExecutable(true, true);
@@ -436,8 +411,6 @@ public class HKPackageManager {
 
         File exact = new File(libDir, requestedName);
 
-        // test -e follows a valid symlink; test -L also recognizes the link
-        // itself. This avoids false negatives caused by File.exists().
         try {
             Process p = Runtime.getRuntime().exec(new String[]{
                 "sh", "-c",
@@ -490,8 +463,6 @@ public class HKPackageManager {
         }
 
         try {
-            // Nano requires the wide-character ncurses SONAME. Fail early with a
-            // precise message instead of producing dozens of secondary symbols.
             if ("nano".equals(pkgName) && !hasLibrary(libDir, "libncursesw.so.6")) {
                 triggerErrorPopup(listener, "NANO_NCURSESW_CHECK",
                     "Required library libncursesw.so.6 is missing from " + libDir.getAbsolutePath());
