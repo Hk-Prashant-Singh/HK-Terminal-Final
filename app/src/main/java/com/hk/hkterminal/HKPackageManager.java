@@ -176,57 +176,74 @@ public class HKPackageManager {
         String usr = usrDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
 
-        // IMPORTANT:
-        // Do NOT delete package symlinks. Alpine packages rely on links such as:
-        // libncursesw.so.6 -> libncursesw.so.6.x
-        //
-        // We also copy directory contents with "cp -a" so permissions, modes and
-        // symlinks are preserved as much as possible inside the app sandbox.
+        /*
+         * Alpine APK format:
+         *
+         *   package.apk
+         *       ├── .PKGINFO
+         *       ├── .SIGN.RSA.*
+         *       └── data.tar.gz   <-- actual filesystem payload
+         *
+         * The previous V2 code could silently continue when the nested
+         * data.tar.gz extraction failed. That is why nano later reported
+         * libncursesw.so.6 as missing.
+         */
         String script =
-            "rm -rf '" + tmp + "'/* 2>/dev/null ; " +
-            "cd '" + tmp + "' && " +
+            "set -e; " +
+            "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
+            "mkdir -p '" + tmp + "'; " +
+            "cd '" + tmp + "'; " +
 
-            // Alpine .apk is an outer tar archive containing data.tar.gz.
-            // Extract the actual package payload before copying usr/lib/usr/bin.
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+            // First unpack the outer APK tar.
+            "tar -xf '" + payloadFile.getAbsolutePath() + "'; " +
+
+            // Then unpack the REAL filesystem payload.
             "if [ -f data.tar.gz ]; then " +
-                "tar -xzf data.tar.gz 2>/dev/null || tar -xf data.tar.gz 2>/dev/null ; " +
+                "tar -xzf data.tar.gz; " +
             "elif [ -f data.tar ]; then " +
-                "tar -xf data.tar 2>/dev/null ; " +
-            "fi ; " +
+                "tar -xf data.tar; " +
+            "else " +
+                "echo 'APK_DATA_PAYLOAD_NOT_FOUND' >&2; exit 21; " +
+            "fi; " +
 
-            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; " +
+            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" +
+                usr + "/sbin' '" + usr + "/share'; " +
 
-            // Top-level package paths.
-            "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
-            "if [ -d bin ]; then cp -a bin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
-            "if [ -d sbin ]; then cp -a sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
-            "if [ -d share ]; then cp -a share/. '" + usr + "/share/' 2>/dev/null || true; fi ; " +
+            // Copy package filesystem while preserving symlinks.
+            "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/'; fi; " +
+            "if [ -d usr/lib ]; then cp -a usr/lib/. '" + usr + "/lib/'; fi; " +
+            "if [ -d bin ]; then cp -a bin/. '" + usr + "/bin/'; fi; " +
+            "if [ -d usr/bin ]; then cp -a usr/bin/. '" + usr + "/bin/'; fi; " +
+            "if [ -d sbin ]; then cp -a sbin/. '" + usr + "/bin/'; fi; " +
+            "if [ -d usr/sbin ]; then cp -a usr/sbin/. '" + usr + "/bin/'; fi; " +
+            "if [ -d share ]; then cp -a share/. '" + usr + "/share/'; fi; " +
+            "if [ -d usr/share ]; then cp -a usr/share/. '" + usr + "/share/'; fi; " +
 
-            // Standard Alpine package paths.
-            "if [ -d usr/lib ]; then cp -a usr/lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
-            "if [ -d usr/bin ]; then cp -a usr/bin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
-            "if [ -d usr/sbin ]; then cp -a usr/sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
-            "if [ -d usr/share ]; then cp -a usr/share/. '" + usr + "/share/' 2>/dev/null || true; fi ; " +
-
-            // Fix permissions only; never remove symlinks.
             "chmod -R u+rwX,go+rX '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null || true";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
         int exit = process.waitFor();
 
         if (exit != 0) {
-            throw new Exception("Package extraction failed (exit " + exit + ").");
+            BufferedReader err = new BufferedReader(
+                new InputStreamReader(process.getErrorStream())
+            );
+            StringBuilder details = new StringBuilder();
+            String line;
+            while ((line = err.readLine()) != null) {
+                details.append(line).append(" ");
+            }
+            throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
         }
 
-        // Do not silently continue when an Alpine APK unpacked only its
-        // metadata. The actual data.tar.gz must have been extracted.
-        if (new File(usrDir, "lib").listFiles() == null &&
-            new File(usrDir, "bin").listFiles() == null) {
-            throw new Exception("Package payload was not extracted.");
+        // The actual payload must have produced package files.
+        File extractedLib = new File(tmp, "usr/lib");
+        File extractedBin = new File(tmp, "usr/bin");
+        if (!extractedLib.isDirectory() && !extractedBin.isDirectory()) {
+            throw new Exception("APK data.tar.gz was extracted, but no usr/lib or usr/bin was produced.");
         }
 
-        repairCommonLibraryLinks(libDirFrom(usrDir));
+        repairCommonLibraryLinks(new File(usrDir, "lib"));
     }
 
     private static File libDirFrom(File usrDir) {
@@ -418,10 +435,18 @@ public class HKPackageManager {
         if (libDir == null || !libDir.isDirectory()) return false;
 
         File exact = new File(libDir, requestedName);
-        if (exact.exists()) return true;
 
-        // Also accept a compatible real version if the requested SONAME link
-        // can be reconstructed.
+        // test -e follows a valid symlink; test -L also recognizes the link
+        // itself. This avoids false negatives caused by File.exists().
+        try {
+            Process p = Runtime.getRuntime().exec(new String[]{
+                "sh", "-c",
+                "test -e '" + exact.getAbsolutePath() + "' || test -L '" +
+                    exact.getAbsolutePath() + "'"
+            });
+            if (p.waitFor() == 0) return true;
+        } catch (Exception ignored) {}
+
         Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)$").matcher(requestedName);
         if (!m.matches()) return false;
 
@@ -430,7 +455,7 @@ public class HKPackageManager {
         if (files == null) return false;
 
         for (File f : files) {
-            if (f.isFile() && f.getName().startsWith(prefix + ".")) {
+            if (f.getName().startsWith(prefix + ".")) {
                 return true;
             }
         }
