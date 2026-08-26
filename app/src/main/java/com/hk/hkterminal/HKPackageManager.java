@@ -2,7 +2,6 @@ package com.hk.hkterminal;
 
 import android.content.Context;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
@@ -28,9 +27,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : GOD-LEVEL DEPLOYMENT ENGINE (RUNTIME v12.1 OMEGA MATRIX)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.1 LINKAGE FIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Direct Injection, Matrix Flattening & Solid Forger
+ * DIRECTIVE    : Ghost Move & Nuke, Progressive Forger, Musl --library-path
  * ============================================================================
  */
 public class HKPackageManager {
@@ -49,6 +48,7 @@ public class HKPackageManager {
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
+            String currentTraceStep = "INITIALIZATION";
 
             try {
                 File filesDir = context.getFilesDir();
@@ -66,7 +66,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v12.1 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v11.0 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -105,10 +105,10 @@ public class HKPackageManager {
                     if (!extTmpDir.exists()) extTmpDir.mkdirs();
 
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Initiating Direct Target Extraction...");
+                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
                     
                     try {
-                        // [!] v12.1: The Tech Wizard's 1000% working Direct-Injection approach
+                        // [!] v11.0: Safe 'cp -a' extraction
                         executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
                         healthScore += 40; 
                     } catch (Exception e) {
@@ -119,7 +119,7 @@ public class HKPackageManager {
 
                     update(listener, "[*] Forging Universal Library Aliases...");
                     try {
-                        // Creates solid clones for any missing symlinked `.so` libraries
+                        // [!] v11.0: Progressive Solid File Forger
                         generateLibraryAliases(libDir);
                         healthScore += 20;
                     } catch (Exception e) {
@@ -170,58 +170,135 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v12.1 OMEGA DIRECT-INJECTION: The Tech Wizard's Core Method
+    // [!] v11.0 OMEGA SWEEPER: Ghost Move & Nuke (No Crashes)
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
-        
-        // 1. Direct Extraction to Target (Bypassing extTmpDir & cp completely)
-        String script = 
-            "tar -xf '" + payloadFile.getAbsolutePath() + "' -C '" + usr + "' 2>/dev/null ; " +
-            
-            // 2. Flatten Matrix (Alpine nested directories to flat directories)
-            "mv -f '" + usr + "/usr/lib/'* '" + usr + "/lib/' 2>/dev/null ; " +
-            "mv -f '" + usr + "/usr/bin/'* '" + usr + "/bin/' 2>/dev/null ; " +
-            "mv -f '" + usr + "/usr/sbin/'* '" + usr + "/bin/' 2>/dev/null ; " +
-            "mv -f '" + usr + "/sbin/'* '" + usr + "/bin/' 2>/dev/null ; " +
-            "mv -f '" + usr + "/usr/share/'* '" + usr + "/share/' 2>/dev/null ; " +
-            
-            // 3. Nuke remnants and lock execution rights
-            "rm -rf '" + usr + "/usr' 2>/dev/null ; " +
-            "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null";
+        String tmp = extTmpDir.getAbsolutePath();
+
+        // IMPORTANT:
+        // Do NOT delete package symlinks. Alpine packages rely on links such as:
+        // libncursesw.so.6 -> libncursesw.so.6.x
+        //
+        // We also copy directory contents with "cp -a" so permissions, modes and
+        // symlinks are preserved as much as possible inside the app sandbox.
+        String script =
+            "rm -rf '" + tmp + "'/* 2>/dev/null ; " +
+            "cd '" + tmp + "' && " +
+            "tar -xf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null ; " +
+
+            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" + usr + "/sbin' '" + usr + "/share' ; " +
+
+            // Top-level package paths.
+            "if [ -d lib ]; then cp -a lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
+            "if [ -d bin ]; then cp -a bin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
+            "if [ -d sbin ]; then cp -a sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
+            "if [ -d share ]; then cp -a share/. '" + usr + "/share/' 2>/dev/null || true; fi ; " +
+
+            // Standard Alpine package paths.
+            "if [ -d usr/lib ]; then cp -a usr/lib/. '" + usr + "/lib/' 2>/dev/null || true; fi ; " +
+            "if [ -d usr/bin ]; then cp -a usr/bin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
+            "if [ -d usr/sbin ]; then cp -a usr/sbin/. '" + usr + "/bin/' 2>/dev/null || true; fi ; " +
+            "if [ -d usr/share ]; then cp -a usr/share/. '" + usr + "/share/' 2>/dev/null || true; fi ; " +
+
+            // Fix permissions only; never remove symlinks.
+            "chmod -R u+rwX,go+rX '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null || true";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
-        process.waitFor();
+        int exit = process.waitFor();
+
+        if (exit != 0) {
+            throw new Exception("Package extraction failed (exit " + exit + ").");
+        }
+
+        repairCommonLibraryLinks(libDirFrom(usrDir));
+    }
+
+    private static File libDirFrom(File usrDir) {
+        return new File(usrDir, "lib");
+    }
+
+    private static void repairCommonLibraryLinks(File libDir) {
+        if (libDir == null || !libDir.isDirectory()) return;
+
+        File[] files = libDir.listFiles();
+        if (files == null) return;
+
+        for (File real : files) {
+            if (!real.isFile() || isSymbolicLinkCompat(real)) continue;
+
+            String name = real.getName();
+
+            // Only repair conventional ELF shared-library SONAMEs.
+            // Keep this conservative so unrelated files are untouched.
+            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.([0-9]+))+$").matcher(name);
+            if (!m.matches()) continue;
+
+            String majorLink = m.group(1) + "." + m.group(2);
+            File major = new File(libDir, majorLink);
+
+            if (!major.exists()) {
+                createRelativeSymlink(real, major);
+            }
+
+            // Some binaries request the unversioned .so name. Create it only
+            // when there is a real versioned library and no existing .so file.
+            File unversioned = new File(libDir, m.group(1));
+            if (!unversioned.exists()) {
+                createRelativeSymlink(real, unversioned);
+            }
+        }
+    }
+
+    private static void createRelativeSymlink(File target, File link) {
+        try {
+            if (link.exists() || isSymbolicLinkCompat(link)) return;
+
+            String targetName = target.getName();
+            Process p = Runtime.getRuntime().exec(new String[]{
+                "sh", "-c",
+                "cd '" + link.getParent() + "' && ln -s '" + targetName + "' '" + link.getName() + "'"
+            });
+            p.waitFor();
+        } catch (Exception ignored) {}
     }
 
     // ============================================================================
-    // [!] v12.1 OMEGA JAVA FORGER: Progressive Split Engine
+
+    // [!] v11.0 OMEGA JAVA FORGER: Progressive Split Engine
     // ============================================================================
+    private static boolean isSymbolicLinkCompat(File file) {
+        try {
+            Process p = Runtime.getRuntime().exec(new String[]{
+                "sh", "-c", "test -L '" + file.getAbsolutePath() + "'"
+            });
+            return p.waitFor() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
+
+        // Preserve real libraries and create SONAME links only when absent.
+        // Do not duplicate ELF shared objects byte-for-byte under many names.
+        repairCommonLibraryLinks(libDir);
+
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
-        List<File> realLibs = new ArrayList<>();
         for (File f : libs) {
-            // Find only real, solid library files
-            if (f.isFile() && f.length() > 512 && f.getName().contains(".so")) { 
-                realLibs.add(f);
-            }
-        }
+            if (!f.isFile()) continue;
 
-        for (File real : realLibs) {
-            String name = real.getName();
-            String[] parts = name.split("\\.");
-            String alias = "";
-            
-            // Generate full solid copies for all versions (e.g. .so, .so.6, .so.6.4)
-            for (String part : parts) {
-                if (alias.isEmpty()) alias = part;
-                else alias += "." + part;
-                
-                if (alias.contains(".so")) {
-                    cloneFileSafely(real, new File(libDir, alias));
+            String name = f.getName();
+
+            // For common versioned libraries, ensure the major SONAME exists.
+            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\..+)?$").matcher(name);
+            if (m.matches()) {
+                File major = new File(libDir, m.group(1) + "." + m.group(2));
+                if (!major.exists()) {
+                    createRelativeSymlink(f, major);
                 }
             }
         }
@@ -254,7 +331,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v12.1 OMEGA WRAPPER: Musl Library-Path Override
+    // [!] v11.0 OMEGA WRAPPER: Musl Library-Path Override
     // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
@@ -308,7 +385,7 @@ public class HKPackageManager {
                                 fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
                             }
                             
-                            // [!] THE KILLER COMMAND: Musl explicit linkage
+                            // [!] THE KILLER COMMAND: Musl gets explicit instructions to ONLY use our forged path
                             fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + ":/system/lib64:/system/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
                             fw.close();
                             binFile.setExecutable(true, true);
@@ -320,6 +397,29 @@ public class HKPackageManager {
                 }
             }
         }
+    }
+
+    private static boolean hasLibrary(File libDir, String requestedName) {
+        if (libDir == null || !libDir.isDirectory()) return false;
+
+        File exact = new File(libDir, requestedName);
+        if (exact.exists()) return true;
+
+        // Also accept a compatible real version if the requested SONAME link
+        // can be reconstructed.
+        Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)$").matcher(requestedName);
+        if (!m.matches()) return false;
+
+        String prefix = m.group(1) + "." + m.group(2);
+        File[] files = libDir.listFiles();
+        if (files == null) return false;
+
+        for (File f : files) {
+            if (f.isFile() && f.getName().startsWith(prefix + ".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
@@ -350,6 +450,14 @@ public class HKPackageManager {
         }
 
         try {
+            // Nano requires the wide-character ncurses SONAME. Fail early with a
+            // precise message instead of producing dozens of secondary symbols.
+            if ("nano".equals(pkgName) && !hasLibrary(libDir, "libncursesw.so.6")) {
+                triggerErrorPopup(listener, "NANO_NCURSESW_CHECK",
+                    "Required library libncursesw.so.6 is missing from " + libDir.getAbsolutePath());
+                return false;
+            }
+
             update(listener, "[*] Smoke Test: Firing package binary...");
             Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", targetExecutable.getAbsolutePath() + " --help"});
             
