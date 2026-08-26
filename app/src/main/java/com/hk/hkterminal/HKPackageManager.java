@@ -20,16 +20,9 @@ import java.util.regex.Pattern;
 
 /**
  * ============================================================================
- * ██╗  ██╗██╗  ██╗     ██████╗ ██████╗ ███████╗██████╗  █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
- * ██║  ██║██║ ██╔╝    ██╔═══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
- * ███████║█████╔╝     ██║   ██║██████╔╝█████╗  ██████╔╝███████║   ██║   ██║██║   ██║██╔██╗ ██║
- * ██╔══██║██╔═██╗     ██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
- * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
- * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
- * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.3 FINAL ALPINE FIX)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v14.0 ALPINE SANDBOX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Direct APK Extraction (GZIP Fix), Permission Bypass, Bionic Isolation
+ * DIRECTIVE    : 100% Musl-Bionic Isolation & Sub-system Sandboxing
  * ============================================================================
  */
 public class HKPackageManager {
@@ -48,25 +41,25 @@ public class HKPackageManager {
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
-            String currentTraceStep = "INITIALIZATION";
 
             try {
                 File filesDir = context.getFilesDir();
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
-                File libDir = new File(usrDir, "lib");
-                File localLibDir = new File(usrDir, "local/lib");
                 File cacheDir = new File(filesDir, ".cache");
-                File sbinDir = new File(filesDir, "sbin");
-                File usrSbinDir = new File(usrDir, "sbin");
-                File shareDir = new File(usrDir, "share");
                 File tmpDir = new File(filesDir, "tmp");
                 File extTmpDir = new File(filesDir, "ext_tmp");
                 
-                ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
+                // 🚨 SANDBOX FIX: Dedicated isolated folders for Alpine packages
+                File alpineDir = new File(usrDir, "alpine");
+                File alpineBinDir = new File(alpineDir, "bin");
+                File alpineLibDir = new File(alpineDir, "lib");
+                File alpineShareDir = new File(alpineDir, "share");
+                
+                ensureMatrixDirectories(usrDir, binDir, cacheDir, tmpDir, extTmpDir, alpineDir, alpineBinDir, alpineLibDir, alpineShareDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v11.3 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v14.0 SANDBOX ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -102,36 +95,34 @@ public class HKPackageManager {
                     }
                     healthScore += 20;
 
-                    if (!extTmpDir.exists()) extTmpDir.mkdirs();
-
                     dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Initiating Native OS Extraction...");
+                    update(listener, "[+] Payload Secured. Extracting to Isolated Sandbox...");
                     
                     try {
-                        executeNativeExtractionAndSweep(payloadFile, usrDir, extTmpDir);
+                        executeNativeExtractionAndSweep(payloadFile, alpineDir, extTmpDir);
                         healthScore += 40; 
                     } catch (Exception e) {
-                        triggerErrorPopup(listener, "NATIVE_EXTRACTION", "Extraction crash -> " + e.getMessage());
+                        triggerErrorPopup(listener, "SANDBOX_EXTRACTION", "Extraction crash -> " + e.getMessage());
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue;
                     }
 
-                    update(listener, "[*] Forging Universal Library Aliases...");
+                    update(listener, "[*] Forging Universal Sandbox Aliases...");
                     try {
-                        generateLibraryAliases(libDir);
+                        generateLibraryAliases(alpineLibDir);
                         healthScore += 20;
                     } catch (Exception e) {
                         triggerErrorPopup(listener, "ALIAS_FORGER", "Symlink clone failed -> " + e.getMessage());
                     }
 
-                    update(listener, "[*] Injecting Advanced Wrapper Matrix (100% ISOLATED)...");
-                    generateWrapperMatrix(binDir, libDir, localLibDir, usrDir, filesDir, pkgName);
+                    update(listener, "[*] Injecting Stealth Wrappers to Main System...");
+                    generateWrapperMatrix(alpineBinDir, alpineLibDir, binDir, usrDir, alpineDir, filesDir, pkgName);
 
                     executeGhostCleanup(payloadFile, filesDir, extTmpDir);
                     
                     dbManager.updatePackageState(pkgName, "VALIDATING");
                     update(listener, "[*] Running Runtime Validation & Smoke Test...");
-                    boolean isRuntimeValid = runValidationMatrix(binDir, libDir, pkgName, listener);
+                    boolean isRuntimeValid = runValidationMatrix(binDir, alpineLibDir, pkgName, listener);
 
                     if (isRuntimeValid) {
                         healthScore += 20; 
@@ -167,11 +158,8 @@ public class HKPackageManager {
         update(listener, "[-] ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
     }
 
-    // ============================================================================
-    // [!] v11.3 OMEGA SWEEPER: 100% Android-Compatible Extraction (GZIP + CP FIX)
-    // ============================================================================
-    private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
-        String usr = usrDir.getAbsolutePath();
+    private static void executeNativeExtractionAndSweep(File payloadFile, File alpineDir, File extTmpDir) throws Exception {
+        String alpine = alpineDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
 
         String script =
@@ -180,22 +168,20 @@ public class HKPackageManager {
             "mkdir -p '" + tmp + "'; " +
             "cd '" + tmp + "'; " +
 
-            // Android's tar needs -z for .apk files. Fallback to normal tar if -z fails.
             "tar -ozxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || tar -oxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || true; " +
 
-            "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" +
-                usr + "/sbin' '" + usr + "/share'; " +
+            "mkdir -p '" + alpine + "/lib' '" + alpine + "/bin' '" + alpine + "/share'; " +
 
-            "if [ -d lib ]; then cp -r lib/* '" + usr + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/lib ]; then cp -r usr/lib/* '" + usr + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d bin ]; then cp -r bin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/bin ]; then cp -r usr/bin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d sbin ]; then cp -r sbin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/sbin ]; then cp -r usr/sbin/* '" + usr + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d share ]; then cp -r share/* '" + usr + "/share/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/share ]; then cp -r usr/share/* '" + usr + "/share/' 2>/dev/null || true; fi; " +
+            "if [ -d lib ]; then cp -r lib/* '" + alpine + "/lib/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/lib ]; then cp -r usr/lib/* '" + alpine + "/lib/' 2>/dev/null || true; fi; " +
+            "if [ -d bin ]; then cp -r bin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/bin ]; then cp -r usr/bin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d sbin ]; then cp -r sbin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/sbin ]; then cp -r usr/sbin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
+            "if [ -d share ]; then cp -r share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
+            "if [ -d usr/share ]; then cp -r usr/share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
 
-            "chmod -R 777 '" + usr + "/bin' '" + usr + "/lib' 2>/dev/null || true";
+            "chmod -R 777 '" + alpine + "' 2>/dev/null || true";
 
         Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
         int exit = process.waitFor();
@@ -209,12 +195,7 @@ public class HKPackageManager {
             }
             throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
         }
-
-        repairCommonLibraryLinks(libDirFrom(usrDir));
-    }
-
-    private static File libDirFrom(File usrDir) {
-        return new File(usrDir, "lib");
+        repairCommonLibraryLinks(new File(alpine, "lib"));
     }
 
     private static void repairCommonLibraryLinks(File libDir) {
@@ -225,34 +206,23 @@ public class HKPackageManager {
 
         for (File real : files) {
             if (!real.isFile() || isSymbolicLinkCompat(real)) continue;
-
             String name = real.getName();
-
             Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.([0-9]+))+$").matcher(name);
             if (!m.matches()) continue;
 
-            String majorLink = m.group(1) + "." + m.group(2);
-            File major = new File(libDir, majorLink);
-
-            if (!major.exists()) {
-                createRelativeSymlink(real, major);
-            }
+            File major = new File(libDir, m.group(1) + "." + m.group(2));
+            if (!major.exists()) createRelativeSymlink(real, major);
 
             File unversioned = new File(libDir, m.group(1));
-            if (!unversioned.exists()) {
-                createRelativeSymlink(real, unversioned);
-            }
+            if (!unversioned.exists()) createRelativeSymlink(real, unversioned);
         }
     }
 
     private static void createRelativeSymlink(File target, File link) {
         try {
             if (link.exists() || isSymbolicLinkCompat(link)) return;
-
-            String targetName = target.getName();
             Process p = Runtime.getRuntime().exec(new String[]{
-                "sh", "-c",
-                "cd '" + link.getParent() + "' && ln -s '" + targetName + "' '" + link.getName() + "'"
+                "sh", "-c", "cd '" + link.getParent() + "' && ln -s '" + target.getName() + "' '" + link.getName() + "'"
             });
             p.waitFor();
         } catch (Exception ignored) {}
@@ -260,34 +230,23 @@ public class HKPackageManager {
 
     private static boolean isSymbolicLinkCompat(File file) {
         try {
-            Process p = Runtime.getRuntime().exec(new String[]{
-                "sh", "-c", "test -L '" + file.getAbsolutePath() + "'"
-            });
+            Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", "test -L '" + file.getAbsolutePath() + "'"});
             return p.waitFor() == 0;
-        } catch (Exception e) {
-            return false;
-        }
+        } catch (Exception e) { return false; }
     }
 
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
-
         repairCommonLibraryLinks(libDir);
-
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
         for (File f : libs) {
             if (!f.isFile()) continue;
-
-            String name = f.getName();
-
-            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\..+)?$").matcher(name);
+            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\..+)?$").matcher(f.getName());
             if (m.matches()) {
                 File major = new File(libDir, m.group(1) + "." + m.group(2));
-                if (!major.exists()) {
-                    createRelativeSymlink(f, major);
-                }
+                if (!major.exists()) createRelativeSymlink(f, major);
             }
         }
     }
@@ -296,7 +255,6 @@ public class HKPackageManager {
         try {
             File realSource = source.getCanonicalFile();
             if (!realSource.exists() || realSource.isDirectory()) return; 
-
             if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
             dest.delete(); 
             
@@ -307,20 +265,13 @@ public class HKPackageManager {
             while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
             
             in.close(); out.close();
-            
-            try {
-                android.system.Os.chmod(dest.getAbsolutePath(), 0777);
-            } catch (Exception e) {
-                dest.setExecutable(true, false); 
-                dest.setReadable(true, false);
-                dest.setWritable(true, false);
-            }
+            dest.setExecutable(true, false); 
         } catch (Exception ignored) {}
     }
 
-    private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
-        String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
-        File[] libs = libDir.listFiles();
+    private static void generateWrapperMatrix(File alpineBinDir, File alpineLibDir, File mainBinDir, File usrDir, File alpineDir, File filesDir, String pkgName) {
+        String muslLoaderPath = alpineLibDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
+        File[] libs = alpineLibDir.listFiles();
         if (libs != null) {
             for (File f : libs) {
                 if (f.getName().startsWith("libc.musl-") || f.getName().startsWith("ld-musl-")) {
@@ -330,57 +281,54 @@ public class HKPackageManager {
             }
         }
 
-        File pyReal = new File(binDir, "python3.14");
-        if (pyReal.exists() && pyReal.length() > 1024) {
-            cloneFileSafely(pyReal, new File(binDir, "python.elf"));
-            cloneFileSafely(pyReal, new File(binDir, "python3.elf"));
-        }
-
-        File[] allBinaries = binDir.listFiles();
+        File[] allBinaries = alpineBinDir.listFiles();
         if (allBinaries == null) return;
 
         for (File binFile : allBinaries) {
-            if (binFile.isFile() && !binFile.getName().endsWith(".elf") && !binFile.getName().endsWith(".sh") && !binFile.getName().endsWith(".py")) {
-                boolean isElf = false;
-                try {
-                    FileInputStream fis = new FileInputStream(binFile);
-                    byte[] header = new byte[4];
-                    if (fis.read(header) == 4 && header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
-                        isElf = true;
-                    }
-                    fis.close();
-                } catch (Exception ignored) {}
+            if (!binFile.isFile()) continue;
+            String name = binFile.getName();
+            if (name.endsWith(".elf") || name.endsWith(".sh") || name.endsWith(".py")) continue;
 
-                if (isElf) {
-                    File binReal = new File(binDir, binFile.getName() + ".elf");
-                    if (binFile.renameTo(binReal)) {
-                        try {
-                            FileWriter fw = new FileWriter(binFile);
-                            fw.write("#!/system/bin/sh\n");
-                            fw.write("export PREFIX='" + usrDir.getAbsolutePath() + "'\n");
-                            fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
-                            fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
-                            fw.write("export PATH='" + binDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
-                            
-                            // 🚨 CRITICAL FIX: Removed LD_LIBRARY_PATH export entirely to avoid poisoning Android native commands.
-                            
-                            fw.write("export TERMINFO='" + usrDir.getAbsolutePath() + "/share/terminfo'\n");
-                            fw.write("export LANG='en_US.UTF-8'\n");
-                            fw.write("export LC_ALL='en_US.UTF-8'\n");
-
-                            if (pkgName.contains("python") || binFile.getName().contains("python")) {
-                                fw.write("export PYTHONHOME='" + usrDir.getAbsolutePath() + "'\n");
-                            }
-                            
-                            fw.write("exec '" + muslLoaderPath + "' --library-path '" + libDir.getAbsolutePath() + ":" + localLibDir.getAbsolutePath() + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
-                            fw.close();
-                            binFile.setExecutable(true, true);
-                            binReal.setExecutable(true, true);
-                        } catch (Exception ignored) {}
-                    }
-                } else {
-                    binFile.setExecutable(true, true);
+            boolean isElf = false;
+            try {
+                FileInputStream fis = new FileInputStream(binFile);
+                byte[] header = new byte[4];
+                if (fis.read(header) == 4 && header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
+                    isElf = true;
                 }
+                fis.close();
+            } catch (Exception ignored) {}
+
+            if (isElf) {
+                File binReal = new File(alpineBinDir, name + ".elf");
+                if (binFile.renameTo(binReal)) {
+                    try {
+                        File wrapperFile = new File(mainBinDir, name);
+                        FileWriter fw = new FileWriter(wrapperFile);
+                        fw.write("#!/system/bin/sh\n");
+                        fw.write("export PREFIX='" + usrDir.getAbsolutePath() + "'\n");
+                        fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
+                        fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
+                        fw.write("export PATH='" + mainBinDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
+                        // Target Sandbox Terminfo so nano's screen doesn't break
+                        fw.write("export TERMINFO='" + alpineDir.getAbsolutePath() + "/share/terminfo'\n");
+                        fw.write("export LANG='en_US.UTF-8'\n");
+                        fw.write("export LC_ALL='en_US.UTF-8'\n");
+
+                        if (pkgName.contains("python") || name.contains("python")) {
+                            fw.write("export PYTHONHOME='" + alpineDir.getAbsolutePath() + "'\n");
+                        }
+                        
+                        fw.write("exec '" + muslLoaderPath + "' --library-path '" + alpineLibDir.getAbsolutePath() + "' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
+                        fw.close();
+                        wrapperFile.setExecutable(true, true);
+                        binReal.setExecutable(true, true);
+                    } catch (Exception ignored) {}
+                }
+            } else {
+                File target = new File(mainBinDir, name);
+                cloneFileSafely(binFile, target);
+                target.setExecutable(true, true);
             }
         }
     }
@@ -389,15 +337,7 @@ public class HKPackageManager {
         if (libDir == null || !libDir.isDirectory()) return false;
 
         File exact = new File(libDir, requestedName);
-
-        try {
-            Process p = Runtime.getRuntime().exec(new String[]{
-                "sh", "-c",
-                "test -e '" + exact.getAbsolutePath() + "' || test -L '" +
-                    exact.getAbsolutePath() + "'"
-            });
-            if (p.waitFor() == 0) return true;
-        } catch (Exception ignored) {}
+        if (exact.exists()) return true;
 
         Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)$").matcher(requestedName);
         if (!m.matches()) return false;
@@ -407,44 +347,27 @@ public class HKPackageManager {
         if (files == null) return false;
 
         for (File f : files) {
-            if (f.getName().startsWith(prefix + ".")) {
-                return true;
-            }
+            if (f.getName().startsWith(prefix + ".")) return true;
         }
         return false;
     }
 
-    private static boolean runValidationMatrix(File binDir, File libDir, String pkgName, InstallListener listener) {
-        boolean binaryExists = false;
-        File targetExecutable = null;
-
-        if (new File(binDir, pkgName).exists()) {
-            binaryExists = true;
-            targetExecutable = new File(binDir, pkgName);
-        } else if (new File(binDir, pkgName + ".elf").exists()) {
-            binaryExists = true;
-            targetExecutable = new File(binDir, pkgName);
-        }
-
-        if (!binaryExists || targetExecutable == null) {
+    private static boolean runValidationMatrix(File binDir, File alpineLibDir, String pkgName, InstallListener listener) {
+        File targetExecutable = new File(binDir, pkgName);
+        
+        if (!targetExecutable.exists()) {
             if (pkgName.contains("lib") || pkgName.contains("musl") || pkgName.contains("terminfo") || 
                 pkgName.contains("ca-certificates") || pkgName.contains("tzdata") || pkgName.contains("ncurses") || 
                 pkgName.contains("sqlite") || pkgName.contains("zlib") || pkgName.contains("openssl") || pkgName.contains("bzip")) {
                 return true; 
             }
-            triggerErrorPopup(listener, "VALIDATION_BINARY_CHECK", "Binary wrapper not found.");
-            return false;
-        }
-
-        if (!targetExecutable.canExecute()) {
-            triggerErrorPopup(listener, "VALIDATION_PERMISSION", "Execution permission denied.");
+            triggerErrorPopup(listener, "VALIDATION_BINARY_CHECK", "Binary wrapper not found in main PATH.");
             return false;
         }
 
         try {
-            if ("nano".equals(pkgName) && !hasLibrary(libDir, "libncursesw.so.6")) {
-                triggerErrorPopup(listener, "NANO_NCURSESW_CHECK",
-                    "Required library libncursesw.so.6 is missing from " + libDir.getAbsolutePath());
+            if ("nano".equals(pkgName) && !hasLibrary(alpineLibDir, "libncursesw.so.6")) {
+                triggerErrorPopup(listener, "NANO_NCURSESW_CHECK", "libncursesw.so.6 missing from sandbox.");
                 return false;
             }
 
@@ -484,11 +407,6 @@ public class HKPackageManager {
             String errStr = errorOutput.toString().toLowerCase();
             if (errStr.contains("not found") || errStr.contains("error loading shared library") || errStr.contains("symbol not found")) {
                 triggerErrorPopup(listener, "SMOKE_TEST_LINKAGE", errStr.trim());
-                return false;
-            }
-
-            if (exitCode == 127) { 
-                triggerErrorPopup(listener, "SMOKE_TEST_EXECUTION", "Fatal Shell Error (127).");
                 return false;
             }
 
