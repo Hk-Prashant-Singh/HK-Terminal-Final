@@ -141,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
     // [!] v12.0 OPERATION: Universal Permission Matrix (AI Voice + Omni-Storage)
     // ============================================================================
     private void initializeFutureMatrixPermissions() {
-        // 1. Android 11+ Scoped Storage Bypass (For Logger & Guardian)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 try {
@@ -157,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 2. Standard Runtime Permissions for Future AI Engine & Legacy Storage
         String[] requiredPermissions = {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -176,31 +174,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ============================================================================
+    // [!] SYSTEM DIAGNOSTIC (SILENT MODE)
+    // ============================================================================
     private void runSystemDiagnostic() {
-        appendMatrixText("[*] Booting HK-Operation Intelligence (v12.0 NATIVE)...\n");
-        appendMatrixText("[*] Running Zero-Trust System Diagnostic...\n");
-        File binDir = new File(getUsrBinPath());
-        File libDir = new File(getUsrLibPath());
-        
-        int weaponCount = (binDir.exists() && binDir.listFiles() != null) ? binDir.listFiles().length : 0;
-        int libCount = (libDir.exists() && libDir.listFiles() != null) ? libDir.listFiles().length : 0;
-        
-        appendMatrixText("[+] Arsenal Status: " + weaponCount + " Weapons, " + libCount + " Libs loaded.\n");
-        
+        // [!] FIX: Visual print statements removed to keep terminal clean.
+        // Background matrix checks will run silently without spamming the UI.
         try {
             SQLiteDatabase db = dbManager.getReadableDatabase();
             Cursor c = db.rawQuery("SELECT COUNT(*) FROM Health WHERE is_corrupted = 1", null);
             if (c.moveToFirst() && c.getInt(0) > 0) {
-                appendMatrixText("[-] WARNING: " + c.getInt(0) + " packages corrupted! Run 'hk-C' to Auto-Heal.\n");
-            } else {
-                appendMatrixText("[+] System Health Matrix: 100% SECURE.\n");
+                HKLogger.logEvent("DIAGNOSTIC", "CORRUPTION_FOUND", c.getInt(0) + " packages corrupted.");
             }
             c.close();
         } catch (Exception e) {
-            appendMatrixText("[*] Database Registry initializing...\n");
+            HKLogger.logEvent("DIAGNOSTIC", "DB_INIT_ERROR", e.getMessage());
         }
-
-        appendMatrixText("[+] Native Bypass Shield & Future AI Core: ACTIVE.\n");
+        // AI Core updated to HK Core internally, but stays stealthy (no screen print).
+        HKLogger.logEvent("DIAGNOSTIC", "SHIELD_STATUS", "Native Bypass Shield & HK Core: ACTIVE");
     }
 
     private void setupCopyFeature() {
@@ -216,63 +207,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ============================================================================
+    // [!] v12.0 MASTER ENGINE LINK: Triggering TerminalEngine
+    // ============================================================================
     private void initStatefulShell() {
-        try {
-            String[] env = {
-                "PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin", 
-                "LD_LIBRARY_PATH=/system/lib64:/system/lib", 
-                "TERM=xterm-256color", 
-                "HOME=" + getBaseHomePath(),
-                "PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr",
-                "PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14"
-            };
-            
-            shellProcess = Runtime.getRuntime().exec("sh", env, new File(getBaseHomePath()));
-            shellInput = new DataOutputStream(shellProcess.getOutputStream());
-            
-            new Thread(() -> {
-                try {
-                    InputStream is = shellProcess.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        if (line.trim().equals("---HK_DONE---")) {
-                            runOnUiThread(() -> {
-                                if (outputView != null) outputView.append(currentPrompt);
-                                scrollToBottom();
-                            });
-                        } else {
-                            final String l = line + "\n";
-                            runOnUiThread(() -> appendMatrixText(l));
-                        }
-                    }
-                } catch (Exception e) { Log.e("HK_SHELL", "Output Stream Dead", e); }
-            }).start();
-
-            new Thread(() -> {
-                try {
-                    InputStream es = shellProcess.getErrorStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(es));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        final String l = line + "\n";
-                        runOnUiThread(() -> appendMatrixText(l));
-                    }
-                } catch (Exception e) { Log.e("HK_SHELL", "Error Stream Dead", e); }
-            }).start();
-
-            if (shellInput != null) {
-                shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
-                shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n");
-                shellInput.writeBytes("alias ls='ls --color=never'\n");
-                shellInput.writeBytes("alias ll='ls -la'\n");
-                shellInput.writeBytes("echo '---HK_DONE---'\n");
-                shellInput.flush();
+        TerminalEngine.igniteEngine(this, new Callback() {
+            @Override
+            public void onOutput(String line) {
+                if (line == null) return;
+                
+                if (line.trim().equals("---HK_DONE---")) {
+                    runOnUiThread(() -> {
+                        if (outputView != null) outputView.append(currentPrompt);
+                        scrollToBottom();
+                    });
+                } else {
+                    final String l = line + "\n";
+                    runOnUiThread(() -> appendMatrixText(l));
+                }
             }
-            
-        } catch (Exception e) {
-            appendMatrixText("[-] FATAL: Shell Initialization Blocked by OS.\n");
-        }
+        });
+
+        // Safe binding to the persistent shell input stream
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                java.lang.reflect.Field field = TerminalEngine.class.getDeclaredField("shellInput");
+                field.setAccessible(true);
+                shellInput = (DataOutputStream) field.get(null);
+
+                if (shellInput != null) {
+                    shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
+                    shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n");
+                    shellInput.writeBytes("alias ls='ls --color=never'\n");
+                    shellInput.writeBytes("alias ll='ls -la'\n");
+                    shellInput.writeBytes("echo '---HK_DONE---'\n");
+                    shellInput.flush();
+                }
+            } catch (Exception e) {
+                appendMatrixText("[-] Shell Connection Failed: " + e.getMessage() + "\n");
+            }
+        }, 1200); // 1.2 seconds delay to allow secure bootstrap extraction
     }
 
     public void appendMatrixText(final String rawText) {
