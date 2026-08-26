@@ -2,18 +2,18 @@ package com.hk.hkterminal;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.util.Log;
-import android.widget.Toast;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * HK-OPERATION : ALPHA SILENT ROUTER & CORE KERNEL
  * IDENTITY     : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : 15-Second Access Engine & Digital Guardian Proxy
+ * DIRECTIVE    : 15-Second Access Engine & Native Bootstrap Engine
  */
 public class TerminalEngine {
 
@@ -63,7 +63,6 @@ public class TerminalEngine {
         }
     }
 
-    // Upgraded Handler: Now routes incoming socket traffic directly into the living shell
     private static class AmSocketClientHandler implements Runnable {
         private Socket clientSocket;
         public AmSocketClientHandler(Socket socket) { this.clientSocket = socket; }
@@ -73,7 +72,6 @@ public class TerminalEngine {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 String msg;
                 while ((msg = in.readLine()) != null) {
-                    // Injecting intercepted network strings straight to the execution engine
                     Log.i("HK_SOCKET", "[>] Intercepted payload: " + msg);
                     TerminalEngine.run(msg); 
                 }
@@ -83,13 +81,60 @@ public class TerminalEngine {
         }
     }
 
+    // ============================================================================
+    // [!] v12.0 BOOTSTRAP ENGINE: First-Boot Extraction Logic
+    // ============================================================================
+    private static boolean isBootstrapInstalled() {
+        // Checking if native bash exists
+        return new File(BIN_PATH, "bash").exists();
+    }
+
+    private static void extractBootstrapMatrix(Context context, MainActivity.Callback cb) {
+        try {
+            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: Unpacking Native Matrix from Core...\n");
+            
+            AssetManager assetManager = context.getAssets();
+            InputStream is = assetManager.open("bootstrap.zip");
+            ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is));
+            ZipEntry ze;
+            byte[] buffer = new byte[16384];
+
+            while ((ze = zis.getNextEntry()) != null) {
+                File file = new File(PREFIX_PATH, ze.getName());
+                if (ze.isDirectory()) {
+                    file.mkdirs();
+                } else {
+                    file.getParentFile().mkdirs();
+                    FileOutputStream fout = new FileOutputStream(file);
+                    int count;
+                    while ((count = zis.read(buffer)) != -1) {
+                        fout.write(buffer, 0, count);
+                    }
+                    fout.close();
+                }
+            }
+            zis.close();
+            is.close();
+
+            // Secure the native execution permissions
+            Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + BIN_PATH + " " + LIB_PATH}).waitFor();
+            
+            if (cb != null) cb.onOutput("[+] HK-BOOTSTRAP: Matrix integrated successfully.\n");
+        } catch (FileNotFoundException e) {
+            if (cb != null) cb.onOutput("[*] HK-BOOTSTRAP: bootstrap.zip not found in assets. Falling back to default shell.\n");
+        } catch (Exception e) {
+            if (cb != null) cb.onOutput("[-] HK-BOOTSTRAP ERROR: " + e.getMessage() + "\n");
+        }
+    }
+
     // 2. ENGINE IGNITION: Start the Stealth Persistent Shell
-    public static void igniteEngine(final MainActivity.Callback cb) {
+    // [!] Note: Passed 'Context' to allow asset extraction
+    public static void igniteEngine(Context context, final MainActivity.Callback cb) {
         if (persistentShell != null) return; // Core is already burning
 
         new Thread(() -> {
             try {
-                // Foundation Verification (Silent Directory Generation)
+                // Foundation Verification
                 File homeDir = new File(HOME_PATH);
                 if (!homeDir.exists()) homeDir.mkdirs();
                 File usrDir = new File(PREFIX_PATH);
@@ -99,11 +144,20 @@ public class TerminalEngine {
                 File libDir = new File(LIB_PATH);
                 if (!libDir.exists()) libDir.mkdirs();
 
-                // Build the Core Shell Matrix (Stealth Mode)
-                ProcessBuilder pb = new ProcessBuilder("sh");
+                // Phase 1: Bootstrap Injection Check
+                if (!isBootstrapInstalled()) {
+                    extractBootstrapMatrix(context, cb);
+                }
+
+                // Phase 2: The Shell Swap (sh -> bash)
+                File bashTarget = new File(BIN_PATH, "bash");
+                String shellToExecute = bashTarget.exists() ? bashTarget.getAbsolutePath() : "sh";
+
+                // Build the Core Shell Matrix
+                ProcessBuilder pb = new ProcessBuilder(shellToExecute);
                 pb.directory(homeDir);
                 
-                // Injecting HK-Terminal DNA with full environment control
+                // Injecting HK-Terminal DNA
                 pb.environment().put("HOME", HOME_PATH);
                 pb.environment().put("PREFIX", PREFIX_PATH);
                 pb.environment().put("PATH", BIN_PATH + ":" + BIN_PATH + "/applets:/system/bin:/system/xbin");
@@ -111,19 +165,17 @@ public class TerminalEngine {
                 pb.environment().put("TERM", "xterm-256color");
                 pb.environment().put("LANG", "en_US.UTF-8");
                 
-                pb.redirectErrorStream(true); // Catch all fatal and standard outputs in one stream
+                pb.redirectErrorStream(true);
 
                 persistentShell = pb.start();
                 shellInput = new DataOutputStream(persistentShell.getOutputStream());
 
-                // Continuous Output Reader (The Terminal's Eyes - Zero Lag)
                 BufferedReader reader = new BufferedReader(new InputStreamReader(persistentShell.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (cb != null) cb.onOutput(line);
                 }
 
-                // If the system guardian kills the shell
                 persistentShell.waitFor();
                 persistentShell = null;
                 if (cb != null) cb.onOutput("\n[!] HK-ENGINE TERMINATED BY OS KERNEL\n");
@@ -139,7 +191,6 @@ public class TerminalEngine {
         if (shellInput == null) return;
         new Thread(() -> {
             try {
-                // Fire directly into the living process without UI interference
                 shellInput.writeBytes(cmd + "\n");
                 shellInput.flush();
             } catch (IOException e) {
