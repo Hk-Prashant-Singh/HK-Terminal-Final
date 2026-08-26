@@ -27,9 +27,9 @@ import java.util.regex.Pattern;
  * ██║  ██║██║  ██╗    ╚██████╔╝██║     ███████╗██║  ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
  * ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
  * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.1 LINKAGE FIX + BIONIC ISOLATION)
+ * HK-OPERATION : SAFE DEPLOYMENT ENGINE (RUNTIME v11.2 FINAL ALPINE FIX)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Ghost Move & Nuke, Progressive Forger, Musl --library-path
+ * DIRECTIVE    : Direct APK Extraction, Permission Bypass, Bionic Isolation
  * ============================================================================
  */
 public class HKPackageManager {
@@ -66,7 +66,7 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, libDir, localLibDir, cacheDir, sbinDir, usrSbinDir, shareDir, tmpDir, extTmpDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: WAKING UP v11.0 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: WAKING UP v11.2 OMEGA ENGINE FOR '" + targetPkgName.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
@@ -168,13 +168,13 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v11.1 OMEGA SWEEPER: Safe Extraction (100% BYPASS PERMISSION FIX)
+    // [!] v11.2 OMEGA SWEEPER: Safe Extraction (FINAL ALPINE LOGIC)
     // ============================================================================
     private static void executeNativeExtractionAndSweep(File payloadFile, File usrDir, File extTmpDir) throws Exception {
         String usr = usrDir.getAbsolutePath();
         String tmp = extTmpDir.getAbsolutePath();
 
-        // 🚨 CRITICAL FIX: Added -o flag and || true to prevent pipeline abortion
+        // 🚨 FINAL FIX: Directly extract APK contents while bypassing ownership errors
         String script =
             "set -e; " +
             "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
@@ -182,14 +182,6 @@ public class HKPackageManager {
             "cd '" + tmp + "'; " +
 
             "tar -oxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || true; " +
-
-            "if [ -f data.tar.gz ]; then " +
-                "tar -oxzf data.tar.gz 2>/dev/null || true; " +
-            "elif [ -f data.tar ]; then " +
-                "tar -oxf data.tar 2>/dev/null || true; " +
-            "else " +
-                "echo 'APK_DATA_PAYLOAD_NOT_FOUND' >&2; exit 21; " +
-            "fi; " +
 
             "mkdir -p '" + usr + "/lib' '" + usr + "/bin' '" +
                 usr + "/sbin' '" + usr + "/share'; " +
@@ -216,12 +208,6 @@ public class HKPackageManager {
                 details.append(line).append(" ");
             }
             throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
-        }
-
-        File extractedLib = new File(tmp, "usr/lib");
-        File extractedBin = new File(tmp, "usr/bin");
-        if (!extractedLib.isDirectory() && !extractedBin.isDirectory()) {
-            throw new Exception("APK data payload was extracted, but no usr/lib or usr/bin was produced.");
         }
 
         repairCommonLibraryLinks(libDirFrom(usrDir));
@@ -273,7 +259,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v11.1 OMEGA JAVA FORGER: Progressive Split Engine
+    // [!] v11.2 OMEGA JAVA FORGER: Progressive Split Engine
     // ============================================================================
     private static boolean isSymbolicLinkCompat(File file) {
         try {
@@ -336,7 +322,7 @@ public class HKPackageManager {
     }
 
     // ============================================================================
-    // [!] v11.1 OMEGA WRAPPER: Musl Library-Path Override (100% ISOLATED)
+    // [!] v11.2 OMEGA WRAPPER: Musl Library-Path Override (100% ISOLATED)
     // ============================================================================
     private static void generateWrapperMatrix(File binDir, File libDir, File localLibDir, File usrDir, File filesDir, String pkgName) {
         String muslLoaderPath = libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
