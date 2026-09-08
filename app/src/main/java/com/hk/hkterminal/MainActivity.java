@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         upgradeAllPanel = findViewById(R.id.upgradeAllPanel);
         btnUpgradeAll = findViewById(R.id.btnUpgradeAll);
 
+        // [!] THE MASTER FIX: Initialize all future AI & Storage permissions on boot
         initializeFutureMatrixPermissions();
 
         initHKEnvironment();
@@ -131,66 +132,13 @@ public class MainActivity extends AppCompatActivity {
         
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             clearTerminal();
+            initStatefulShell();
             runSystemDiagnostic(); 
-            checkAndInstallBaseSystem(); // [!] NEW LOGIC: Trigger First Boot Setup
         }, 400);
     }
 
     // ============================================================================
-    // [!] FIRST BOOT MATRIX: Setup Six-Pack core required packages
-    // ============================================================================
-    private void checkAndInstallBaseSystem() {
-        SharedPreferences prefs = getSharedPreferences("HK_MATRIX_PREFS", MODE_PRIVATE);
-        boolean isSetupDone = prefs.getBoolean("isBaseSetupDone", false);
-
-        if (!isSetupDone) {
-            if(headerProgress != null) {
-                headerProgress.setIndeterminate(true);
-                headerProgress.setVisibility(View.VISIBLE);
-            }
-            appendMatrixText("\n[*] ================================================\n");
-            appendMatrixText("[*] SYSTEM INITIALIZATION (FIRST BOOT)...\n");
-            appendMatrixText("[*] Downloading and installing required 'Six-Pack' modules.\n");
-            appendMatrixText("[*] Please wait, do not close the app.\n");
-            appendMatrixText("[*] ================================================\n");
-            
-            // Core packages needed for basic functionality
-            String[] requiredPackages = {"busybox", "bash", "nano", "curl", "ncurses", "musl"}; 
-            installPackageQueue(requiredPackages, 0, prefs);
-        } else {
-            initStatefulShell();
-        }
-    }
-
-    private void installPackageQueue(String[] packages, int index, SharedPreferences prefs) {
-        if (index >= packages.length) {
-            prefs.edit().putBoolean("isBaseSetupDone", true).apply();
-            runOnUiThread(() -> {
-                if(headerProgress != null) headerProgress.setVisibility(View.GONE);
-                appendMatrixText("\n[+] SETUP COMPLETE: All required packages installed.\n");
-                appendMatrixText("[+] App is now READY to run.\n");
-                initStatefulShell(); 
-            });
-            return;
-        }
-
-        String currentPkg = packages[index];
-        runOnUiThread(() -> appendMatrixText("\n[*] Fetching Required Package: " + currentPkg + "...\n"));
-
-        HKPackageManager.installPackage(this, currentPkg, new HKPackageManager.InstallListener() {
-            @Override 
-            public void onUpdate(String msg) { 
-                runOnUiThread(() -> appendMatrixText(msg + "\n"));
-            }
-            @Override 
-            public void onComplete() {
-                installPackageQueue(packages, index + 1, prefs);
-            }
-        });
-    }
-
-    // ============================================================================
-    // [!] v12.0 OPERATION: Universal Permission Matrix
+    // [!] v12.0 OPERATION: Universal Permission Matrix (AI Voice + Omni-Storage)
     // ============================================================================
     private void initializeFutureMatrixPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -226,7 +174,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ============================================================================
+    // [!] SYSTEM DIAGNOSTIC (SILENT MODE)
+    // ============================================================================
     private void runSystemDiagnostic() {
+        // [!] FIX: Visual print statements removed to keep terminal clean.
+        // Background matrix checks will run silently without spamming the UI.
         try {
             SQLiteDatabase db = dbManager.getReadableDatabase();
             Cursor c = db.rawQuery("SELECT COUNT(*) FROM Health WHERE is_corrupted = 1", null);
@@ -237,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             HKLogger.logEvent("DIAGNOSTIC", "DB_INIT_ERROR", e.getMessage());
         }
+        // AI Core updated to HK Core internally, but stays stealthy (no screen print).
         HKLogger.logEvent("DIAGNOSTIC", "SHIELD_STATUS", "Native Bypass Shield & HK Core: ACTIVE");
     }
 
@@ -253,6 +207,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ============================================================================
+    // [!] v12.0 MASTER ENGINE LINK: Triggering TerminalEngine
+    // ============================================================================
     private void initStatefulShell() {
         TerminalEngine.igniteEngine(this, new Callback() {
             @Override
@@ -271,6 +228,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Safe binding to the persistent shell input stream
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 java.lang.reflect.Field field = TerminalEngine.class.getDeclaredField("shellInput");
@@ -288,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 appendMatrixText("[-] Shell Connection Failed: " + e.getMessage() + "\n");
             }
-        }, 1200);
+        }, 1200); // 1.2 seconds delay to allow secure bootstrap extraction
     }
 
     public void appendMatrixText(final String rawText) {
@@ -763,10 +721,9 @@ public class MainActivity extends AppCompatActivity {
                     br.close();
                 } catch (Exception ignored) {}
 
-                // [!] BUG FIXED HERE: Removed Android System Libraries to avoid Bionic / Musl clash
                 String envInject = "export HOME=" + getBaseHomePath() + "; " +
                                    "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
-                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + "; " +
+                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; " +
                                    "export PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr; " +
                                    "export PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14; ";
 
