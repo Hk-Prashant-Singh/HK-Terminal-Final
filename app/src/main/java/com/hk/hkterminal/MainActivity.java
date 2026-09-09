@@ -236,10 +236,13 @@ public class MainActivity extends AppCompatActivity {
                 shellInput = (DataOutputStream) field.get(null);
 
                 if (shellInput != null) {
-                    shellInput.writeBytes("cd " + getBaseHomePath() + "\n");
-                    shellInput.writeBytes("chmod -R 777 " + getUsrBinPath() + " 2>/dev/null\n");
-                    shellInput.writeBytes("alias ls='ls --color=never'\n");
-                    shellInput.writeBytes("alias ll='ls -la'\n");
+                    shellInput.writeBytes("cd '" + getBaseHomePath() + "'\n");
+                    shellInput.writeBytes("export HOME='" + getBaseHomePath() + "'\n");
+                    shellInput.writeBytes("export PREFIX='" + getFilesDir().getAbsolutePath() + "/usr'\n");
+                    shellInput.writeBytes("export PATH='" + getUsrBinPath() + ":/system/bin:/system/xbin'\n");
+                    shellInput.writeBytes("export LD_LIBRARY_PATH='" + getUsrLibPath() + ":/system/lib64:/system/lib'\n");
+                    shellInput.writeBytes("alias ls='/system/bin/ls'\n");
+                    shellInput.writeBytes("alias ll='/system/bin/ls -la'\n");
                     shellInput.writeBytes("echo '---HK_DONE---'\n");
                     shellInput.flush();
                 }
@@ -608,12 +611,42 @@ public class MainActivity extends AppCompatActivity {
             trimmedCmd = "ip addr";
         }
 
+        // Native Android commands must NEVER be sent to HKPackageManager.
+        // pkg is handled below as an HK package bridge, not as a Linux binary lookup.
+        String[] rawParts = trimmedCmd.split("\\s+");
+        String rawBaseCmd = rawParts.length > 0 ? rawParts[0] : "";
+        if (rawBaseCmd.equals("pkg")) {
+            handlePkgCommand(trimmedCmd);
+            return;
+        }
+
+        // Force Android's own ls/ll and return before the HK weapon lookup.
+        // This guarantees that a missing usr/bin/ls can never trigger an install attempt.
+        if (rawBaseCmd.equals("ls") || rawBaseCmd.equals("ll")) {
+            String args = trimmedCmd.length() > rawBaseCmd.length() ? trimmedCmd.substring(rawBaseCmd.length()).trim() : "";
+            String nativeLs = rawBaseCmd.equals("ll") ? "/system/bin/ls -la" : "/system/bin/ls";
+            if (!args.isEmpty()) nativeLs += " " + args;
+            if (shellInput != null) {
+                try {
+                    shellInput.writeBytes(nativeLs + "\n");
+                    shellInput.writeBytes("echo '---HK_DONE---'\n");
+                    shellInput.flush();
+                } catch (Exception e) {
+                    appendMatrixText("[-] Native ls execution failed: " + e.getMessage() + "\n");
+                }
+            } else {
+                appendMatrixText("[-] FATAL: Shell Engine is Offline.\n");
+            }
+            return;
+        }
+
         String[] parts = trimmedCmd.split(" ");
         String baseCmd = parts[0];
         
         List<String> nativeCmds = Arrays.asList(
             "clear", "su", "cd", "ls", "ll", "ip", "export", "chmod", "cat", 
-            "echo", "sh", "bash", "cp", "mv", "rm", "mkdir", "pwd", "grep", "env"
+            "echo", "sh", "bash", "cp", "mv", "rm", "mkdir", "pwd", "grep", "env",
+            "which", "command", "type", "true", "false", "printf", "test"
         );
 
         if (!trimmedCmd.startsWith("hk ") && !trimmedCmd.startsWith("pip ") && !nativeCmds.contains(baseCmd)) {
@@ -780,6 +813,62 @@ public class MainActivity extends AppCompatActivity {
             appendMatrixText("[-] FATAL: Shell Engine is Offline.\n");
             if (outputView != null) outputView.append(currentPrompt);
         }
+    }
+
+    private void handlePkgCommand(final String cmd) {
+        String[] p = cmd.trim().split("\\s+");
+        if (p.length < 2) {
+            appendMatrixText("HK-pkg: usage: pkg install <package> | pkg uninstall <package> | pkg list-installed | pkg update | pkg upgrade\n");
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+        String action = p[1].toLowerCase(java.util.Locale.US);
+        if (action.equals("update") || action.equals("upgrade")) {
+            appendMatrixText("[*] HK-pkg: repository metadata is resolved by HKPackageManager during installation.\n");
+            appendMatrixText("[+] Nothing to upgrade yet; use: pkg install <package>\n");
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+        if (action.equals("list-installed") || action.equals("list")) {
+            File binDir = new File(getUsrBinPath());
+            appendMatrixText("[+] HK-pkg installed modules:\n");
+            File[] files = binDir.listFiles();
+            if (files != null) for (File f : files) if (f.isFile()) appendMatrixText(" -> " + f.getName() + "\n");
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+        if (action.equals("install") || action.equals("i")) {
+            if (p.length < 3) {
+                appendMatrixText("[-] HK-pkg: package name required. Example: pkg install python\n");
+                if (outputView != null) outputView.append(currentPrompt);
+                return;
+            }
+            String pkg = p[2].trim();
+            if (headerProgress != null) { headerProgress.setIndeterminate(true); headerProgress.setVisibility(View.VISIBLE); }
+            HKPackageManager.installPackage(MainActivity.this, pkg, new HKPackageManager.InstallListener() {
+                @Override public void onUpdate(String msg) { runOnUiThread(() -> appendMatrixText(msg + "\n")); }
+                @Override public void onComplete() {
+                    runOnUiThread(() -> {
+                        if (headerProgress != null) headerProgress.setVisibility(View.GONE);
+                        if (packagesFragmentInstance != null) packagesFragmentInstance.refreshPackagesList();
+                        if (outputView != null) outputView.append(currentPrompt);
+                    });
+                }
+            });
+            return;
+        }
+        if (action.equals("uninstall") || action.equals("remove")) {
+            if (p.length < 3) { appendMatrixText("[-] HK-pkg: package name required.\n"); }
+            else {
+                File target = new File(getUsrBinPath(), p[2]);
+                if (target.exists() && target.delete()) appendMatrixText("[+] Removed: " + p[2] + "\n");
+                else appendMatrixText("[-] Not installed: " + p[2] + "\n");
+            }
+            if (outputView != null) outputView.append(currentPrompt);
+            return;
+        }
+        appendMatrixText("[-] HK-pkg: unsupported action '" + action + "'.\n");
+        if (outputView != null) outputView.append(currentPrompt);
     }
 
     private void navigateHistory(int dir) {
