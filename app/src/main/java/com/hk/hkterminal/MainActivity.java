@@ -756,7 +756,7 @@ public class MainActivity extends AppCompatActivity {
 
                 String envInject = "export HOME=" + getBaseHomePath() + "; " +
                                    "export PATH=" + getUsrBinPath() + ":/system/bin:/system/xbin; " +
-                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":/system/lib64:/system/lib; " +
+                                   "export LD_LIBRARY_PATH=" + getUsrLibPath() + ":" + getFilesDir().getAbsolutePath() + "/usr/alpine/lib:/system/lib64:/system/lib; " +
                                    "export PYTHONHOME=" + getFilesDir().getAbsolutePath() + "/usr; " +
                                    "export PYTHONPATH=" + getFilesDir().getAbsolutePath() + "/usr/lib/python3.14; ";
 
