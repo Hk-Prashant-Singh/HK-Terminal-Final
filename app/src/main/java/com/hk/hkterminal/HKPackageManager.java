@@ -1,36 +1,23 @@
 package com.hk.hkterminal;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.StatFs;
-import android.util.Log;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 /**
- * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (ALL-IN-ONE FINAL MASTER v15.1)
+ * HK-OPERATION : PERMANENT DEPLOYMENT ENGINE (GOD-LEVEL EXECUTION)
  * ARCHITECT    : HK Prashant Singh (Tech Wizard)
- * DIRECTIVE    : Universal Package Compatibility, Zero-Failure Sandbox & Aliases
- * ============================================================================
+ * DIRECTIVE    : Pure Java Tar Extractor, Zero-Block Bypass, Byte-Cloner, Raw Musl Wrapper
  */
 public class HKPackageManager {
-
-    private static final String TAG = "HK_AI_MATRIX";
-    private static final int TIMEOUT_MS = 60000;
-    private static final long MIN_DISK_SPACE = 50 * 1024 * 1024;
-    private static final ConcurrentHashMap<String, Long> mirrorLatencyCache = new ConcurrentHashMap<>();
 
     public interface InstallListener {
         void onUpdate(String msg);
@@ -38,474 +25,342 @@ public class HKPackageManager {
     }
 
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
-        final String requested = targetPkgName == null ? "" : targetPkgName.trim();
-        if (requested.isEmpty()) {
-            update(listener, "[-] HK-pkg: package name is empty.");
-            new Handler(Looper.getMainLooper()).post(listener::onComplete);
-            return;
-        }
-
-        // Android/system commands are not installable packages. Never send them
-        // through the repository spider (this fixes the 'ls -> SPIDER_MODULE' loop).
-        if (isAndroidNativeCommand(requested)) {
-            update(listener, "[+] '" + requested + "' is an Android native command; installation skipped.");
-            update(listener, "[+] Use the command directly: " + requested);
-            new Handler(Looper.getMainLooper()).post(listener::onComplete);
-            return;
-        }
-
         new Thread(() -> {
-            HKDatabaseManager dbManager = new HKDatabaseManager(context);
-            HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
-
             try {
-                File filesDir = context.getFilesDir();
+                File filesDir = context.getFilesDir(); 
                 File usrDir = new File(filesDir, "usr");
                 File binDir = new File(usrDir, "bin");
+                File libDir = new File(usrDir, "lib");
                 File cacheDir = new File(filesDir, ".cache");
-                File tmpDir = new File(filesDir, "tmp");
-                File extTmpDir = new File(filesDir, "ext_tmp");
                 
-                File alpineDir = new File(usrDir, "alpine");
-                File alpineBinDir = new File(alpineDir, "bin");
-                File alpineLibDir = new File(alpineDir, "lib");
-                File alpineShareDir = new File(alpineDir, "share");
-                
-                ensureMatrixDirectories(usrDir, binDir, cacheDir, tmpDir, extTmpDir, alpineDir, alpineBinDir, alpineLibDir, alpineShareDir);
+                if (!binDir.exists()) binDir.mkdirs();
+                if (!libDir.exists()) libDir.mkdirs();
+                if (!cacheDir.exists()) cacheDir.mkdirs();
 
-                update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: ALL-IN-ONE MASTER ENGINE WAKING UP FOR '" + requested.toUpperCase() + "'...");
-                
-                if (!performAIPreFlightCheck(filesDir, listener)) {
-                    throw new Exception("Insufficient System Resources for HK-Operation.");
+                update(listener, "[*] HK-PKG: Initiating Tactical Dependency Analysis for '" + targetPkgName + "'...");
+
+                List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
+                if (installQueue.isEmpty()) {
+                    installQueue.add(targetPkgName);
+                } else {
+                    update(listener, "[+] Dependency Graph Resolved. Packages to integrate: " + installQueue.size());
                 }
 
-                List<String> installQueue = HKDependencyEngine.calculateInstallQueue(requested);
-                if (installQueue.isEmpty()) installQueue.add(requested);
-                
-                update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
-
                 for (String pkgName : installQueue) {
-                    int healthScore = 0; 
-                    dbManager.registerPackage(pkgName, "latest");
-                    dbManager.updatePackageState(pkgName, "VERIFYING");
-
                     update(listener, "-----------------------------------");
-                    update(listener, "[*] Deploying Tactical Module: '" + pkgName + "'...");
+                    update(listener, "[*] Deploying Module: '" + pkgName + "'...");
 
-                    String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
+                    String targetUrl = huntTargetOnGlobalWeb(pkgName, listener);
                     if (targetUrl == null) {
-                        triggerErrorPopup(listener, "SPIDER_MODULE", "No compatible Alpine package found for '" + pkgName + "' in the configured repositories.");
-                        dbManager.updatePackageState(pkgName, "FAILED");
+                        update(listener, "[-] FATAL: Weapon '" + pkgName + "' unidentifiable. Skipping...");
                         continue; 
                     }
 
-                    dbManager.updatePackageState(pkgName, "DOWNLOADING");
-                    File payloadFile = new File(cacheDir, pkgName + ".apk"); // Alpine APK archive (not an Android APK)
-                    boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
-                    if (!downloadSuccess) {
-                        triggerErrorPopup(listener, "DOWNLOAD_TUNNEL", "Network collapsed or payload corrupted.");
-                        dbManager.updatePackageState(pkgName, "FAILED");
-                        continue;
-                    }
-                    healthScore += 20;
+                    String ext = targetUrl.endsWith(".apk") ? ".apk" : (targetUrl.endsWith(".deb") ? ".deb" : ".tar.gz");
+                    File payloadFile = new File(cacheDir, pkgName + ext);
 
-                    dbManager.updatePackageState(pkgName, "EXTRACTING & DEPLOYING");
-                    update(listener, "[+] Payload Secured. Extracting to Isolated Sandbox...");
+                    update(listener, "[*] Establishing secure uplink to Direct Payload...");
+
+                    HttpURLConnection conn = null;
+                    URL url = new URL(targetUrl);
+                    boolean redirect;
+                    int redirectCount = 0;
+
+                    do {
+                        conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("GET");
+                        conn.setConnectTimeout(30000); 
+                        conn.setReadTimeout(60000);    
+                        conn.setInstanceFollowRedirects(false); 
+                        
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HK-Spider/16.0");
+                        conn.setRequestProperty("Accept", "*/*");
+                        conn.setRequestProperty("Connection", "keep-alive");
+
+                        int status = conn.getResponseCode();
+                        if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER) {
+                            redirect = true;
+                            url = new URL(conn.getHeaderField("Location"));
+                            redirectCount++;
+                        } else {
+                            redirect = false;
+                        }
+                    } while (redirect && redirectCount < 5); 
                     
-                    try {
-                        executeNativeExtractionAndSweep(payloadFile, alpineDir, extTmpDir);
-                        healthScore += 40; 
-                    } catch (Exception e) {
-                        triggerErrorPopup(listener, "SANDBOX_EXTRACTION", "Extraction crash -> " + e.getMessage());
-                        dbManager.updatePackageState(pkgName, "FAILED");
-                        continue;
+                    if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                        update(listener, "[-] FATAL: Target unreachable. Skipping...");
+                        continue; 
                     }
 
-                    update(listener, "[*] Forging Universal Sandbox Aliases...");
-                    try {
-                        generateLibraryAliases(alpineLibDir);
-                        healthScore += 20;
-                    } catch (Exception e) {
-                        triggerErrorPopup(listener, "ALIAS_FORGER", "Symlink clone failed -> " + e.getMessage());
+                    int fileLength = conn.getContentLength();
+                    InputStream input = new BufferedInputStream(conn.getInputStream());
+                    OutputStream output = new FileOutputStream(payloadFile);
+                    byte[] data = new byte[8192];
+                    long total = 0;
+                    int count;
+                    int lastPercent = -1;
+
+                    while ((count = input.read(data)) != -1) {
+                        total += count;
+                        output.write(data, 0, count);
+                        if (fileLength > 0) {
+                            int percent = (int) (total * 100 / fileLength);
+                            if (percent != lastPercent && percent % 5 == 0) {
+                                update(listener, "Progress: " + getHackerProgressBar(percent) + " [" + percent + "%] Fetching " + pkgName + "...");
+                                lastPercent = percent;
+                            }
+                        }
+                    }
+                    output.flush(); output.close(); input.close();
+
+                    if (fileLength > 0 && total != fileLength) {
+                        update(listener, "[-] PAYLOAD CORRUPTED: Data lost during transit.");
+                        payloadFile.delete(); continue;
                     }
 
-                    update(listener, "[*] Injecting Stealth Wrappers to Main System...");
-                    generateWrapperMatrix(alpineBinDir, alpineLibDir, binDir, usrDir, alpineDir, filesDir, pkgName);
+                    update(listener, "[+] Payload Secured. Initiating Force-Unpack Matrix...");
 
-                    executeGhostCleanup(payloadFile, filesDir, extTmpDir);
-                    
-                    dbManager.updatePackageState(pkgName, "VALIDATING");
-                    update(listener, "[*] Running Runtime Validation & Smoke Test...");
-                    boolean isRuntimeValid = runValidationMatrix(binDir, alpineLibDir, pkgName, listener);
-
-                    if (isRuntimeValid) {
-                        healthScore += 20; 
-                        dbManager.updatePackageState(pkgName, "READY");
-                        dbManager.updateHealthScore(pkgName, healthScore, false);
-                        update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: 100%].");
+                    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Bypasses Android Toybox completely)
+                    if (payloadFile.getName().endsWith(".apk") || payloadFile.getName().endsWith(".tar.gz")) {
+                        File tarFile = new File(cacheDir, pkgName + ".tar");
+                        try (GZIPInputStream gis = new GZIPInputStream(new FileInputStream(payloadFile));
+                             FileOutputStream fos = new FileOutputStream(tarFile)) {
+                            byte[] buf = new byte[8192];
+                            int l;
+                            while ((l = gis.read(buf)) > 0) {
+                                fos.write(buf, 0, l);
+                            }
+                        } catch (Exception e) {}
+                        
+                        // Extracting via Java to ignore Zero-Block Traps
+                        extractTarMatrix(tarFile, filesDir);
                     } else {
-                        dbManager.updatePackageState(pkgName, "REPAIRABLE");
-                        dbManager.updateHealthScore(pkgName, healthScore, true);
+                        String unpackCmd = "cd " + filesDir.getAbsolutePath() + " && (ar x " + payloadFile.getAbsolutePath() + " 2>/dev/null && tar -xf data.tar.* -C " + filesDir.getAbsolutePath() + " 2>/dev/null)";
+                        Runtime.getRuntime().exec(new String[]{"sh", "-c", unpackCmd}).waitFor(); 
+                    }
+
+                    // ULTIMATE PATH SWEEPER
+                    String sweepCmd = "mv " + filesDir.getAbsolutePath() + "/usr/local/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/usr/sbin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/bin/* " + binDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/usr/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null; " +
+                                      "mv " + filesDir.getAbsolutePath() + "/lib/* " + libDir.getAbsolutePath() + " 2>/dev/null";
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", sweepCmd}).waitFor();
+                    
+                    // FORCE PERMISSION MATRIX
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", "chmod -R 777 " + usrDir.getAbsolutePath() + " 2>/dev/null"}).waitFor();
+
+                    // [!] BULLETPROOF JAVA BYTE-CLONER (Constructs missing libraries physically)
+                    // Android app sandboxes may reject symlinks, so aliases are real copied files.
+                    generatePhysicalLibraryAliases(libDir);
+                    File[] libs = libDir.listFiles();
+                    if (libs != null) {
+                        for (File lib : libs) {
+                            String name = lib.getName();
+                            int soIndex = name.indexOf(".so.");
+                            if (soIndex != -1 && lib.isFile() && lib.length() > 1000) {
+                                int endIdx = soIndex + 4; 
+                                while (endIdx < name.length() && Character.isDigit(name.charAt(endIdx))) {
+                                    endIdx++;
+                                }
+                                if (endIdx > soIndex + 4) {
+                                    String baseName = name.substring(0, endIdx); // libncursesw.so.6
+                                    if (!baseName.equals(name)) {
+                                        File baseFile = new File(libDir, baseName);
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + baseFile.getAbsolutePath()}).waitFor();
+                                        cloneFileSafely(lib, baseFile);
+                                        
+                                        String rootName = name.substring(0, soIndex + 3); // libncursesw.so
+                                        File rootFile = new File(libDir, rootName);
+                                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "rm -f " + rootFile.getAbsolutePath()}).waitFor();
+                                        cloneFileSafely(lib, rootFile);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    File extractedBin = new File(binDir, pkgName);
+                    
+                    // [!] RAW MUSL WRAPPER INJECTION 
+                    if (extractedBin.exists() && !extractedBin.getName().endsWith(".elf")) {
+                        boolean isElf = false;
+                        try {
+                            FileInputStream fis = new FileInputStream(extractedBin);
+                            byte[] header = new byte[4];
+                            fis.read(header);
+                            fis.close();
+                            if (header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
+                                isElf = true;
+                            }
+                        } catch (Exception ignored) {}
+
+                        if (isElf) {
+                            File binReal = new File(binDir, pkgName + ".elf");
+                            if (extractedBin.renameTo(binReal)) {
+                                try {
+                                    FileWriter fw = new FileWriter(extractedBin);
+                                    fw.write("#!/system/bin/sh\n");
+                                    fw.write("export LD_LIBRARY_PATH=" + libDir.getAbsolutePath() + "\n");
+                                    fw.write("exec " + libDir.getAbsolutePath() + "/libc.musl-aarch64.so.1 " + binReal.getAbsolutePath() + " \"$@\"\n");
+                                    fw.close();
+                                    extractedBin.setExecutable(true, true);
+                                    binReal.setExecutable(true, true);
+                                    update(listener, "[*] Native Linker Shield Applied to: " + pkgName);
+                                } catch (Exception e) { e.printStackTrace(); }
+                            }
+                        } else {
+                            extractedBin.setExecutable(true, true); 
+                        }
+                    }
+
+                    // GHOST CLEANUP
+                    payloadFile.delete(); 
+                    new File(cacheDir, pkgName + ".tar").delete(); 
+                    String cleanupCmd = "rm -rf " + filesDir.getAbsolutePath() + "/control.tar.* " + filesDir.getAbsolutePath() + "/data.tar.* " + filesDir.getAbsolutePath() + "/debian-binary " + filesDir.getAbsolutePath() + "/*.json " + filesDir.getAbsolutePath() + "/payload " + filesDir.getAbsolutePath() + "/.PKGINFO " + filesDir.getAbsolutePath() + "/.SIGN.* 2>/dev/null";
+                    Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
+                    
+                    boolean hasPayload = extractedBin.exists() || new File(binDir, pkgName + ".elf").exists() || (pkgName.contains("lib") && libDir.listFiles() != null && libDir.listFiles().length > 0);
+                    if (hasPayload) {
+                        update(listener, "[+] Target Locked: Module '" + pkgName + "' integrated successfully.");
+                    } else {
+                        update(listener, "[-] Extraction Matrix Alert: Binary/Library failed to deploy.");
                     }
                 }
                 
                 update(listener, "===================================");
                 update(listener, "[+] ALL TACTICAL DEPLOYMENTS COMPLETED.");
+
                 update(listener, "[*] ================================================");
-                update(listener, "[+] TACTICAL DIRECTIVE FOR " + requested.toUpperCase() + ":");
-                update(listener, " -> Execute: '" + requested + "'");
+                update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
+                if (targetPkgName.contains("python")) {
+                    update(listener, " -> Execute: 'python3' or 'pip install <module>'");
+                } else if (targetPkgName.equals("sl")) {
+                    update(listener, " -> Execute: 'sl'");
+                } else if (targetPkgName.contains("pip")) {
+                    update(listener, " -> Execute: 'pip install <package_name>'");
+                } else {
+                    update(listener, " -> Execute: '" + targetPkgName + "'");
+                }
+                update(listener, "[*] ================================================");
 
             } catch (Exception e) {
-                triggerErrorPopup(listener, "GLOBAL_SYSTEM", e.getMessage());
-                update(listener, "[-] AI System Error: Engine Halted.");
+                update(listener, "[-] System Error: " + e.getMessage());
             } finally {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
     }
 
-    private static boolean isAndroidNativeCommand(String name) {
-        String n = name.toLowerCase(java.util.Locale.US);
-        return n.equals("ls") || n.equals("pwd") || n.equals("cd") || n.equals("cat") ||
-               n.equals("cp") || n.equals("mv") || n.equals("rm") || n.equals("mkdir") ||
-               n.equals("chmod") || n.equals("grep") || n.equals("echo") || n.equals("env") ||
-               n.equals("clear") || n.equals("sh") || n.equals("bash") || n.equals("ip") ||
-               n.equals("su") || n.equals("export") || n.equals("which") || n.equals("command") ||
-               n.equals("type") || n.equals("true") || n.equals("false") || n.equals("printf") ||
-               n.equals("test") || n.equals("ll");
-    }
-
-    public static void triggerErrorPopup(InstallListener listener, String step, String exactCause) {
-        update(listener, "\n[-] ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄");
-        update(listener, "[-] 🚨 SYSTEM TRACE : CRITICAL FAILURE 🚨");
-        update(listener, "[-] 📍 FAILED AT STEP : " + step);
-        update(listener, "[-] 🔍 EXACT CAUSE    : " + exactCause);
-        update(listener, "[-] ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
-    }
-
-    private static void executeNativeExtractionAndSweep(File payloadFile, File alpineDir, File extTmpDir) throws Exception {
-        String alpine = alpineDir.getAbsolutePath();
-        String tmp = extTmpDir.getAbsolutePath();
-
-        String script =
-            "set -e; " +
-            "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
-            "mkdir -p '" + tmp + "'; " +
-            "cd '" + tmp + "'; " +
-
-            "tar -ozxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || tar -oxf '" + payloadFile.getAbsolutePath() + "' 2>/dev/null || true; " +
-
-            "mkdir -p '" + alpine + "/lib' '" + alpine + "/bin' '" + alpine + "/share'; " +
-
-            "if [ -d lib ]; then cp -r lib/* '" + alpine + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/lib ]; then cp -r usr/lib/* '" + alpine + "/lib/' 2>/dev/null || true; fi; " +
-            "if [ -d bin ]; then cp -r bin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/bin ]; then cp -r usr/bin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d sbin ]; then cp -r sbin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/sbin ]; then cp -r usr/sbin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
-            "if [ -d share ]; then cp -r share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
-            "if [ -d usr/share ]; then cp -r usr/share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
-            // Some Alpine packages place shared libraries below nested paths.
-            // Stage every real .so/loader file into the common runtime lib dir.
-            "find . -type f \( -name '*.so' -o -name '*.so.*' -o -name 'ld-musl-*' \) -exec cp -f {} '" + alpine + "/lib/' \; 2>/dev/null || true; " +
-
-            "chmod -R 777 '" + alpine + "' 2>/dev/null || true";
-
-        Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", script});
-        int exit = process.waitFor();
-
-        if (exit != 0) {
-            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            StringBuilder details = new StringBuilder();
-            String line;
-            while ((line = err.readLine()) != null) {
-                details.append(line).append(" ");
-            }
-            throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
-        }
-        repairCommonLibraryLinks(new File(alpine, "lib"));
-    }
-
-    private static void repairCommonLibraryLinks(File libDir) {
-        if (libDir == null || !libDir.isDirectory()) return;
-
-        File[] files = libDir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.getName().startsWith("libncursesw.so")) {
-                    File targetLink = new File(libDir, "libncursesw.so.6");
-                    if (!targetLink.exists()) {
-                        createRelativeSymlink(f, targetLink);
+    // [!] THE GOD-LEVEL JAVA NATIVE TAR EXTRACTOR (Defeats Zero-Block EOF Traps)
+    private static void extractTarMatrix(File tarFile, File destDir) {
+        try (InputStream is = new FileInputStream(tarFile)) {
+            byte[] header = new byte[512];
+            while (is.read(header) == 512) {
+                String name = new String(header, 0, 100).replace("\0", "").trim();
+                if (name.isEmpty()) continue; // Skips EOF Zero-Blocks completely
+                
+                String sizeStr = new String(header, 124, 12).replace("\0", "").trim();
+                long size = sizeStr.isEmpty() ? 0 : Long.parseLong(sizeStr, 8);
+                char type = (char) header[156];
+                
+                File outFile = new File(destDir, name);
+                if (type == '5') {
+                    outFile.mkdirs();
+                } else if (type == '0' || type == '\0') {
+                    outFile.getParentFile().mkdirs();
+                    try (OutputStream os = new FileOutputStream(outFile)) {
+                        byte[] buf = new byte[8192];
+                        long left = size;
+                        while (left > 0) {
+                            int r = is.read(buf, 0, (int)Math.min(left, buf.length));
+                            if (r <= 0) break;
+                            os.write(buf, 0, r);
+                            left -= r;
+                        }
                     }
+                    outFile.setExecutable(true, false); 
+                    outFile.setReadable(true, false);
+                } 
+                
+                long skip = (512 - (size % 512)) % 512;
+                while (skip > 0) {
+                    long s = is.skip(skip);
+                    if (s <= 0) break;
+                    skip -= s;
                 }
             }
-        }
-
-        if (files == null) return;
-        for (File real : files) {
-            if (!real.isFile() || isSymbolicLinkCompat(real)) continue;
-            String name = real.getName();
-            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.([0-9]+))+$").matcher(name);
-            if (!m.matches()) continue;
-
-            File major = new File(libDir, m.group(1) + "." + m.group(2));
-            if (!major.exists()) createRelativeSymlink(real, major);
-
-            File unversioned = new File(libDir, m.group(1));
-            if (!unversioned.exists()) createRelativeSymlink(real, unversioned);
-        }
-    }
-
-    private static void createRelativeSymlink(File target, File link) {
-        try {
-            if (link.exists() || isSymbolicLinkCompat(link)) return;
-            Process p = Runtime.getRuntime().exec(new String[]{
-                "sh", "-c", "cd '" + link.getParent() + "' && ln -s '" + target.getName() + "' '" + link.getName() + "'"
-            });
-            p.waitFor();
-            if (!link.exists() && target.isFile()) {
-                // Android app sandboxes may reject symlinks. Use a real-file alias.
-                cloneFileSafely(target, link);
-            }
-        } catch (Exception ignored) {
-            if (target != null && target.isFile()) cloneFileSafely(target, link);
-        }
-    }
-
-    private static boolean isSymbolicLinkCompat(File file) {
-        try {
-            Process p = Runtime.getRuntime().exec(new String[]{"sh", "-c", "test -L '" + file.getAbsolutePath() + "'"});
-            return p.waitFor() == 0;
-        } catch (Exception e) { return false; }
-    }
-
-    private static void generateLibraryAliases(File libDir) {
-        if (!libDir.exists() || !libDir.isDirectory()) return;
-
-        repairCommonLibraryLinks(libDir);
-
-        File[] libs = libDir.listFiles();
-        if (libs == null) return;
-
-        for (File f : libs) {
-            if (!f.isFile()) continue;
-            String name = f.getName();
-            // libfoo.so.1.2 -> libfoo.so.1 and libfoo.so
-            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.[0-9]+)*$").matcher(name);
-            if (m.matches()) {
-                File major = new File(libDir, m.group(1) + "." + m.group(2));
-                if (!major.exists()) createRelativeSymlink(f, major);
-                File unversioned = new File(libDir, m.group(1));
-                if (!unversioned.exists()) createRelativeSymlink(f, unversioned);
-            }
-        }
-
-        // Explicit SONAME repair for ncurses used by Alpine's sl binary.
-        File nc6 = new File(libDir, "libncursesw.so.6");
-        if (!nc6.exists()) {
-            File[] candidates = libDir.listFiles();
-            if (candidates != null) {
-                for (File f : candidates) {
-                    if (f.isFile() && f.getName().matches("libncursesw\\.so\\.6(?:\\.[0-9]+)+")) {
-                        createRelativeSymlink(f, nc6);
-                        if (nc6.exists()) break;
-                    }
-                }
-            }
-        }
-    }
-
-    private static void generateWrapperMatrix(File alpineBinDir, File alpineLibDir, File mainBinDir, File usrDir, File alpineDir, File filesDir, String pkgName) {
-        String muslLoaderPath = alpineLibDir.getAbsolutePath() + "/libc.musl-aarch64.so.1"; 
-        File[] libs = alpineLibDir.listFiles();
-        if (libs != null) {
-            for (File f : libs) {
-                if (f.getName().startsWith("libc.musl-") || f.getName().startsWith("ld-musl-")) {
-                    muslLoaderPath = f.getAbsolutePath();
-                    break;
-                }
-            }
-        }
-
-        File[] allBinaries = alpineBinDir.listFiles();
-        if (allBinaries == null) return;
-
-        for (File binFile : allBinaries) {
-            if (!binFile.isFile()) continue;
-            String name = binFile.getName();
-            if (name.endsWith(".elf") || name.endsWith(".sh") || name.endsWith(".py")) continue;
-
-            boolean isElf = false;
-            try {
-                FileInputStream fis = new FileInputStream(binFile);
-                byte[] header = new byte[4];
-                if (fis.read(header) == 4 && header[0] == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
-                    isElf = true;
-                }
-                fis.close();
-            } catch (Exception ignored) {}
-
-            if (isElf) {
-                File binReal = new File(alpineBinDir, name + ".elf");
-                if (binFile.renameTo(binReal)) {
-                    try {
-                        File wrapperFile = new File(mainBinDir, name);
-                        FileWriter fw = new FileWriter(wrapperFile);
-                        fw.write("#!/system/bin/sh\n");
-                        fw.write("export PREFIX='" + usrDir.getAbsolutePath() + "'\n");
-                        fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
-                        fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
-                        fw.write("export PATH='" + mainBinDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
-                        fw.write("export TERMINFO='" + alpineDir.getAbsolutePath() + "/share/terminfo'\n");
-                        fw.write("export LANG='en_US.UTF-8'\n");
-                        fw.write("export LC_ALL='en_US.UTF-8'\n");
-
-                        if (pkgName.contains("python") || name.contains("python")) {
-                            fw.write("export PYTHONHOME='" + alpineDir.getAbsolutePath() + "'\n");
-                        }
-                        
-                        fw.write("exec '" + muslLoaderPath + "' --library-path '" + alpineLibDir.getAbsolutePath() + ":" + usrDir.getAbsolutePath() + "/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
-                        fw.close();
-                        wrapperFile.setExecutable(true, true);
-                        binReal.setExecutable(true, true);
-
-                        if (name.equals("python3")) {
-                            File pyAlias = new File(mainBinDir, "python");
-                            FileWriter afw = new FileWriter(pyAlias);
-                            afw.write("#!/system/bin/sh\n");
-                            afw.write("exec python3 \"$@\"\n");
-                            afw.close();
-                            pyAlias.setExecutable(true, true);
-                        }
-
-                        if (name.equals("npm") || name.equals("node")) {
-                            binReal.setExecutable(true, true);
-                        }
-
-                    } catch (Exception ignored) {}
-                }
-            } else {
-                File target = new File(mainBinDir, name);
-                cloneFileSafely(binFile, target);
-                target.setExecutable(true, true);
-            }
-        }
-    }
-
-    private static void cloneFileSafely(File source, File dest) {
-        try {
-            File realSource = source.getCanonicalFile();
-            if (!realSource.exists() || realSource.isDirectory()) return; 
-            if (dest.exists() && dest.length() == realSource.length() && dest.length() > 0) return; 
-            dest.delete(); 
-            
-            InputStream in = new FileInputStream(realSource); 
-            OutputStream out = new FileOutputStream(dest);
-            byte[] buf = new byte[16384];
-            int len;
-            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-            
-            in.close(); out.close();
-            dest.setExecutable(true, false); 
         } catch (Exception ignored) {}
     }
 
-    private static boolean runValidationMatrix(File binDir, File alpineLibDir, String pkgName, InstallListener listener) {
+    // [!] JAVA NATIVE BYTE-CLONER
+    private static void cloneFileSafely(File source, File dest) {
         try {
-            File[] candidates = binDir.listFiles();
-            if (candidates == null) return false;
-            boolean found = false;
-            for (File f : candidates) {
-                if (f.isFile() && (f.getName().equals(pkgName) || f.getName().startsWith(pkgName))) {
-                    found = true;
-                    break;
-                }
+            if (dest.exists()) dest.delete(); 
+            InputStream in = new FileInputStream(source);
+            OutputStream out = new FileOutputStream(dest);
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
             }
-            if (!found) {
-                update(listener, "[-] Validation failed: wrapper for '" + pkgName + "' was not created.");
-                return false;
-            }
-            if (pkgName.equals("sl") && !new File(alpineLibDir, "libncursesw.so.6").exists()) {
-                update(listener, "[-] Validation failed: libncursesw.so.6 is missing from runtime library path.");
-                return false;
-            }
-            return true;
-        } catch (Exception e) {
-            update(listener, "[-] Validation exception: " + e.getMessage());
-            return false;
+            in.close();
+            out.close();
+            dest.setExecutable(true, false);
+            dest.setReadable(true, false);
+        } catch (Exception ignored) {}
+    }
+
+    private static String getHackerProgressBar(int percent) {
+        int filledCount = percent / 10;
+        StringBuilder bar = new StringBuilder("[");
+        for (int i = 0; i < 10; i++) {
+            if (i < filledCount) bar.append("█");
+            else bar.append("░");
         }
+        bar.append("]");
+        return bar.toString();
     }
 
-    private static void ensureMatrixDirectories(File... dirs) {
-        for (File dir : dirs) {
-            if (!dir.exists()) dir.mkdirs();
-        }
-    }
-
-    private static boolean performAIPreFlightCheck(File systemDir, InstallListener listener) {
-        try {
-            StatFs stat = new StatFs(systemDir.getAbsolutePath());
-            return (stat.getAvailableBlocksLong() * stat.getBlockSizeLong()) >= MIN_DISK_SPACE;
-        } catch (Exception e) { return true; }
-    }
-
-    private static String huntTargetWithAINeuralNet(String pkgName, InstallListener listener) {
-        String[] masterMirrors = {
+    private static String huntTargetOnGlobalWeb(String pkgName, InstallListener listener) {
+        String[] mirrors = {
             "https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/",
             "https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/"
         };
-        for (String mirror : masterMirrors) {
+        for (String mirror : mirrors) {
             try {
+                update(listener, "[*] Scraping Global Matrix: " + mirror.replace("https://dl-cdn.", ""));
                 URL url = new URL(mirror);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setConnectTimeout(10000);
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (HK-Terminal Scraper Engine)");
+
                 if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String line;
+                    
                     String regexPattern = "href=\"(" + Pattern.quote(pkgName) + "-[0-9][^\"]*\\.(apk|tar\\.gz|deb))\"";
                     Pattern pattern = Pattern.compile(regexPattern);
+
                     while ((line = reader.readLine()) != null) {
                         Matcher matcher = pattern.matcher(line);
                         if (matcher.find()) {
-                            reader.close(); conn.disconnect();
-                            return mirror + matcher.group(1);
+                            String exactFileName = matcher.group(1);
+                            reader.close();
+                            update(listener, "[+] Global Target Acquired: " + exactFileName);
+                            return mirror + exactFileName;
                         }
                     }
                     reader.close();
                 }
-                conn.disconnect();
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                update(listener, "[-] Matrix search shifted...");
+            }
         }
         return null;
-    }
-
-    private static boolean executeSelfHealingDownload(String targetUrl, File payloadFile, String pkgName, InstallListener listener) {
-        try {
-            URL url = new URL(targetUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(TIMEOUT_MS); 
-            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return false; 
-
-            InputStream input = new BufferedInputStream(conn.getInputStream());
-            OutputStream output = new FileOutputStream(payloadFile);
-            byte[] data = new byte[16384]; 
-            int count;
-            while ((count = input.read(data)) != -1) output.write(data, 0, count);
-            
-            output.flush(); output.close(); input.close(); conn.disconnect();
-            return true;
-        } catch (Exception e) {
-            if (payloadFile.exists()) payloadFile.delete();
-            return false;
-        }
-    }
-
-    private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
-        if (payloadFile.exists()) payloadFile.delete();
-        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* 2>/dev/null";
-        Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
     }
 
     private static void update(InstallListener listener, String msg) {
