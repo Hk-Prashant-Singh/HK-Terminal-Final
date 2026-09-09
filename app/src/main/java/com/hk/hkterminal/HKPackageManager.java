@@ -206,6 +206,9 @@ public class HKPackageManager {
             "if [ -d usr/sbin ]; then cp -r usr/sbin/* '" + alpine + "/bin/' 2>/dev/null || true; fi; " +
             "if [ -d share ]; then cp -r share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
             "if [ -d usr/share ]; then cp -r usr/share/* '" + alpine + "/share/' 2>/dev/null || true; fi; " +
+            // Some Alpine packages place shared libraries below nested paths.
+            // Stage every real .so/loader file into the common runtime lib dir.
+            "find . -type f \( -name '*.so' -o -name '*.so.*' -o -name 'ld-musl-*' \) -exec cp -f {} '" + alpine + "/lib/' \; 2>/dev/null || true; " +
 
             "chmod -R 777 '" + alpine + "' 2>/dev/null || true";
 
@@ -261,7 +264,13 @@ public class HKPackageManager {
                 "sh", "-c", "cd '" + link.getParent() + "' && ln -s '" + target.getName() + "' '" + link.getName() + "'"
             });
             p.waitFor();
-        } catch (Exception ignored) {}
+            if (!link.exists() && target.isFile()) {
+                // Android app sandboxes may reject symlinks. Use a real-file alias.
+                cloneFileSafely(target, link);
+            }
+        } catch (Exception ignored) {
+            if (target != null && target.isFile()) cloneFileSafely(target, link);
+        }
     }
 
     private static boolean isSymbolicLinkCompat(File file) {
@@ -273,16 +282,36 @@ public class HKPackageManager {
 
     private static void generateLibraryAliases(File libDir) {
         if (!libDir.exists() || !libDir.isDirectory()) return;
+
         repairCommonLibraryLinks(libDir);
+
         File[] libs = libDir.listFiles();
         if (libs == null) return;
 
         for (File f : libs) {
             if (!f.isFile()) continue;
-            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\..+)?$").matcher(f.getName());
+            String name = f.getName();
+            // libfoo.so.1.2 -> libfoo.so.1 and libfoo.so
+            Matcher m = Pattern.compile("^(lib.+\\.so)\\.([0-9]+)(?:\\.[0-9]+)*$").matcher(name);
             if (m.matches()) {
                 File major = new File(libDir, m.group(1) + "." + m.group(2));
                 if (!major.exists()) createRelativeSymlink(f, major);
+                File unversioned = new File(libDir, m.group(1));
+                if (!unversioned.exists()) createRelativeSymlink(f, unversioned);
+            }
+        }
+
+        // Explicit SONAME repair for ncurses used by Alpine's sl binary.
+        File nc6 = new File(libDir, "libncursesw.so.6");
+        if (!nc6.exists()) {
+            File[] candidates = libDir.listFiles();
+            if (candidates != null) {
+                for (File f : candidates) {
+                    if (f.isFile() && f.getName().matches("libncursesw\\.so\\.6(?:\\.[0-9]+)+")) {
+                        createRelativeSymlink(f, nc6);
+                        if (nc6.exists()) break;
+                    }
+                }
             }
         }
     }
@@ -383,7 +412,29 @@ public class HKPackageManager {
     }
 
     private static boolean runValidationMatrix(File binDir, File alpineLibDir, String pkgName, InstallListener listener) {
-        return true;
+        try {
+            File[] candidates = binDir.listFiles();
+            if (candidates == null) return false;
+            boolean found = false;
+            for (File f : candidates) {
+                if (f.isFile() && (f.getName().equals(pkgName) || f.getName().startsWith(pkgName))) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                update(listener, "[-] Validation failed: wrapper for '" + pkgName + "' was not created.");
+                return false;
+            }
+            if (pkgName.equals("sl") && !new File(alpineLibDir, "libncursesw.so.6").exists()) {
+                update(listener, "[-] Validation failed: libncursesw.so.6 is missing from runtime library path.");
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            update(listener, "[-] Validation exception: " + e.getMessage());
+            return false;
+        }
     }
 
     private static void ensureMatrixDirectories(File... dirs) {
