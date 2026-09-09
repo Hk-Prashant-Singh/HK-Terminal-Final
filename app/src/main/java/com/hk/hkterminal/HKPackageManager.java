@@ -38,6 +38,22 @@ public class HKPackageManager {
     }
 
     public static void installPackage(Context context, final String targetPkgName, final InstallListener listener) {
+        final String requested = targetPkgName == null ? "" : targetPkgName.trim();
+        if (requested.isEmpty()) {
+            update(listener, "[-] HK-pkg: package name is empty.");
+            new Handler(Looper.getMainLooper()).post(listener::onComplete);
+            return;
+        }
+
+        // Android/system commands are not installable packages. Never send them
+        // through the repository spider (this fixes the 'ls -> SPIDER_MODULE' loop).
+        if (isAndroidNativeCommand(requested)) {
+            update(listener, "[+] '" + requested + "' is an Android native command; installation skipped.");
+            update(listener, "[+] Use the command directly: " + requested);
+            new Handler(Looper.getMainLooper()).post(listener::onComplete);
+            return;
+        }
+
         new Thread(() -> {
             HKDatabaseManager dbManager = new HKDatabaseManager(context);
             HKLogger.logEvent("MODULE-01", "INSTALL_INITIATED", "Target: " + targetPkgName);
@@ -58,14 +74,14 @@ public class HKPackageManager {
                 ensureMatrixDirectories(usrDir, binDir, cacheDir, tmpDir, extTmpDir, alpineDir, alpineBinDir, alpineLibDir, alpineShareDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: ALL-IN-ONE MASTER ENGINE WAKING UP FOR '" + targetPkgName.toUpperCase() + "'...");
+                update(listener, "[*] HK-AI: ALL-IN-ONE MASTER ENGINE WAKING UP FOR '" + requested.toUpperCase() + "'...");
                 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
                 }
 
-                List<String> installQueue = HKDependencyEngine.calculateInstallQueue(targetPkgName);
-                if (installQueue.isEmpty()) installQueue.add(targetPkgName);
+                List<String> installQueue = HKDependencyEngine.calculateInstallQueue(requested);
+                if (installQueue.isEmpty()) installQueue.add(requested);
                 
                 update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
 
@@ -79,13 +95,13 @@ public class HKPackageManager {
 
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
-                        triggerErrorPopup(listener, "SPIDER_MODULE", "Failed to locate '" + pkgName + "'.");
+                        triggerErrorPopup(listener, "SPIDER_MODULE", "No compatible Alpine package found for '" + pkgName + "' in the configured repositories.");
                         dbManager.updatePackageState(pkgName, "FAILED");
                         continue; 
                     }
 
                     dbManager.updatePackageState(pkgName, "DOWNLOADING");
-                    File payloadFile = new File(cacheDir, pkgName + ".apk");
+                    File payloadFile = new File(cacheDir, pkgName + ".apk"); // Alpine APK archive (not an Android APK)
                     boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
                     if (!downloadSuccess) {
                         triggerErrorPopup(listener, "DOWNLOAD_TUNNEL", "Network collapsed or payload corrupted.");
@@ -137,8 +153,8 @@ public class HKPackageManager {
                 update(listener, "===================================");
                 update(listener, "[+] ALL TACTICAL DEPLOYMENTS COMPLETED.");
                 update(listener, "[*] ================================================");
-                update(listener, "[+] TACTICAL DIRECTIVE FOR " + targetPkgName.toUpperCase() + ":");
-                update(listener, " -> Execute: '" + targetPkgName + "'");
+                update(listener, "[+] TACTICAL DIRECTIVE FOR " + requested.toUpperCase() + ":");
+                update(listener, " -> Execute: '" + requested + "'");
 
             } catch (Exception e) {
                 triggerErrorPopup(listener, "GLOBAL_SYSTEM", e.getMessage());
@@ -147,6 +163,17 @@ public class HKPackageManager {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
+    }
+
+    private static boolean isAndroidNativeCommand(String name) {
+        String n = name.toLowerCase(java.util.Locale.US);
+        return n.equals("ls") || n.equals("pwd") || n.equals("cd") || n.equals("cat") ||
+               n.equals("cp") || n.equals("mv") || n.equals("rm") || n.equals("mkdir") ||
+               n.equals("chmod") || n.equals("grep") || n.equals("echo") || n.equals("env") ||
+               n.equals("clear") || n.equals("sh") || n.equals("bash") || n.equals("ip") ||
+               n.equals("su") || n.equals("export") || n.equals("which") || n.equals("command") ||
+               n.equals("type") || n.equals("true") || n.equals("false") || n.equals("printf") ||
+               n.equals("test") || n.equals("ll");
     }
 
     public static void triggerErrorPopup(InstallListener listener, String step, String exactCause) {
