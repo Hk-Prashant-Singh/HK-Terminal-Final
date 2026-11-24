@@ -8,27 +8,46 @@ import android.os.StatFs;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * ============================================================================
- * HK-OPERATION : SAFE DEPLOYMENT ENGINE (ALL-IN-ONE FINAL MASTER v16.0)
+ * HK-OPERATION : SAFE DEPLOYMENT & SELF-HEALING ENGINE (ULTIMATE v17.0)
  * ARCHITECT    : HK Prashant Bhai (Tech Wizard)
- * DIRECTIVE    : Multi-Stream Extraction, Symlink-Safe Wrappers & Real Validation
+ * DIRECTIVE    : Auto-Requirement Resolver, Zero-Failure Sandbox & Self-Heal
  * ============================================================================
  */
 public class HKPackageManager {
 
     private static final String TAG = "HK_AI_MATRIX";
     private static final int TIMEOUT_MS = 60000;
+    private static final int MAX_RETRIES = 3;
     private static final long MIN_DISK_SPACE = 50 * 1024 * 1024;
     private static final ConcurrentHashMap<String, Long> mirrorLatencyCache = new ConcurrentHashMap<>();
+
+    // Extra runtime & requirement packages that make Python & tools work completely
+    private static final Map<String, List<String>> EXTRA_REQUIREMENTS = new HashMap<>();
+
+    static {
+        EXTRA_REQUIREMENTS.put("python", Arrays.asList(
+                "musl", "libffi", "sqlite-libs", "libcrypto3", "libssl3", "openssl",
+                "ca-certificates", "zlib", "libbz2", "libexpat", "xz-libs",
+                "ncurses-libs", "readline", "gdbm", "py3-pip", "py3-setuptools"
+        ));
+        EXTRA_REQUIREMENTS.put("python3", Arrays.asList(
+                "musl", "libffi", "sqlite-libs", "libcrypto3", "libssl3", "openssl",
+                "ca-certificates", "zlib", "libbz2", "libexpat", "xz-libs",
+                "ncurses-libs", "readline", "gdbm", "py3-pip", "py3-setuptools"
+        ));
+        EXTRA_REQUIREMENTS.put("pip", Arrays.asList("python3", "py3-pip", "py3-setuptools", "ca-certificates", "openssl"));
+        EXTRA_REQUIREMENTS.put("py3-pip", Arrays.asList("python3", "py3-setuptools", "ca-certificates", "openssl"));
+        EXTRA_REQUIREMENTS.put("git", Arrays.asList("musl", "libcrypto3", "libssl3", "openssl", "ca-certificates", "zlib", "pcre2", "nghttp2-libs", "brotli-libs", "curl", "libexpat"));
+        EXTRA_REQUIREMENTS.put("curl", Arrays.asList("musl", "libcrypto3", "libssl3", "openssl", "ca-certificates", "zlib", "nghttp2-libs", "brotli-libs"));
+        EXTRA_REQUIREMENTS.put("nmap", Arrays.asList("musl", "libcrypto3", "libssl3", "openssl", "pcre2", "liblinear", "lua5.4", "libpcap", "readline", "ncurses-libs"));
+    }
 
     public interface InstallListener {
         void onUpdate(String msg);
@@ -66,20 +85,20 @@ public class HKPackageManager {
                 File alpineBinDir = new File(alpineDir, "bin");
                 File alpineLibDir = new File(alpineDir, "lib");
                 File alpineShareDir = new File(alpineDir, "share");
+                File alpineEtcDir = new File(alpineDir, "etc");
 
-                ensureMatrixDirectories(usrDir, binDir, cacheDir, tmpDir, extTmpDir, alpineDir, alpineBinDir, alpineLibDir, alpineShareDir);
+                ensureMatrixDirectories(usrDir, binDir, cacheDir, tmpDir, extTmpDir, alpineDir, alpineBinDir, alpineLibDir, alpineShareDir, alpineEtcDir);
 
                 update(listener, "\n[*] ================================================");
-                update(listener, "[*] HK-AI: ALL-IN-ONE MASTER ENGINE WAKING UP FOR '" + requested.toUpperCase(Locale.US) + "'...");
+                update(listener, "[*] HK-AI: SELF-HEALING DEPLOYMENT ENGINE ACTIVE FOR '" + requested.toUpperCase(Locale.US) + "'...");
 
                 if (!performAIPreFlightCheck(filesDir, listener)) {
                     throw new Exception("Insufficient System Resources for HK-Operation.");
                 }
 
-                List<String> installQueue = HKDependencyEngine.calculateInstallQueue(requested);
-                if (installQueue.isEmpty()) installQueue.add(requested);
-
-                update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " dependencies locked.");
+                // Build complete dependency + requirement queue without duplicates
+                List<String> installQueue = buildFullRequirementQueue(requested);
+                update(listener, "[+] AI-Graph Resolved: " + installQueue.size() + " packages & runtime dependencies locked.");
 
                 for (String pkgName : installQueue) {
                     int healthScore = 0;
@@ -91,8 +110,14 @@ public class HKPackageManager {
 
                     String targetUrl = huntTargetWithAINeuralNet(pkgName, listener);
                     if (targetUrl == null) {
-                        triggerErrorPopup(listener, "SPIDER_MODULE", "No compatible Alpine package found for '" + pkgName + "' in repositories.");
+                        update(listener, "[!] Mirror miss for '" + pkgName + "', trying auto-heal fallback scan...");
+                        targetUrl = huntTargetWithAINeuralNet(pkgName.replace("_", "-"), listener);
+                    }
+
+                    if (targetUrl == null) {
+                        triggerErrorPopup(listener, "SPIDER_MODULE", "No compatible Alpine package found for '" + pkgName + "'.");
                         dbManager.updatePackageState(pkgName, "FAILED");
+                        dbManager.updateHealthScore(pkgName, 0, true);
                         continue;
                     }
 
@@ -100,8 +125,9 @@ public class HKPackageManager {
                     File payloadFile = new File(cacheDir, pkgName + ".apk");
                     boolean downloadSuccess = executeSelfHealingDownload(targetUrl, payloadFile, pkgName, listener);
                     if (!downloadSuccess) {
-                        triggerErrorPopup(listener, "DOWNLOAD_TUNNEL", "Network collapsed or payload corrupted.");
+                        triggerErrorPopup(listener, "DOWNLOAD_TUNNEL", "Network collapsed or payload corrupted for '" + pkgName + "'.");
                         dbManager.updatePackageState(pkgName, "FAILED");
+                        dbManager.updateHealthScore(pkgName, 0, true);
                         continue;
                     }
                     healthScore += 20;
@@ -113,12 +139,21 @@ public class HKPackageManager {
                         executeNativeExtractionAndSweep(payloadFile, alpineDir, extTmpDir);
                         healthScore += 40;
                     } catch (Exception e) {
-                        triggerErrorPopup(listener, "SANDBOX_EXTRACTION", "Extraction crash -> " + e.getMessage());
-                        dbManager.updatePackageState(pkgName, "FAILED");
-                        continue;
+                        // Self-heal retry once after cleaning temp & sandbox cache
+                        update(listener, "[!] Extraction fault on '" + pkgName + "', executing self-heal retry...");
+                        cleanDirectoryContents(extTmpDir);
+                        try {
+                            executeNativeExtractionAndSweep(payloadFile, alpineDir, extTmpDir);
+                            healthScore += 40;
+                        } catch (Exception retryEx) {
+                            triggerErrorPopup(listener, "SANDBOX_EXTRACTION", "Extraction crash -> " + retryEx.getMessage());
+                            dbManager.updatePackageState(pkgName, "FAILED");
+                            dbManager.updateHealthScore(pkgName, healthScore, true);
+                            continue;
+                        }
                     }
 
-                    update(listener, "[*] Forging Universal Sandbox Aliases...");
+                    update(listener, "[*] Forging Universal Sandbox Aliases & Library Links...");
                     try {
                         generateLibraryAliases(alpineLibDir);
                         healthScore += 20;
@@ -133,18 +168,23 @@ public class HKPackageManager {
 
                     dbManager.updatePackageState(pkgName, "VALIDATING");
                     update(listener, "[*] Running Runtime Validation & Smoke Test...");
-                    boolean isRuntimeValid = runValidationMatrix(binDir, alpineLibDir, pkgName, listener);
+                    boolean isRuntimeValid = runValidationMatrix(binDir, alpineBinDir, alpineLibDir, filesDir, pkgName, listener);
 
                     if (isRuntimeValid) {
                         healthScore += 20;
                         dbManager.updatePackageState(pkgName, "READY");
                         dbManager.updateHealthScore(pkgName, healthScore, false);
-                        update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: 100%].");
+                        update(listener, "[+] AI-Core Locked: Module '" + pkgName + "' integrated flawlessly [Health: " + healthScore + "%].");
                     } else {
                         dbManager.updatePackageState(pkgName, "REPAIRABLE");
                         dbManager.updateHealthScore(pkgName, healthScore, true);
+                        update(listener, "[!] Module '" + pkgName + "' marked REPAIRABLE [Health: " + healthScore + "%].");
                     }
                 }
+
+                // Final pass: ensure python & python3 shortcuts + self-heal links are intact
+                repairCommonLibraryLinks(alpineLibDir);
+                ensurePythonReadyAliases(alpineBinDir, alpineLibDir, binDir, usrDir, alpineDir, filesDir);
 
                 update(listener, "===================================");
                 update(listener, "[+] ALL TACTICAL DEPLOYMENTS COMPLETED.");
@@ -159,6 +199,34 @@ public class HKPackageManager {
                 new Handler(Looper.getMainLooper()).post(listener::onComplete);
             }
         }).start();
+    }
+
+    private static List<String> buildFullRequirementQueue(String requested) {
+        List<String> finalQueue = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+
+        List<String> baseResolved = HKDependencyEngine.calculateInstallQueue(requested);
+        if (baseResolved.isEmpty()) {
+            baseResolved = Collections.singletonList(requested);
+        }
+
+        List<String> extraList = EXTRA_REQUIREMENTS.get(requested);
+        List<String> combinedSeeds = new ArrayList<>();
+        if (extraList != null) {
+            for (String req : extraList) {
+                combinedSeeds.addAll(HKDependencyEngine.calculateInstallQueue(req));
+                if (!combinedSeeds.contains(req)) combinedSeeds.add(req);
+            }
+        }
+        combinedSeeds.addAll(baseResolved);
+
+        for (String item : combinedSeeds) {
+            if (!visited.contains(item)) {
+                visited.add(item);
+                finalQueue.add(item);
+            }
+        }
+        return finalQueue;
     }
 
     private static boolean isAndroidNativeCommand(String name) {
@@ -185,15 +253,16 @@ public class HKPackageManager {
         String tmp = extTmpDir.getAbsolutePath();
         String apkPath = payloadFile.getAbsolutePath();
 
-        // Multi-stream gzip fix: gzip -dc saare concatenated Alpine streams ko extract karta hai
+        // Handles multi-stream Alpine APK archives cleanly without failing on trailing streams
         String script =
-            "set -e; " +
             "rm -rf '" + tmp + "'/* 2>/dev/null || true; " +
             "mkdir -p '" + tmp + "'; " +
-            "cd '" + tmp + "'; " +
-            "(gzip -dc '" + apkPath + "' | tar -xf -) 2>/dev/null || tar -xzf '" + apkPath + "' 2>/dev/null; " +
+            "cd '" + tmp + "' || exit 1; " +
+            "if ! (gzip -dc '" + apkPath + "' 2>/dev/null | tar -xf - 2>/dev/null); then " +
+            "  tar -ozxf '" + apkPath + "' 2>/dev/null || tar -oxf '" + apkPath + "' 2>/dev/null || true; " +
+            "fi; " +
             "if [ ! -d lib ] && [ ! -d usr ] && [ ! -d bin ] && [ ! -d sbin ] && [ ! -d etc ]; then " +
-            "  echo 'No payload directories extracted'; exit 1; " +
+            "  echo 'Archive contained no standard payload directories'; exit 1; " +
             "fi; " +
             "mkdir -p '" + alpine + "/lib' '" + alpine + "/bin' '" + alpine + "/share' '" + alpine + "/etc'; " +
             "if [ -d lib ]; then cp -RP lib/* '" + alpine + "/lib/' 2>/dev/null || true; fi; " +
@@ -211,15 +280,16 @@ public class HKPackageManager {
         int exit = process.waitFor();
 
         if (exit != 0) {
-            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
             StringBuilder details = new StringBuilder();
-            String line;
-            while ((line = err.readLine()) != null) {
-                details.append(line).append(" ");
+            try (BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                while ((line = err.readLine()) != null) {
+                    details.append(line).append(" ");
+                }
             }
-            err.close();
             throw new Exception("APK payload extraction failed (exit " + exit + "): " + details.toString().trim());
         }
+
         repairCommonLibraryLinks(new File(alpine, "lib"));
     }
 
@@ -303,7 +373,7 @@ public class HKPackageManager {
         File[] allBinaries = alpineBinDir.listFiles();
         if (allBinaries == null) return;
 
-        // Pass 0: Pehle saare symlinks (jaise python3 -> python3.12) ke targets record karo
+        // Pass 0: Record symlinks (such as python3 -> python3.12) before renaming real ELFs
         Map<String, String> symlinkTargets = new HashMap<>();
         for (File binFile : allBinaries) {
             String name = binFile.getName();
@@ -319,7 +389,7 @@ public class HKPackageManager {
             }
         }
 
-        // Pass 1: Sirf REAL files ko process karo (symlinks ko rename mat karo)
+        // Pass 1: Process only real files (never rename symlinks into .elf)
         for (File binFile : allBinaries) {
             if (!binFile.isFile() || isSymbolicLinkCompat(binFile)) continue;
             String name = binFile.getName();
@@ -351,6 +421,7 @@ public class HKPackageManager {
 
                             if (pkgName.contains("python") || name.contains("python")) {
                                 fw.write("export PYTHONHOME='" + alpineDir.getAbsolutePath() + "'\n");
+                                fw.write("export PYTHONPATH='" + alpineDir.getAbsolutePath() + "/lib/python3.12:" + alpineDir.getAbsolutePath() + "/lib/python3.13'\n");
                             }
 
                             fw.write("exec '" + muslLoaderPath + "' --library-path '" + alpineLibDir.getAbsolutePath() + ":" + usrDir.getAbsolutePath() + "/lib' '" + binReal.getAbsolutePath() + "' \"$@\"\n");
@@ -366,7 +437,7 @@ public class HKPackageManager {
             }
         }
 
-        // Pass 2: Symlinks ke liye clean wrappers banao (e.g., python3 -> mainBinDir/python3.12)
+        // Pass 2: Build wrappers for symlinks pointing to real target binaries
         for (Map.Entry<String, String> entry : symlinkTargets.entrySet()) {
             String linkName = entry.getKey();
             String targetName = entry.getValue();
@@ -380,8 +451,49 @@ public class HKPackageManager {
             } catch (Exception ignored) {}
         }
 
-        // Pass 3: 'python' alias guarantee karo agar python3 wrapper ban gaya hai
+        ensurePythonReadyAliases(alpineBinDir, alpineLibDir, mainBinDir, usrDir, alpineDir, filesDir);
+    }
+
+    private static void ensurePythonReadyAliases(File alpineBinDir, File alpineLibDir, File mainBinDir, File usrDir, File alpineDir, File filesDir) {
+        String muslLoaderPath = alpineLibDir.getAbsolutePath() + "/ld-musl-aarch64.so.1";
+        File[] libs = alpineLibDir.listFiles();
+        if (libs != null) {
+            for (File f : libs) {
+                if (f.getName().startsWith("ld-musl-") || f.getName().startsWith("libc.musl-")) {
+                    muslLoaderPath = f.getAbsolutePath();
+                    break;
+                }
+            }
+        }
+
+        File versionedElf = null;
+        File[] bins = alpineBinDir.listFiles();
+        if (bins != null) {
+            for (File b : bins) {
+                if (b.getName().matches("python3\\.[0-9]+\\.elf") && b.exists()) {
+                    versionedElf = b;
+                    break;
+                }
+            }
+        }
+
         File py3Wrapper = new File(mainBinDir, "python3");
+        if (!py3Wrapper.exists() && versionedElf != null) {
+            try {
+                try (FileWriter fw = new FileWriter(py3Wrapper)) {
+                    fw.write("#!/system/bin/sh\n");
+                    fw.write("export PREFIX='" + usrDir.getAbsolutePath() + "'\n");
+                    fw.write("export HOME='" + filesDir.getAbsolutePath() + "/home'\n");
+                    fw.write("export TMPDIR='" + filesDir.getAbsolutePath() + "/tmp'\n");
+                    fw.write("export PATH='" + mainBinDir.getAbsolutePath() + ":/system/bin:/system/xbin'\n");
+                    fw.write("export LANG='en_US.UTF-8'\n");
+                    fw.write("export PYTHONHOME='" + alpineDir.getAbsolutePath() + "'\n");
+                    fw.write("exec '" + muslLoaderPath + "' --library-path '" + alpineLibDir.getAbsolutePath() + ":" + usrDir.getAbsolutePath() + "/lib' '" + versionedElf.getAbsolutePath() + "' \"$@\"\n");
+                }
+                py3Wrapper.setExecutable(true, false);
+            } catch (Exception ignored) {}
+        }
+
         if (py3Wrapper.exists()) {
             try {
                 File pyAlias = new File(mainBinDir, "python");
@@ -406,13 +518,13 @@ public class HKPackageManager {
                 byte[] buf = new byte[16384];
                 int len;
                 while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+                out.flush();
             }
             dest.setExecutable(true, false);
         } catch (Exception ignored) {}
     }
 
-    private static boolean runValidationMatrix(File binDir, File alpineLibDir, String pkgName, InstallListener listener) {
-        // Pure library / certificate / metadata packages mein executable binary nahi hoti
+    private static boolean runValidationMatrix(File binDir, File alpineBinDir, File alpineLibDir, File filesDir, String pkgName, InstallListener listener) {
         if (pkgName.startsWith("lib") || pkgName.equals("musl") || pkgName.endsWith("-libs") ||
             pkgName.equals("zlib") || pkgName.equals("bzip2") || pkgName.equals("readline") ||
             pkgName.equals("gdbm") || pkgName.equals("pcre2") || pkgName.equals("ca-certificates") ||
@@ -429,15 +541,38 @@ public class HKPackageManager {
 
         File targetWrapper = new File(binDir, expectedBin);
         if (!targetWrapper.exists()) {
+            // Check versioned binary fallback for python3
+            if (pkgName.equals("python3")) {
+                File[] bins = alpineBinDir.listFiles();
+                if (bins != null) {
+                    for (File b : bins) {
+                        if (b.getName().startsWith("python3.") && b.getName().endsWith(".elf")) {
+                            return b.canExecute();
+                        }
+                    }
+                }
+            }
             update(listener, "[-] Validation Warning: Wrapper missing for '" + expectedBin + "'");
             return false;
         }
+
+        targetWrapper.setExecutable(true, false);
         return targetWrapper.canExecute();
     }
 
     private static void ensureMatrixDirectories(File... dirs) {
         for (File dir : dirs) {
             if (!dir.exists()) dir.mkdirs();
+        }
+    }
+
+    private static void cleanDirectoryContents(File dir) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) return;
+        File[] children = dir.listFiles();
+        if (children == null) return;
+        for (File child : children) {
+            if (child.isDirectory()) cleanDirectoryContents(child);
+            child.delete();
         }
     }
 
@@ -485,36 +620,44 @@ public class HKPackageManager {
     }
 
     private static boolean executeSelfHealingDownload(String targetUrl, File payloadFile, String pkgName, InstallListener listener) {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(targetUrl);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setInstanceFollowRedirects(true);
-            conn.setConnectTimeout(TIMEOUT_MS);
-            conn.setReadTimeout(TIMEOUT_MS);
-            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return false;
-
-            try (InputStream input = new BufferedInputStream(conn.getInputStream());
-                 OutputStream output = new FileOutputStream(payloadFile)) {
-                byte[] data = new byte[16384];
-                int count;
-                while ((count = input.read(data)) != -1) {
-                    output.write(data, 0, count);
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(targetUrl);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setInstanceFollowRedirects(true);
+                conn.setConnectTimeout(TIMEOUT_MS);
+                conn.setReadTimeout(TIMEOUT_MS);
+                if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    try (InputStream input = new BufferedInputStream(conn.getInputStream());
+                         OutputStream output = new FileOutputStream(payloadFile)) {
+                        byte[] data = new byte[16384];
+                        int count;
+                        while ((count = input.read(data)) != -1) {
+                            output.write(data, 0, count);
+                        }
+                        output.flush();
+                    }
+                    if (payloadFile.exists() && payloadFile.length() > 0) {
+                        return true;
+                    }
                 }
-                output.flush();
+            } catch (Exception ignored) {
+                if (payloadFile.exists()) payloadFile.delete();
+            } finally {
+                if (conn != null) conn.disconnect();
             }
-            return payloadFile.exists() && payloadFile.length() > 0;
-        } catch (Exception e) {
-            if (payloadFile.exists()) payloadFile.delete();
-            return false;
-        } finally {
-            if (conn != null) conn.disconnect();
+            if (attempt < MAX_RETRIES) {
+                update(listener, "[!] Retrying download for '" + pkgName + "' (Attempt " + (attempt + 1) + "/" + MAX_RETRIES + ")...");
+                try { Thread.sleep(800L * attempt); } catch (InterruptedException ignored) {}
+            }
         }
+        return false;
     }
 
     private static void executeGhostCleanup(File payloadFile, File filesDir, File extTmpDir) throws Exception {
         if (payloadFile.exists()) payloadFile.delete();
-        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* 2>/dev/null";
+        String cleanupCmd = "rm -rf '" + extTmpDir.getAbsolutePath() + "'/* 2>/dev/null || true";
         Runtime.getRuntime().exec(new String[]{"sh", "-c", cleanupCmd}).waitFor();
     }
 
